@@ -16,12 +16,25 @@ uiPath = osp.join(rootPath, 'ui')
 Form, Base = uic.loadUiType(osp.join(uiPath, 'window.ui'))
 class Window(Form, Base):
     
-    def __init__(self, parent=qtfy.getMayaWindow()):
+    def __init__(self, parent=qtfy.getMayaWindow(), checkout = True):
         super(Window, self).__init__(parent)
         self.setupUi(self)
         
+        self.chkout = checkout
+        
+        self.closeButton.clicked.connect(self.close)
+        self.openButton.clicked.connect(self.checkout)
+        self.saveButton.clicked.connect(self.checkin)
+        
+        self.setWindowContext(checkout)
+        
         self.setData()
         self.showAssets()
+        
+    def setWindowContext(self, checkout):
+        if self.chkout:
+            self.saveButton.hide()
+        else: self.openButton.hide()
         
     def setData(self):
         self.data = None
