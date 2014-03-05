@@ -14,3 +14,32 @@ rootPath = osp.dirname(osp.dirname(osp.dirname(__file__)))
 uiPath = osp.join(rootPath, 'ui')
 
 Form, Base = uic.loadUiType(osp.join(uiPath, 'window.ui'))
+class Window(Form, Base):
+    
+    def __init__(self, parent=qtfy.getMayaWindow()):
+        super(Window, self).__init__(parent)
+        self.setupUi(self)
+        
+        self.setData()
+        self.showAssets()
+        
+    def setData(self):
+        self.data = None
+    
+    def showAssets(self):
+        pass
+    
+    def showTasks(self):
+        pass
+    
+    def showContext(self):
+        pass
+    
+    def showFiles(self):
+        pass
+    
+    def checkout(self):
+        pass
+    
+    def checkin(self):
+        pass
