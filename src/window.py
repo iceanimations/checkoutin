@@ -9,6 +9,7 @@ import os.path as osp
 import sys
 
 import util
+reload(util)
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
@@ -40,6 +41,8 @@ class Window(Form, Base):
     def showAssets(self):
         sObjects = util.get_all_project_user_sobjects()
         print sObjects
+        print util.get_sobject_name('vfx/shot?project=vfx&code=S01_004')
+        print util.project_title('vfx')
     
     def showTasks(self):
         pass
