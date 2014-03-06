@@ -20,24 +20,22 @@ class Window(Form, Base):
         super(Window, self).__init__(parent)
         self.setupUi(self)
         
+        #get the user
+        
         self.chkout = checkout
         
         self.closeButton.clicked.connect(self.close)
         self.openButton.clicked.connect(self.checkout)
         self.saveButton.clicked.connect(self.checkin)
         
-        self.setWindowContext(checkout)
+        self.setWindowContext()
         
-        self.setData()
         self.showAssets()
         
-    def setWindowContext(self, checkout):
+    def setWindowContext(self):
         if self.chkout:
             self.saveButton.hide()
         else: self.openButton.hide()
-        
-    def setData(self):
-        self.data = None
     
     def showAssets(self):
         pass
