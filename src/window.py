@@ -3,14 +3,14 @@ site.addsitedir(r"R:\Pipe_Repo\Users\Qurban\utilities")
 from uiContainer import uic
 from PyQt4.QtGui import *
 from PyQt4.QtCore import Qt
-
-site.addsitedir(r"R:\Pipe_Repo\Users\Hussain\packages")
 import qtify_maya_window as qtfy
 
 import os.path as osp
 import sys
 
-rootPath = osp.dirname(osp.dirname(osp.dirname(__file__)))
+import util
+
+rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
 
 Form, Base = uic.loadUiType(osp.join(uiPath, 'window.ui'))
@@ -38,7 +38,8 @@ class Window(Form, Base):
         else: self.openButton.hide()
     
     def showAssets(self):
-        pass
+        sObjects = util.get_all_project_user_sobjects()
+        print sObjects
     
     def showTasks(self):
         pass
@@ -47,7 +48,8 @@ class Window(Form, Base):
         pass
     
     def showFiles(self):
-        pass
+        if self.chkout:
+            pass
     
     def checkout(self):
         pass
