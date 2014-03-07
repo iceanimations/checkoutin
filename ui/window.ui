@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>668</width>
-    <height>299</height>
+    <width>864</width>
+    <height>447</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -54,6 +54,12 @@
     </item>
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout">
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>9</number>
+      </property>
       <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
@@ -133,7 +139,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>668</width>
+     <width>864</width>
      <height>21</height>
     </rect>
    </property>
