@@ -7,7 +7,10 @@ import qtify_maya_window as qtfy
 
 import os.path as osp
 import sys
+from customui import ui as cui
+reload(cui)
 
+reload(cui)
 import util
 reload(util)
 
@@ -39,11 +42,20 @@ class Window(Form, Base):
         else: self.openButton.hide()
     
     def showAssets(self):
-        sObjects = util.get_all_project_user_sobjects()
-        print sObjects
-        print util.get_sobject_name('vfx/shot?project=vfx&code=S01_004')
-        print util.project_title('vfx')
-    
+        tasks = util.get_all_project_user_sobjects()
+        scroller = cui.Scroller(self)
+        self.scrollerLayout.addWidget(scroller)
+        scroller.setTitle('Tasks')
+        for proj in sObjects:
+            sobjs = sObjects[proj]
+            for so in sobjs:
+                item = cui.Item(self)
+                item.setTitle(util.get_sobject_name(so))
+                print util.sobject_to_user_task(so)
+                item.setName(util.get_project_title(proj))
+                item.setDetail(util.get_sobject_description(so))
+                scroller.addItem(item)
+                
     def showTasks(self):
         pass
     
