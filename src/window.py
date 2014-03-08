@@ -9,8 +9,10 @@ import os.path as osp
 import sys
 from customui import ui as cui
 reload(cui)
-import LoginApp
-
+import login
+reload(login)
+#import backend
+#reload(backend)
 reload(cui)
 
 import pymel.core as pc
@@ -28,7 +30,7 @@ class Window(Form, Base):
         
         #get the user
         if not user.user_registered():
-            if not LoginApp.win.Window().exec_():
+            if not login.win.Window().exec_():
                 self.deleteLater()
                 return
         self.chkout = checkout
@@ -170,7 +172,9 @@ class Window(Form, Base):
         
     
     def checkout(self):
-        pass
+        if self.currentFile:
+            pass
+            #backend.checkout(str(self.currentFile.objectName()))
     
     def checkin(self):
         pass
