@@ -116,44 +116,49 @@ class Window(Form, Base):
             self.showFiles(self.contextsBox.items()[0])
     
     def showFiles(self, context):
-        if self.chkout:
-            # highlight the context
-            if self.currentContext:
-                self.currentContext.setStyleSheet("background-color: None")
-            self.currentContext = context
-            self.currentContext.setStyleSheet("background-color: #666666")
+        # highlight the context
+        if self.currentContext:
+            self.currentContext.setStyleSheet("background-color: None")
+        self.currentContext = context
+        self.currentContext.setStyleSheet("background-color: #666666")
+        
+        # get the files
+        parts = str(self.currentContext.objectName()).split('>')
+        context = parts[0]; task = parts[1]
+        files = util.get_snapshots(context, task)
+        
+        # remove the showed files
+        if self.filesBox:
+            for fl in self.filesBox.items():
+                fl.deleteLater()
+            self.filesBox.clearItems()
+            self.currentFile = None
+        
+        if files:
+        
+            # create the scroller
+            if not self.filesBox:
+                self.filesBox = self.createScroller("Files")
             
-            # get the files
-            parts = str(self.currentContext.objectName()).split('>')
-            context = parts[0]; task = parts[1]
-            files = util.get_snapshots(context, task)
+            # show the new files
+            for key in files:
+                value = files[key]
+                item = self.createItem(value,
+                                       '',
+                                       '',
+                                       util.get_sobject_description(key))
+                self.filesBox.addItem(item)
+                item.setObjectName(key)
+                item.setToolTip(value)
             
-            # remove the showed files
-            if self.filesBox:
-                for fl in self.filesBox.items():
-                    fl.deleteLater()
-                self.filesBox.clearItems()
-                self.currentFile = None
-            
-            if files:
-            
-                # create the scroller
-                if not self.filesBox:
-                    self.filesBox = self.createScroller("Files")
-                
-                # show the new files
-                for key in files:
-                    value = files[key]
-                    item = self.createItem(value,
-                                           '',
-                                           '',
-                                           util.get_sobject_description(key))
-                    self.filesBox.addItem(item)
-                    item.setObjectName(key)
-                    item.setToolTip(value)
-                
-                # bind click event
+            # bind click event
+            if self.chkout:
                 map(lambda widget: self.bindClickEvent(widget, self.selectFile), self.filesBox.items())
+            else:
+                for fl in self.filesBox.items():
+                    fl.leaveEvent = lambda event: None
+                    fl.enterEvent = lambda event: None
+                    fl.setEnabled(False)
                 
     def selectFile(self, fil):
         if self.currentFile:
@@ -164,7 +169,7 @@ class Window(Form, Base):
     
     def checkout(self):
         if self.currentFile:
-            pass
+            print self.currentFile.title()
             #backend.checkout(str(self.currentFile.objectName()))
     
     def checkin(self):
