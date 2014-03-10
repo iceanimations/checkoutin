@@ -34,12 +34,10 @@ class Window(Form, Base):
                 self.deleteLater()
                 return
         self.chkout = checkout
-        self.tasks = []
-        self.contexts = []
-        self.files = []
         self.currentTask = None
         self.currentContext = None
         self.currentFile = None
+        self.assetBox = None
         self.contextsBox = None
         self.filesBox = None
         
@@ -61,18 +59,15 @@ class Window(Form, Base):
     
     def showTasks(self):
         tasks = util.get_all_task()
-        scroller = cui.Scroller(self)
-        self.scrollerLayout.addWidget(scroller)
-        scroller.setTitle('Tasks')
+        self.assetBox = self.createScroller("Tasks")
         for tsk in tasks:
             item = self.createItem(util.get_task_process(tsk),
                                    util.get_sobject_name(util.get_sobject_from_task(tsk)),
                                    util.get_project_title(util.get_project_from_task(tsk)),
                                    util.get_sobject_description(tsk))
-            scroller.addItem(item)
+            self.assetBox.addItem(item)
             item.setObjectName(tsk)
-            self.tasks.append(item)
-        map(lambda widget: self.bindClickEvent(widget, self.showContext), self.tasks)
+        map(lambda widget: self.bindClickEvent(widget, self.showContext), self.assetBox.items())
     
     def showContext(self, taskWidget):
         
@@ -83,17 +78,18 @@ class Window(Form, Base):
         self.currentTask.setStyleSheet("background-color: #666666")
         
         # remove the showed contexts
-        for context in self.contexts:
-            context.deleteLater()
-        self.contexts[:] = []
-        self.currentContext = None
+        if self.contextsBox:
+            for context in self.contextsBox.items():
+                context.deleteLater()
+            self.contextsBox.clearItems()
+            self.currentContext = None
         
         # remove the showed files
         if self.filesBox:
             self.filesBox.deleteLater()
+            self.filesBox.clearItems()
             self.filesBox = None
-        self.files[:] = []
-        self.currentFile = None
+            self.currentFile = None
         
         # get the new contexts
         task = str(self.currentTask.objectName())
@@ -101,9 +97,7 @@ class Window(Form, Base):
         
         # create the scroller
         if not self.contextsBox:
-            self.contextsBox = cui.Scroller(self)
-            self.contextsBox.setTitle('Context')
-            self.scrollerLayout.addWidget(self.contextsBox)
+            self.contextsBox = self.createScroller("Context")
         
         # show the context
         for context in contexts:
@@ -112,15 +106,14 @@ class Window(Form, Base):
                                    '',
                                    util.get_sobject_description(task))
             self.contextsBox.addItem(item)
-            self.contexts.append(item)
             item.setObjectName(context +'>'+ task)
             
         # bind the click event
-        map(lambda widget: self.bindClickEvent(widget, self.showFiles), self.contexts)
+        map(lambda widget: self.bindClickEvent(widget, self.showFiles), self.contextsBox.items())
         
         # if there is only one context, show the files
         if len(contexts) == 1:
-            self.showFiles(self.contexts[0])
+            self.showFiles(self.contextsBox.items()[0])
     
     def showFiles(self, context):
         if self.chkout:
@@ -136,18 +129,17 @@ class Window(Form, Base):
             files = util.get_snapshots(context, task)
             
             # remove the showed files
-            for fl in self.files:
-                fl.deleteLater()
-            self.files[:] = []
-            self.currentFile = None
+            if self.filesBox:
+                for fl in self.filesBox.items():
+                    fl.deleteLater()
+                self.filesBox.clearItems()
+                self.currentFile = None
             
             if files:
             
                 # create the scroller
                 if not self.filesBox:
-                    self.filesBox = cui.Scroller(self)
-                    self.filesBox.setTitle("Files")
-                    self.scrollerLayout.addWidget(self.filesBox)
+                    self.filesBox = self.createScroller("Files")
                 
                 # show the new files
                 for key in files:
@@ -157,12 +149,11 @@ class Window(Form, Base):
                                            '',
                                            util.get_sobject_description(key))
                     self.filesBox.addItem(item)
-                    self.files.append(item)
                     item.setObjectName(key)
                     item.setToolTip(value)
                 
                 # bind click event
-                map(lambda widget: self.bindClickEvent(widget, self.selectFile), self.files)
+                map(lambda widget: self.bindClickEvent(widget, self.selectFile), self.filesBox.items())
                 
     def selectFile(self, fil):
         if self.currentFile:
@@ -178,6 +169,12 @@ class Window(Form, Base):
     
     def checkin(self):
         pass
+    
+    def createScroller(self, title):
+        scroller = cui.Scroller(self)
+        scroller.setTitle(title)
+        self.scrollerLayout.addWidget(scroller)
+        return scroller
     
     def createItem(self, title, asset, project, detail):
         if not title:
