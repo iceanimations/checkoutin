@@ -176,10 +176,13 @@ class Window(Form, Base):
             sobj = util.get_sobject_from_task(str(self.currentTask.objectName()))
             name = backend.checkin(sobj, self.currentContext.title()).keys()[0]
             self.showFiles(self.currentContext)
-            for item in self.filesBox.items():
-                fileKey = str(item.objectName())
-                if fileKey == name:
-                    self.filesBox.ensureWidgetVisible(item, 0, 0)
+            if self.filesBox:
+                for item in self.filesBox.items():
+                    fileKey = str(item.objectName())
+                    if fileKey == name:
+                        qApp.processEvents()
+                        self.filesBox.scrollArea.ensureWidgetVisible(item, 0, 0)
+                        qApp.processEvents()
     
     def createScroller(self, title):
         scroller = cui.Scroller(self)
