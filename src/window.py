@@ -11,8 +11,8 @@ from customui import ui as cui
 reload(cui)
 import login
 reload(login)
-#import backend
-#reload(backend)
+import backend
+reload(backend)
 reload(cui)
 
 import pymel.core as pc
@@ -169,11 +169,17 @@ class Window(Form, Base):
     
     def checkout(self):
         if self.currentFile:
-            print self.currentFile.title()
-            #backend.checkout(str(self.currentFile.objectName()))
+            backend.checkout(str(self.currentFile.objectName()))
     
     def checkin(self):
-        pass
+        if self.currentTask and self.currentContext:
+            sobj = util.get_sobject_from_task(str(self.currentTask.objectName()))
+            name = backend.checkin(sobj, self.currentContext.title()).keys()[0]
+            self.showFiles(self.currentContext)
+            for item in self.filesBox.items():
+                fileKey = str(item.objectName())
+                if fileKey == name:
+                    self.filesBox.ensureWidgetVisible(item, 0, 0)
     
     def createScroller(self, title):
         scroller = cui.Scroller(self)
