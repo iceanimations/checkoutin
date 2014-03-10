@@ -1,4 +1,5 @@
 from auth import user
+import util
 import tempfile
 import pymel.core as pc
 import tactic_client_lib.application.maya as maya
@@ -29,8 +30,10 @@ def checkout(snapshot):
         server = user.get_server()
         snap = server.get_by_search_key(snapshot)
         sobj = server.get_by_search_key(server.build_search_key(snap['search_type'], snap['search_code'], snap['project_code']))
+        print snap['version']
+        print util.pretty_print(snap)
         file_type = server.get_by_search_key(server.query('sthpw/file', filters = [('snapshot_code', snap['code']), ('project_code', snap['project_code'])])[0]['__search_key__'])
-        paths = server.checkout(sobj['__search_key__'], snap['context'], to_sandbox_dir = True)
+        paths = server.checkout(sobj['__search_key__'], snap['context'], to_sandbox_dir = True, version = snap['version'], file_type = file_type["type"])
         pc.openFile(paths[0], force = True)
         return paths[0]
         
@@ -47,6 +50,7 @@ def checkin(sobject, context, version=-1):
     server = user.get_server()
     tmpfile = op.normpath(getTemp(prefix = dt.now().strftime("%Y-%M-%d %H-%M-%S"))).replace("\\", "/")
     print tmpfile
+    print sobject, context
     save_path = m.save(tmpfile, file_type = "mayaBinary" if pc.sceneName().endswith(".mb") else "mayaAscii")
     snapshot = user.get_server().simple_checkin(sobject, context, save_path, use_handoff_dir=True, mode = 'copy')
     search_key = snapshot['__search_key__']
