@@ -15,8 +15,6 @@ import backend
 reload(backend)
 reload(cui)
 
-import operator
-
 import pymel.core as pc
 import auth.user as user
 
@@ -158,19 +156,15 @@ class Window(Form, Base):
             temp = {}
             for ke in files:
                 temp[ke] = files[ke]['version']
-            
-            for item in sorted(temp.iteritems(), key=operator.itemgetter(1)):
-                print item
                 
             # show the new files
-            for key in sorted(temp.iteritems(), key=operator.itemgetter(1), reverse=True):
-                newKey = key[0]
-                value = files[newKey]
+            for key in sorted(temp, key=temp.get, reverse=True):
+                value = files[key]
                 item = self.createItem(value['filename'],
                                        '', '',
-                                       util.get_sobject_description(newKey))
+                                       util.get_sobject_description(key))
                 self.filesBox.addItem(item)
-                item.setObjectName(newKey)
+                item.setObjectName(key)
                 item.setToolTip(value['filename'])
             
             # bind click event
