@@ -15,6 +15,8 @@ import backend
 reload(backend)
 reload(cui)
 
+import operator
+
 import pymel.core as pc
 import auth.user as user
 
@@ -139,17 +141,37 @@ class Window(Form, Base):
             # create the scroller
             if not self.filesBox:
                 self.filesBox = self.createScroller("Files")
+                
+            # add the latest file to scroller
+            for k in files:
+                values=files[k]
+                if values['latest']:
+                    item = self.createItem(values['filename'],
+                                           '', '',
+                                           util.get_sobject_description(k))
+                    self.filesBox.addItem(item)
+                    item.setObjectName(k)
+                    item.setToolTip(values['filename'])
+                    files.pop(k)
+                    break
+                
+            temp = {}
+            for ke in files:
+                temp[ke] = files[ke]['version']
             
+            for item in sorted(temp.iteritems(), key=operator.itemgetter(1)):
+                print item
+                
             # show the new files
-            for key in files:
-                value = files[key]
-                item = self.createItem(value,
-                                       '',
-                                       '',
-                                       util.get_sobject_description(key))
+            for key in sorted(temp.iteritems(), key=operator.itemgetter(1), reverse=True):
+                newKey = key[0]
+                value = files[newKey]
+                item = self.createItem(value['filename'],
+                                       '', '',
+                                       util.get_sobject_description(newKey))
                 self.filesBox.addItem(item)
-                item.setObjectName(key)
-                item.setToolTip(value)
+                item.setObjectName(newKey)
+                item.setToolTip(value['filename'])
             
             # bind click event
             if self.chkout:
