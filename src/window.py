@@ -9,8 +9,8 @@ import login
 import pymel.core as pc
 import auth.user as user
 import updater
-reload(updater)
-reload(cui)
+#reload(updater)
+#reload(cui)
 reload(login)
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
