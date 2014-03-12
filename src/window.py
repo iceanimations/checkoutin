@@ -234,7 +234,8 @@ class Window(Form, Base):
     def bindClickEvent(self, widget, function):
         widget.mouseReleaseEvent = lambda event: function(widget)
         
-#     def updateWindow(self):
+    def updateWindow(self):
+        pass
 #         newTasks = util.get_all_task()
 #         taskLen1 = len(newTasks); taskLen2 = len(self.tasksBox.item())
 #         if taskLen1 != taskLen2:
