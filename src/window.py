@@ -6,12 +6,10 @@ import os.path as osp
 import sys
 from customui import ui as cui
 import login
-import backend
 import pymel.core as pc
 import auth.user as user
 import updater
 reload(updater)
-reload(backend)
 reload(cui)
 reload(login)
 rootPath = osp.dirname(osp.dirname(__file__))
@@ -47,6 +45,10 @@ class Window(Form, Base):
         
         self.setWindowContext()
         import util as ut
+        import backend as be
+        reload(be)
+        global backend
+        backend = be
         reload(ut)
         global util
         util = ut
