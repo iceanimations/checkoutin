@@ -2,29 +2,31 @@ from uiContainer import uic
 from PyQt4.QtGui import *
 from PyQt4.QtCore import Qt
 import qtify_maya_window as qtfy
-
 import os.path as osp
 import sys
 from customui import ui as cui
-reload(cui)
 import login
-reload(login)
 import backend
-reload(backend)
-reload(cui)
-
 import pymel.core as pc
 import auth.user as user
-
+import updater
+reload(updater)
+reload(backend)
+reload(cui)
+reload(login)
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
 
 Form, Base = uic.loadUiType(osp.join(uiPath, 'window.ui'))
 class Window(Form, Base):
-    
+
     def __init__(self, parent=qtfy.getMayaWindow(), checkout = True):
         super(Window, self).__init__(parent)
         self.setupUi(self)
+        
+        self.tempButton = QPushButton(self)
+        self.tempButton.released.connect(self.updateWindow)
+        self.tempButton.hide()
         
         #get the user
         if not user.user_registered():
@@ -35,7 +37,7 @@ class Window(Form, Base):
         self.currentTask = None
         self.currentContext = None
         self.currentFile = None
-        self.assetBox = None
+        self.tasksBox = None
         self.contextsBox = None
         self.filesBox = None
         
@@ -49,6 +51,15 @@ class Window(Form, Base):
         global util
         util = ut
         self.showTasks()
+        self.startThread()
+        
+    def closeEvent(self, event):
+        self.thread.terminate()
+        self.deleteLater()
+        
+    def startThread(self):
+        self.thread = updater.Thread(self)
+        self.thread.start()
         
     def setWindowContext(self):
         if self.chkout:
@@ -57,15 +68,15 @@ class Window(Form, Base):
     
     def showTasks(self):
         tasks = util.get_all_task()
-        self.assetBox = self.createScroller("Tasks")
+        self.tasksBox = self.createScroller("Tasks")
         for tsk in tasks:
             item = self.createItem(util.get_task_process(tsk),
                                    util.get_sobject_name(util.get_sobject_from_task(tsk)),
                                    util.get_project_title(util.get_project_from_task(tsk)),
                                    util.get_sobject_description(tsk))
-            self.assetBox.addItem(item)
+            self.tasksBox.addItem(item)
             item.setObjectName(tsk)
-        map(lambda widget: self.bindClickEvent(widget, self.showContext), self.assetBox.items())
+        map(lambda widget: self.bindClickEvent(widget, self.showContext), self.tasksBox.items())
     
     def showContext(self, taskWidget):
         
@@ -190,6 +201,8 @@ class Window(Form, Base):
         if self.currentTask and self.currentContext:
             sobj = util.get_sobject_from_task(str(self.currentTask.objectName()))
             name = backend.checkin(sobj, self.currentContext.title()).keys()[0]
+            
+            # redisplay the the filesBox
             self.showFiles(self.currentContext)
             if self.filesBox:
                 for item in self.filesBox.items():
@@ -217,3 +230,7 @@ class Window(Form, Base):
     
     def bindClickEvent(self, widget, function):
         widget.mouseReleaseEvent = lambda event: function(widget)
+        
+    def updateWindow(self):
+        # check the taskBox
+        pass
