@@ -1,3 +1,5 @@
+import site
+site.addsitedir(r"R:\Pipe_Repo\Users\Qurban\utilities")
 from uiContainer import uic
 from PyQt4.QtGui import *
 from PyQt4.QtCore import Qt
@@ -9,8 +11,8 @@ from customui import ui as cui
 reload(cui)
 import login
 reload(login)
-import backend
-reload(backend)
+#import backend
+#reload(backend)
 reload(cui)
 
 import pymel.core as pc
@@ -137,33 +139,17 @@ class Window(Form, Base):
             # create the scroller
             if not self.filesBox:
                 self.filesBox = self.createScroller("Files")
-                
-            # add the latest file to scroller
-            for k in files:
-                values=files[k]
-                if values['latest']:
-                    item = self.createItem(values['filename'],
-                                           '', '',
-                                           util.get_sobject_description(k))
-                    self.filesBox.addItem(item)
-                    item.setObjectName(k)
-                    item.setToolTip(values['filename'])
-                    files.pop(k)
-                    break
-                
-            temp = {}
-            for ke in files:
-                temp[ke] = files[ke]['version']
-                
+            
             # show the new files
-            for key in sorted(temp, key=temp.get, reverse=True):
+            for key in files:
                 value = files[key]
-                item = self.createItem(value['filename'],
-                                       '', '',
+                item = self.createItem(value,
+                                       '',
+                                       '',
                                        util.get_sobject_description(key))
                 self.filesBox.addItem(item)
                 item.setObjectName(key)
-                item.setToolTip(value['filename'])
+                item.setToolTip(value)
             
             # bind click event
             if self.chkout:
@@ -183,21 +169,11 @@ class Window(Form, Base):
     
     def checkout(self):
         if self.currentFile:
-            backend.checkout(str(self.currentFile.objectName()))
+            print self.currentFile.title()
             #backend.checkout(str(self.currentFile.objectName()))
     
     def checkin(self):
-        if self.currentTask and self.currentContext:
-            sobj = util.get_sobject_from_task(str(self.currentTask.objectName()))
-            name = backend.checkin(sobj, self.currentContext.title()).keys()[0]
-            self.showFiles(self.currentContext)
-            if self.filesBox:
-                for item in self.filesBox.items():
-                    fileKey = str(item.objectName())
-                    if fileKey == name:
-                        qApp.processEvents()
-                        self.filesBox.scrollArea.ensureWidgetVisible(item, 0, 0)
-                        qApp.processEvents()
+        pass
     
     def createScroller(self, title):
         scroller = cui.Scroller(self)

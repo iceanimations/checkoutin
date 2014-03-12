@@ -184,7 +184,6 @@ class Window(Form, Base):
     def checkout(self):
         if self.currentFile:
             backend.checkout(str(self.currentFile.objectName()))
-            #backend.checkout(str(self.currentFile.objectName()))
     
     def checkin(self):
         if self.currentTask and self.currentContext:

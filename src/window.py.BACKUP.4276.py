@@ -9,8 +9,13 @@ from customui import ui as cui
 reload(cui)
 import login
 reload(login)
+<<<<<<< HEAD
+#import backend
+#reload(backend)
+=======
 import backend
 reload(backend)
+>>>>>>> backend
 reload(cui)
 
 import pymel.core as pc
@@ -137,6 +142,19 @@ class Window(Form, Base):
             # create the scroller
             if not self.filesBox:
                 self.filesBox = self.createScroller("Files")
+<<<<<<< HEAD
+            
+            # show the new files
+            for key in files:
+                value = files[key]
+                item = self.createItem(value,
+                                       '',
+                                       '',
+                                       util.get_sobject_description(key))
+                self.filesBox.addItem(item)
+                item.setObjectName(key)
+                item.setToolTip(value)
+=======
                 
             # add the latest file to scroller
             for k in files:
@@ -164,6 +182,7 @@ class Window(Form, Base):
                 self.filesBox.addItem(item)
                 item.setObjectName(key)
                 item.setToolTip(value['filename'])
+>>>>>>> backend
             
             # bind click event
             if self.chkout:
@@ -183,8 +202,14 @@ class Window(Form, Base):
     
     def checkout(self):
         if self.currentFile:
-            backend.checkout(str(self.currentFile.objectName()))
+<<<<<<< HEAD
+            print self.currentFile.title()
             #backend.checkout(str(self.currentFile.objectName()))
+    
+    def checkin(self):
+        pass
+=======
+            backend.checkout(str(self.currentFile.objectName()))
     
     def checkin(self):
         if self.currentTask and self.currentContext:
@@ -198,6 +223,7 @@ class Window(Form, Base):
                         qApp.processEvents()
                         self.filesBox.scrollArea.ensureWidgetVisible(item, 0, 0)
                         qApp.processEvents()
+>>>>>>> backend
     
     def createScroller(self, title):
         scroller = cui.Scroller(self)
