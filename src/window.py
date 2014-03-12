@@ -56,7 +56,7 @@ class Window(Form, Base):
         self.startThread()
         
     def closeEvent(self, event):
-        self.thread.terminate()
+        #self.thread.terminate()
         self.deleteLater()
         
     def startThread(self):
@@ -91,9 +91,9 @@ class Window(Form, Base):
         
         # remove the showed contexts
         if self.contextsBox:
-            self.contextsBox.clearItems()
             for context in self.contextsBox.items():
                 context.deleteLater()
+            self.contextsBox.clearItems()
             self.currentContext = None
         
         # remove the showed files
