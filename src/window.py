@@ -60,8 +60,9 @@ class Window(Form, Base):
         self.deleteLater()
         
     def startThread(self):
-        self.thread = updater.Thread(self)
-        self.thread.start()
+        pass
+        #self.thread = updater.Thread(self)
+        #self.thread.start()
         
     def setWindowContext(self):
         if self.chkout:
@@ -90,15 +91,15 @@ class Window(Form, Base):
         
         # remove the showed contexts
         if self.contextsBox:
+            self.contextsBox.clearItems()
             for context in self.contextsBox.items():
                 context.deleteLater()
-            self.contextsBox.clearItems()
             self.currentContext = None
         
         # remove the showed files
         if self.filesBox:
-            self.filesBox.deleteLater()
             self.filesBox.clearItems()
+            self.filesBox.deleteLater()
             self.filesBox = None
             self.currentFile = None
         
@@ -234,5 +235,31 @@ class Window(Form, Base):
         widget.mouseReleaseEvent = lambda event: function(widget)
         
     def updateWindow(self):
-        # check the taskBox
+        newTasks = util.get_all_task()
+        taskLen1 = len(newTasks); taskLen2 = len(self.tasksBox.item())
+        if taskLen1 != taskLen2:
+            self.updateTasksBox(newTasks, taskLen1, taskLen2)
+        if self.currentTask:
+            contexts = util.get_contexts_from_task(str(self.currentTask.objectName()))
+            contextsLen1 = len(contexts); contextsLen2 = len(self.contextsBox.items())
+            if contextsLen1 != contextsLen2:
+                self.updateContextsBox(contexts, contextsLen1, contextsLen2)
+            if self.currentContext:
+                files = util.get_snapshots(self.currentContext.title(), str(self.currentTask.objectName()))
+                filesLen1 = len(files); filesLen2 = len(self.filesBox.items())
+                if filesLen1 != filesLen2:
+                    self.updateFilesBox(files, filesLen1, filesLen2)
+                    
+    def updateTasksBox(self, tasks, l1, l2):
+        if l1 > l2:
+            pass
+        elif l1 < l2:
+            pass
+        else:
+            pass
+    
+    def updateContextsBox(self, contexts, l1, l2):
+        pass
+    
+    def updateFilesBox(self, files, l1, l2):
         pass
