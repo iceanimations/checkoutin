@@ -1,36 +1,26 @@
 from uiContainer import uic
 from PyQt4.QtGui import *
-from PyQt4.QtCore import Qt
+from PyQt4.QtCore import *
 import qtify_maya_window as qtfy
 import os.path as osp
 import sys
 from customui import ui as cui
-import login
 import pymel.core as pc
-import auth.user as user
-#import updater
-#reload(updater)
+import util
+import backend
+reload(backend)
+reload(util)
 reload(cui)
-reload(login)
+
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
+iconPath = osp.join(rootPath, 'icons')
 
-Form, Base = uic.loadUiType(osp.join(uiPath, 'window.ui'))
-class Window(Form, Base):
+class Window(cui.Explorer):
 
     def __init__(self, parent=qtfy.getMayaWindow(), checkout = True):
         super(Window, self).__init__(parent)
-        self.setupUi(self)
         
-        self.tempButton = QPushButton(self)
-        self.tempButton.released.connect(self.updateWindow)
-        self.tempButton.hide()
-        
-        #get the user
-        if not user.user_registered():
-            if not login.win.Window().exec_():
-                self.deleteLater()
-                return
         self.chkout = checkout
         self.currentTask = None
         self.currentContext = None
@@ -39,31 +29,20 @@ class Window(Form, Base):
         self.contextsBox = None
         self.filesBox = None
         
+        self.refreshButton.setIcon(QIcon(osp.join(iconPath, 'refresh.png')))
+
+        self.refreshButton.clicked.connect(self.updateWindow)        
         self.closeButton.clicked.connect(self.close)
         self.openButton.clicked.connect(self.checkout)
         self.saveButton.clicked.connect(self.checkin)
         
         self.setWindowContext()
-        import util as ut
-        import backend as be
-        reload(be)
-        global backend
-        backend = be
-        reload(ut)
-        global util
-        util = ut
         self.showTasks()
-        self.startThread()
         
     def closeEvent(self, event):
-        #self.thread.terminate()
         self.deleteLater()
         
-    def startThread(self):
-        pass
-        #self.thread = updater.Thread(self)
         #self.thread.start()
-        
     def setWindowContext(self):
         if self.chkout:
             self.saveButton.hide()
@@ -71,7 +50,7 @@ class Window(Form, Base):
     
     def showTasks(self):
         self.tasksBox = self.createScroller("Tasks")
-        self.addTask(util.get_all_task())
+        self.addTasks(util.get_all_task())
         map(lambda widget: self.bindClickEvent(widget, self.showContext), self.tasksBox.items())
         
     def addTasks(self, tasks):
@@ -100,10 +79,11 @@ class Window(Form, Base):
             self.filesBox.deleteLater()
         
         # get the new contexts
+        task = str(self.currentTask.objectName())
         contexts = util.get_contexts_from_task(task)
         
         # add the contexts
-        self.addContexts(contexts, str(self.currentTask.objectName()))
+        self.addContexts(contexts, task)
         
         # bind the click event
         map(lambda widget: self.bindClickEvent(widget, self.showFiles), self.contextsBox.items())
@@ -244,15 +224,15 @@ class Window(Form, Base):
         
     def updateWindow(self):
         newTasks = util.get_all_task()
-        taskLen1 = len(newTasks); taskLen2 = len(self.tasksBox.item())
+        taskLen1 = len(newTasks); taskLen2 = len(self.tasksBox.items())
         if taskLen1 != taskLen2:
             self.updateTasksBox(newTasks, taskLen1, taskLen2)
-        if self.currentTask:
+        if self.currentTask and self.contextsBox:
             contexts = util.get_contexts_from_task(str(self.currentTask.objectName()))
             contextsLen1 = len(contexts); contextsLen2 = len(self.contextsBox.items())
             if contextsLen1 != contextsLen2:
                 self.updateContextsBox(contexts, contextsLen1, contextsLen2)
-            if self.currentContext:
+            if self.currentContext and self.filesBox:
                 files = util.get_snapshots(self.currentContext.title(),
                                            str(self.currentTask.objectName()))
                 filesLen1 = len(files); filesLen2 = len(self.filesBox.items())
