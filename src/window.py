@@ -29,9 +29,6 @@ class Window(cui.Explorer):
         self.contextsBox = None
         self.filesBox = None
         
-        self.refreshButton.setIcon(QIcon(osp.join(iconPath, 'refresh.png')))
-
-        self.refreshButton.clicked.connect(self.updateWindow)        
         self.closeButton.clicked.connect(self.close)
         self.openButton.clicked.connect(self.checkout)
         self.saveButton.clicked.connect(self.checkin)
