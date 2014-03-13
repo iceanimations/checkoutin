@@ -48,7 +48,6 @@ class Window(cui.Explorer):
     def showTasks(self):
         self.tasksBox = self.createScroller("Tasks")
         self.addTasks(util.get_all_task())
-        map(lambda widget: self.bindClickEvent(widget, self.showContext), self.tasksBox.items())
         
     def addTasks(self, tasks):
         for tsk in tasks:
@@ -58,6 +57,7 @@ class Window(cui.Explorer):
                                    util.get_sobject_description(tsk))
             self.tasksBox.addItem(item)
             item.setObjectName(tsk)
+        map(lambda widget: self.bindClickEvent(widget, self.showContext), self.tasksBox.items())
     
     def showContext(self, taskWidget):
         
@@ -82,9 +82,6 @@ class Window(cui.Explorer):
         # add the contexts
         self.addContexts(contexts, task)
         
-        # bind the click event
-        map(lambda widget: self.bindClickEvent(widget, self.showFiles), self.contextsBox.items())
-        
         # if there is only one context, show the files
         if len(contexts) == 1:
             self.showFiles(self.contextsBox.items()[0])
@@ -97,6 +94,8 @@ class Window(cui.Explorer):
                                    util.get_sobject_description(task))
             self.contextsBox.addItem(item)
             item.setObjectName(context +'>'+ task)
+        # bind the click event
+        map(lambda widget: self.bindClickEvent(widget, self.showFiles), self.contextsBox.items())
             
     def clearContexts(self):
         if self.contextsBox:
@@ -238,26 +237,22 @@ class Window(cui.Explorer):
                      
     def updateTasksBox(self, tasks, l1, l2):
         print 'Updating tasks list...'
-        tasksNow = [t.objectName() for t in self.tasksBox.items()]
+        tasksNow = set([str(t.objectName()) for t in self.tasksBox.items()])
+        tasks = set(tasks)
+        print 'tasks now: ', tasksNow
+        print 'tasks: ', tasks
         if l1 > l2:
             print 'Adding task(s)...'
-            for task in tasksNow:
-                if task in tasks:
-                    tasks.remove(task)
-            self.addTasks(tasks)
+            self.addTasks(tasks.difference(tasksNow))
         else:
-            for task in tasks:
-                if task in tasksNow:
-                    tasksNow.remove(task)
-            itemsRemoved = filter(None, [item if str(item.objectName()) == task
-                                         else None
-                                         for item in self.tasksBox.items()])
-            for task in tasksNow:
-                self.tasksBox.removeItems(itemsRemoved)
+            print 'Removing tasks: '
+            removedTasks = self.tasksBox.removeItemsON(tasksNow.difference(tasks))
             
-            # check if the selected item is removed
-            if self.currentTask in itemsRemoved:
+            # check if the currentTask is removed
+            if self.currentTask in removedTasks:
                 self.clearContexts()
+                self.currentTask = None
+            
 
     def updateContextsBox(self, contexts, l1, l2):
         pass
