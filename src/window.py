@@ -70,8 +70,11 @@ class Window(Form, Base):
         else: self.openButton.hide()
     
     def showTasks(self):
-        tasks = util.get_all_task()
         self.tasksBox = self.createScroller("Tasks")
+        self.addTask(util.get_all_task())
+        map(lambda widget: self.bindClickEvent(widget, self.showContext), self.tasksBox.items())
+        
+    def addTasks(self, tasks):
         for tsk in tasks:
             item = self.createItem(util.get_task_process(tsk),
                                    util.get_sobject_name(util.get_sobject_from_task(tsk)),
@@ -79,7 +82,6 @@ class Window(Form, Base):
                                    util.get_sobject_description(tsk))
             self.tasksBox.addItem(item)
             item.setObjectName(tsk)
-        map(lambda widget: self.bindClickEvent(widget, self.showContext), self.tasksBox.items())
     
     def showContext(self, taskWidget):
         
@@ -90,28 +92,27 @@ class Window(Form, Base):
         self.currentTask.setStyleSheet("background-color: #666666")
         
         # remove the showed contexts
-        if self.contextsBox:
-            for context in self.contextsBox.items():
-                context.deleteLater()
-            self.contextsBox.clearItems()
-            self.currentContext = None
-        
-        # remove the showed files
-        if self.filesBox:
-            self.filesBox.clearItems()
-            self.filesBox.deleteLater()
-            self.filesBox = None
-            self.currentFile = None
-        
-        # get the new contexts
-        task = str(self.currentTask.objectName())
-        contexts = util.get_contexts_from_task(task)
+        self.clearContexts()
         
         # create the scroller
         if not self.contextsBox:
             self.contextsBox = self.createScroller("Context")
+            self.filesBox.deleteLater()
         
-        # show the context
+        # get the new contexts
+        contexts = util.get_contexts_from_task(task)
+        
+        # add the contexts
+        self.addContexts(contexts, str(self.currentTask.objectName()))
+        
+        # bind the click event
+        map(lambda widget: self.bindClickEvent(widget, self.showFiles), self.contextsBox.items())
+        
+        # if there is only one context, show the files
+        if len(contexts) == 1:
+            self.showFiles(self.contextsBox.items()[0])
+    
+    def addContexts(self, contexts, task):
         for context in contexts:
             item = self.createItem(context,
                                    '',
@@ -120,12 +121,19 @@ class Window(Form, Base):
             self.contextsBox.addItem(item)
             item.setObjectName(context +'>'+ task)
             
-        # bind the click event
-        map(lambda widget: self.bindClickEvent(widget, self.showFiles), self.contextsBox.items())
+    def clearContexts(self):
+        if self.contextsBox:
+            for context in self.contextsBox.items():
+                context.deleteLater()
+            self.contextsBox.clearItems()
+            self.currentContext = None
         
-        # if there is only one context, show the files
-        if len(contexts) == 1:
-            self.showFiles(self.contextsBox.items()[0])
+        # remove the showed files
+        if self.filesBox:
+            self.filesBox.deleteLater()
+            self.filesBox.clearItems()
+            self.filesBox = None
+            self.currentFile = None
     
     def showFiles(self, context):
         # highlight the context
@@ -245,18 +253,35 @@ class Window(Form, Base):
             if contextsLen1 != contextsLen2:
                 self.updateContextsBox(contexts, contextsLen1, contextsLen2)
             if self.currentContext:
-                files = util.get_snapshots(self.currentContext.title(), str(self.currentTask.objectName()))
+                files = util.get_snapshots(self.currentContext.title(),
+                                           str(self.currentTask.objectName()))
                 filesLen1 = len(files); filesLen2 = len(self.filesBox.items())
                 if filesLen1 != filesLen2:
                     self.updateFilesBox(files, filesLen1, filesLen2)
                      
     def updateTasksBox(self, tasks, l1, l2):
+        print 'Updating tasks list...'
+        tasksNow = [t.objectName() for t in self.tasksBox.items()]
         if l1 > l2:
-            pass
-        elif l1 < l2:
-            pass
+            print 'Adding task(s)...'
+            for task in tasksNow:
+                if task in tasks:
+                    tasks.remove(task)
+            self.addTasks(tasks)
         else:
-            pass
+            for task in tasks:
+                if task in tasksNow:
+                    tasksNow.remove(task)
+            itemsRemoved = filter(None, [item if str(item.objectName()) == task
+                                         else None
+                                         for item in self.tasksBox.items()])
+            for task in tasksNow:
+                self.tasksBox.removeItems(itemsRemoved)
+            
+            # check if the selected item is removed
+            if self.currentTask in itemsRemoved:
+                self.clearContexts()
+
     def updateContextsBox(self, contexts, l1, l2):
         pass
     
