@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>300</width>
-    <height>252</height>
+    <width>465</width>
+    <height>270</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -62,6 +62,27 @@
        </property>
       </spacer>
      </item>
+     <item>
+      <widget class="QCheckBox" name="newContextButton">
+       <property name="text">
+        <string>New Context</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLineEdit" name="newContextBox">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="styleSheet">
+        <string>border-width: 1px; 
+border-style: inset; 
+border-color: #535353; 
+border-radius: 9px;
+padding-left: 5px;</string>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
    <item>
@@ -74,8 +95,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>280</width>
-        <height>171</height>
+        <width>445</width>
+        <height>183</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -110,6 +131,9 @@
     </widget>
    </item>
    <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_3"/>
+   </item>
+   <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
       <spacer name="horizontalSpacer">
@@ -126,15 +150,36 @@
      </item>
      <item>
       <widget class="QPushButton" name="okButton">
+       <property name="minimumSize">
+        <size>
+         <width>75</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
         <string>Ok</string>
+       </property>
+       <property name="autoDefault">
+        <bool>false</bool>
+       </property>
+       <property name="default">
+        <bool>true</bool>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="cancelButton">
+       <property name="minimumSize">
+        <size>
+         <width>75</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="text">
         <string>Cancel</string>
+       </property>
+       <property name="autoDefault">
+        <bool>false</bool>
        </property>
       </widget>
      </item>
@@ -143,5 +188,38 @@
   </layout>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>newContextButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>newContextBox</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>288</x>
+     <y>20</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>400</x>
+     <y>24</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>newContextButton</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>newContextBox</receiver>
+   <slot>setFocus()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>313</x>
+     <y>23</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>408</x>
+     <y>26</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

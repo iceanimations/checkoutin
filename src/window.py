@@ -57,9 +57,9 @@ class Window(cui.Explorer):
                                    util.get_sobject_description(tsk))
             self.tasksBox.addItem(item)
             item.setObjectName(tsk)
-        map(lambda widget: self.bindClickEvent(widget, self.showContext), self.tasksBox.items())
+        map(lambda widget: self.bindClickEvent(widget, self.showContexts), self.tasksBox.items())
     
-    def showContext(self, taskWidget):
+    def showContexts(self, taskWidget):
         
         # highlight the item
         if self.currentTask:
@@ -184,16 +184,16 @@ class Window(cui.Explorer):
             #backend.checkout(str(self.currentFile.objectName()))
             
     def showCheckinputDialog(self):
-        checkinput.Dialog(self).exec_()
+        checkinput.Dialog(self).show()
     
-    def checkin(self, percent, detail):
+    def checkin(self, context, percent, detail):
         print percent, detail
-        if self.currentTask and self.currentContext:
+        if self.currentTask:
             sobj = util.get_sobject_from_task(str(self.currentTask.objectName()))
-            name = backend.checkin(sobj, self.currentContext.title()).keys()[0]
-            
+            backend.checkin(sobj, context)           
             # redisplay the the filesBox
-            self.showContext(self.currentContext)
+            self.showContexts(self.currentContext)
+        else: pc.warning('No Task selected...')
     
     def createScroller(self, title):
         scroller = cui.Scroller(self)
@@ -247,7 +247,7 @@ class Window(cui.Explorer):
 
     def updateContextsBox(self, contexts, l1, l2):
         if self.currentTask:
-            self.showContext(self.currentTask)
+            self.showContexts(self.currentTask)
             if self.currentContext:
                 self.showFiles(self.currentContext)
     
