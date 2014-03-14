@@ -25,6 +25,9 @@ class Dialog(Form, Base):
                            'lsdkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk',
                            'ksldfjjjjjjjjjjjjjjjjjalsdkfjlaskdjflksaj']
         
+        self.scrollArea.horizontalScrollBar().setFixedHeight(12)
+        self.scrollArea.verticalScrollBar().setFixedWidth(12)
+        
         self.okButton.clicked.connect(self.ok)
         self.cancelButton.clicked.connect(self.cancel)
         

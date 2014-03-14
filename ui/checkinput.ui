@@ -64,6 +64,9 @@
      </item>
      <item>
       <widget class="QCheckBox" name="newContextButton">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
        <property name="text">
         <string>New Context</string>
        </property>
