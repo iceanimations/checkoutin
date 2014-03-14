@@ -193,14 +193,7 @@ class Window(cui.Explorer):
             name = backend.checkin(sobj, self.currentContext.title()).keys()[0]
             
             # redisplay the the filesBox
-            self.showFiles(self.currentContext)
-            if self.filesBox:
-                for item in self.filesBox.items():
-                    fileKey = str(item.objectName())
-                    if fileKey == name:
-                        qApp.processEvents()
-                        self.filesBox.scrollArea.ensureWidgetVisible(item, 0, 0)
-                        qApp.processEvents()
+            self.showContext(self.currentContext)
     
     def createScroller(self, title):
         scroller = cui.Scroller(self)
