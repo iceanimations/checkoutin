@@ -214,7 +214,7 @@ class Window(cui.Explorer):
             title = 'No title'
         item = cui.Item(self)
         item.setTitle(title)
-        item.setAssetName(asset)
+        item.setSubTitle(asset)
         item.setProjectName(project)
         item.setDetail(detail)
         return item
