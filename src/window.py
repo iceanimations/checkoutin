@@ -73,7 +73,7 @@ class Window(cui.Explorer):
         else:
             # create the scroller
             self.contextsBox = self.createScroller("Context")
-            self.filesBox.deleteLater()
+
         
         # get the new contexts
         task = str(self.currentTask.objectName())
