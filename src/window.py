@@ -7,8 +7,8 @@ import sys
 from customui import ui as cui
 import pymel.core as pc
 import util
-import backend
-reload(backend)
+import checkinput
+reload(checkinput)
 reload(util)
 reload(cui)
 
@@ -31,7 +31,7 @@ class Window(cui.Explorer):
         
         self.closeButton.clicked.connect(self.close)
         self.openButton.clicked.connect(self.checkout)
-        self.saveButton.clicked.connect(self.checkin)
+        self.saveButton.clicked.connect(self.showCheckinputDialog)
         
         self.setWindowContext()
         self.showTasks()
@@ -183,8 +183,12 @@ class Window(cui.Explorer):
         if self.currentFile:
             backend.checkout(str(self.currentFile.objectName()))
             #backend.checkout(str(self.currentFile.objectName()))
+            
+    def showCheckinputDialog(self):
+        checkinput.Dialog(self).exec_()
     
-    def checkin(self):
+    def checkin(self, percent, detail):
+        print percent, detail
         if self.currentTask and self.currentContext:
             sobj = util.get_sobject_from_task(str(self.currentTask.objectName()))
             name = backend.checkin(sobj, self.currentContext.title()).keys()[0]
