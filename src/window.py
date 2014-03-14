@@ -68,10 +68,10 @@ class Window(cui.Explorer):
         self.currentTask.setStyleSheet("background-color: #666666")
         
         # remove the showed contexts
-        self.clearContexts()
-        
-        # create the scroller
-        if not self.contextsBox:
+        if self.contextsBox:
+            self.clearContexts()
+        else:
+            # create the scroller
             self.contextsBox = self.createScroller("Context")
             self.filesBox.deleteLater()
         
@@ -98,11 +98,10 @@ class Window(cui.Explorer):
         map(lambda widget: self.bindClickEvent(widget, self.showFiles), self.contextsBox.items())
             
     def clearContexts(self):
-        if self.contextsBox:
-            for context in self.contextsBox.items():
-                context.deleteLater()
-            self.contextsBox.clearItems()
-            self.currentContext = None
+        for context in self.contextsBox.items():
+            context.deleteLater()
+        self.contextsBox.clearItems()
+        self.currentContext = None
         
         # remove the showed files
         if self.filesBox:
@@ -240,16 +239,11 @@ class Window(cui.Explorer):
                     self.updateFilesBox(files, filesLen1, filesLen2)
                      
     def updateTasksBox(self, tasks, l1, l2):
-        print 'Updating tasks list...'
         tasksNow = set([str(t.objectName()) for t in self.tasksBox.items()])
         tasks = set(tasks)
-        print 'tasks now: ', tasksNow
-        print 'tasks: ', tasks
         if l1 > l2:
-            print 'Adding task(s)...'
             self.addTasks(tasks.difference(tasksNow))
         else:
-            print 'Removing tasks: '
             removedTasks = self.tasksBox.removeItemsON(tasksNow.difference(tasks))
             
             # check if the currentTask is removed
@@ -259,7 +253,11 @@ class Window(cui.Explorer):
             
 
     def updateContextsBox(self, contexts, l1, l2):
-        pass
+        if self.currentTask:
+            self.showContext(self.currentTask)
+            if self.currentContext:
+                self.showFiles(self.currentContext)
     
     def updateFilesBox(self, files, l1, l2):
-       pass
+       if self.currentContext:
+           self.showFiles(self.currentContext)
