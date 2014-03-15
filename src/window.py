@@ -18,32 +18,17 @@ iconPath = osp.join(rootPath, 'icons')
 
 class Window(cui.Explorer):
 
-    def __init__(self, parent=qtfy.getMayaWindow(), checkout = True):
+    def __init__(self, parent=qtfy.getMayaWindow()):
         super(Window, self).__init__(parent)
         
-        self.chkout = checkout
         self.currentTask = None
-        self.currentContext = None
-        self.currentFile = None
-        self.tasksBox = None
         self.contextsBox = None
-        self.filesBox = None
+        self.tasksBox = None
         
-        self.closeButton.clicked.connect(self.close)
         self.openButton.clicked.connect(self.checkout)
         self.saveButton.clicked.connect(self.showCheckinputDialog)
         
-        self.setWindowContext()
         self.showTasks()
-        
-    def closeEvent(self, event):
-        self.deleteLater()
-        
-        #self.thread.start()
-    def setWindowContext(self):
-        if self.chkout:
-            self.saveButton.hide()
-        else: self.openButton.hide()
     
     def showTasks(self):
         self.tasksBox = self.createScroller("Tasks")
@@ -58,7 +43,7 @@ class Window(cui.Explorer):
             self.tasksBox.addItem(item)
             item.setObjectName(tsk)
         map(lambda widget: self.bindClickEvent(widget, self.showContexts), self.tasksBox.items())
-    
+        
     def showContexts(self, taskWidget):
         
         # highlight the item
@@ -96,7 +81,7 @@ class Window(cui.Explorer):
             item.setObjectName(context +'>'+ task)
         # bind the click event
         map(lambda widget: self.bindClickEvent(widget, self.showFiles), self.contextsBox.items())
-            
+        
     def clearContexts(self):
         for context in self.contextsBox.items():
             context.deleteLater()
@@ -109,74 +94,6 @@ class Window(cui.Explorer):
             self.filesBox.clearItems()
             self.filesBox = None
             self.currentFile = None
-    
-    def showFiles(self, context):
-        # highlight the context
-        if self.currentContext:
-            self.currentContext.setStyleSheet("background-color: None")
-        self.currentContext = context
-        self.currentContext.setStyleSheet("background-color: #666666")
-        
-        # get the files
-        parts = str(self.currentContext.objectName()).split('>')
-        context = parts[0]; task = parts[1]
-        files = util.get_snapshots(context, task)
-        
-        # remove the showed files
-        if self.filesBox:
-            for fl in self.filesBox.items():
-                fl.deleteLater()
-            self.filesBox.clearItems()
-            self.currentFile = None
-        
-        if files:
-        
-            # create the scroller
-            if not self.filesBox:
-                self.filesBox = self.createScroller("Files")
-                
-            # add the latest file to scroller
-            for k in files:
-                values=files[k]
-                if values['latest']:
-                    item = self.createItem(values['filename'],
-                                           '', '',
-                                           util.get_sobject_description(k))
-                    self.filesBox.addItem(item)
-                    item.setObjectName(k)
-                    item.setToolTip(values['filename'])
-                    files.pop(k)
-                    break
-                
-            temp = {}
-            for ke in files:
-                temp[ke] = files[ke]['version']
-                
-            # show the new files
-            for key in sorted(temp, key=temp.get, reverse=True):
-                value = files[key]
-                item = self.createItem(value['filename'],
-                                       '', '',
-                                       util.get_sobject_description(key))
-                self.filesBox.addItem(item)
-                item.setObjectName(key)
-                item.setToolTip(value['filename'])
-            
-            # bind click event
-            if self.chkout:
-                map(lambda widget: self.bindClickEvent(widget, self.selectFile), self.filesBox.items())
-            else:
-                for fl in self.filesBox.items():
-                    fl.leaveEvent = lambda event: None
-                    fl.enterEvent = lambda event: None
-                    fl.setEnabled(False)
-                
-    def selectFile(self, fil):
-        if self.currentFile:
-            self.currentFile.setStyleSheet("background-color: None")
-        self.currentFile = fil
-        self.currentFile.setStyleSheet("background-color: #666666")
-        
     
     def checkout(self):
         if self.currentFile:
@@ -194,25 +111,6 @@ class Window(cui.Explorer):
             # redisplay the the filesBox
             self.showContexts(self.currentContext)
         else: pc.warning('No Task selected...')
-    
-    def createScroller(self, title):
-        scroller = cui.Scroller(self)
-        scroller.setTitle(title)
-        self.scrollerLayout.addWidget(scroller)
-        return scroller
-    
-    def createItem(self, title, asset, project, detail):
-        if not title:
-            title = 'No title'
-        item = cui.Item(self)
-        item.setTitle(title)
-        item.setSubTitle(asset)
-        item.setThirdTitle(project)
-        item.setDetail(detail)
-        return item
-    
-    def bindClickEvent(self, widget, function):
-        widget.mouseReleaseEvent = lambda event: function(widget)
         
     def updateWindow(self):
         newTasks = util.get_all_task()
