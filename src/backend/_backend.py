@@ -40,7 +40,7 @@ def checkout(snapshot):
         
 
 
-def checkin(sobject, context, version=-1):
+def checkin(sobject, context, version=-1, description = 'No description'):
     '''
     @sobject: search_key of sobject to which the checkin belongs
     @context: context of the sobject
@@ -52,7 +52,11 @@ def checkin(sobject, context, version=-1):
     print tmpfile
     print sobject, context
     save_path = m.save(tmpfile, file_type = "mayaBinary" if pc.sceneName().endswith(".mb") else "mayaAscii")
-    snapshot = user.get_server().simple_checkin(sobject, context, save_path, use_handoff_dir=True, mode = 'copy')
+    snapshot = user.get_server().simple_checkin(sobject, context,
+                                                save_path,
+                                                use_handoff_dir=True,
+                                                mode = 'copy',
+                                                description = description)
     search_key = snapshot['__search_key__']
     path = checkout(search_key)
     return {search_key: op.basename(path)}
