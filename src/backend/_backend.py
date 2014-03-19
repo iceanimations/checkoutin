@@ -40,7 +40,8 @@ def checkout(snapshot):
         
 
 
-def checkin(sobject, context, version=-1, description = 'No description'):
+def checkin(sobject, context, process = None,
+            version=-1, description = 'No description'):
     '''
     @sobject: search_key of sobject to which the checkin belongs
     @context: context of the sobject
@@ -57,7 +58,10 @@ def checkin(sobject, context, version=-1, description = 'No description'):
                                                 use_handoff_dir=True,
                                                 mode = 'copy',
                                                 description = description)
+
     search_key = snapshot['__search_key__']
+    if process:
+        server.update(search_key, data = {'process': process})
     path = checkout(search_key)
     return {search_key: op.basename(path)}
     
