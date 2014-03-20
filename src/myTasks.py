@@ -106,6 +106,10 @@ class MyTasks(cui.Explorer):
                             description = desc)           
             # redisplay the the contextsBox/filesBox
             self.showContexts(self.currentTask)
+            for contx in self.contextsBox.items():
+                if contx.objectName() == self.currentContext.objectName():
+                    self.currentContext = contx
+                    break
         else: pc.warning('No Task selected...')
         
     def updateWindow(self):
