@@ -7,7 +7,7 @@ import util
 import checkinput
 reload(checkinput)
 reload(util)
-reload(cui)
+#reload(cui)
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
@@ -22,6 +22,8 @@ class MyTasks(cui.Explorer):
         self.currentTask = None
         self.contextsBox = None
         self.tasksBox = None
+        
+        self.projectsBox.hide()
         
         self.openButton.clicked.connect(self.checkout)
         self.saveButton.clicked.connect(self.showCheckinputDialog)
