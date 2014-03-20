@@ -1,6 +1,3 @@
-from uiContainer import uic
-from PyQt4.QtGui import *
-from PyQt4.QtCore import *
 import qtify_maya_window as qtfy
 import os.path as osp
 import sys
@@ -16,10 +13,11 @@ rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
 iconPath = osp.join(rootPath, 'icons')
 
-class Window(cui.Explorer):
+class MyTasks(cui.Explorer):
 
     def __init__(self, parent=qtfy.getMayaWindow()):
-        super(Window, self).__init__(parent)
+        super(MyTasks, self).__init__(parent)
+        self.setWindowTitle("MyTasks")
         
         self.currentTask = None
         self.contextsBox = None
@@ -36,7 +34,8 @@ class Window(cui.Explorer):
         
     def addTasks(self, tasks):
         for tsk in tasks:
-            item = self.createItem(util.get_task_process(tsk),
+            title = util.get_task_process(tsk)
+            item = self.createItem(title,
                                    util.get_sobject_name(util.get_sobject_from_task(tsk)),
                                    util.get_project_title(util.get_project_from_task(tsk)),
                                    util.get_sobject_description(tsk))
@@ -83,33 +82,30 @@ class Window(cui.Explorer):
         map(lambda widget: self.bindClickEvent(widget, self.showFiles), self.contextsBox.items())
         
     def clearContexts(self):
-        for context in self.contextsBox.items():
-            context.deleteLater()
         self.contextsBox.clearItems()
         self.currentContext = None
         
         # remove the showed files
         if self.filesBox:
             self.filesBox.deleteLater()
-            self.filesBox.clearItems()
             self.filesBox = None
             self.currentFile = None
     
     def checkout(self):
         if self.currentFile:
             backend.checkout(str(self.currentFile.objectName()))
-            #backend.checkout(str(self.currentFile.objectName()))
             
     def showCheckinputDialog(self):
         checkinput.Dialog(self).show()
     
     def checkin(self, context, percent, detail):
-        print percent, detail
+        desc = str(percent) + detail
         if self.currentTask:
             sobj = util.get_sobject_from_task(str(self.currentTask.objectName()))
-            backend.checkin(sobj, context)           
-            # redisplay the the filesBox
-            self.showContexts(self.currentContext)
+            backend.checkin(sobj, context, process = util.get_task_process(str(self.currentTask.objectName())),
+                            description = desc)           
+            # redisplay the the contextsBox/filesBox
+            self.showContexts(self.currentTask)
         else: pc.warning('No Task selected...')
         
     def updateWindow(self):
@@ -127,7 +123,7 @@ class Window(cui.Explorer):
                                            str(self.currentTask.objectName()))
                 filesLen1 = len(files); filesLen2 = len(self.filesBox.items())
                 if filesLen1 != filesLen2:
-                    self.updateFilesBox(files, filesLen1, filesLen2)
+                    self.updateFilesBox()
                      
     def updateTasksBox(self, tasks, l1, l2):
         tasksNow = set([str(t.objectName()) for t in self.tasksBox.items()])
@@ -147,8 +143,14 @@ class Window(cui.Explorer):
         if self.currentTask:
             self.showContexts(self.currentTask)
             if self.currentContext:
-                self.showFiles(self.currentContext)
-    
-    def updateFilesBox(self, files, l1, l2):
-       if self.currentContext:
-           self.showFiles(self.currentContext)
+                flag = False
+                for contx in self.contextsBox.items():
+                    if contx.objectName() == self.currentContext.objectName():
+                        self.currentContext = contx
+                        flag = True
+                        break
+                if not flag:
+                    self.currentContext = None
+                else:
+                    self.showFiles(self.currentContext)
+                    self.reselectFile

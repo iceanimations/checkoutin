@@ -1,6 +1,6 @@
 from uiContainer import uic
 from PyQt4.QtGui import *
-from PyQt4.QtCore import QRegExp
+from PyQt4.QtCore import *
 import os.path as osp
 import sys
 import pymel.core as pc
@@ -55,7 +55,7 @@ class Dialog(Form, Base):
                 context = str(self.newContextBox.text())
             else:
                 if self.parent.currentContext:
-                    context = self.parent.currentContext.title()
+                    context = self.parent.currentContext.title().split('/')[-1]
             if context:
                 self.parent.checkin(int(self.percentBox.value()), selected)
                 self.accept()
