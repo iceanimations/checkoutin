@@ -125,16 +125,17 @@ class AssetsExplorer(cui.Explorer):
             backend.checkout(str(self.currentFile.objectName()))
     
     def checkin(self, context, percent, detail):
-        desc = str(percent) + detail
+        desc = str(percent) +'% - '+ detail
         if self.currentAsset:
             sobj = str(self.currentAsset.objectName())
             pro = self.currentContext.title().split('/')[0]
             backend.checkin(sobj, context, process = pro, description = desc)
             
             # redisplay the contextsProcessesBox/filesBox
+            currentContext = self.currentContext
             self.showContextsProcesses(self.currentAsset)
             for contx in self.contextsProcessesBox.items():
-                if contx.objectName() == self.currentContext.objectName():
+                if contx.objectName() == currentContext.objectName():
                     self.currentContext = contx
                     break
             self.showFiles(self.currentContext, self.snapshots)
@@ -164,7 +165,6 @@ class AssetsExplorer(cui.Explorer):
             if self.currentContext and self.filesBox:
                 if len(self.filesBox.items()) != len([snap for snap in self.snapshots if snap['process'] == self.currentContext.title().split('/')[0]]):
                     self.showFiles(self.currentContext, self.snapshots)
-                    self.reselectFile()
                     
     
     def updateAssetsBox(self, l1, l2, assets):
@@ -191,11 +191,12 @@ class AssetsExplorer(cui.Explorer):
                 self.currentAsset = None
                 
     def updateContextsProcessesBox(self):
+        currentContext = self.currentContext
         self.showContextsProcesses(self.currentAsset)
-        if self.currentContext:
+        if currentContext:
             flag = False
             for contx in self.contextsProcessesBox.items():
-                if contx.objectName() == self.currentContext.objectName():
+                if contx.objectName() == currentContext.objectName():
                     self.currentContext = contx
                     flag = True
                     break
@@ -203,4 +204,3 @@ class AssetsExplorer(cui.Explorer):
                 self.currentContext = None
             else:
                 self.showFiles(self.currentContext)
-                self.reselectFile

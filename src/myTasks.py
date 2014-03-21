@@ -5,9 +5,11 @@ from customui import ui as cui
 import pymel.core as pc
 import util
 import checkinput
+import backend
 reload(checkinput)
 reload(util)
 #reload(cui)
+reload(backend)
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
@@ -107,9 +109,10 @@ class MyTasks(cui.Explorer):
             backend.checkin(sobj, context, process = util.get_task_process(str(self.currentTask.objectName())),
                             description = desc)           
             # redisplay the the contextsBox/filesBox
+            currentContext = self.currentContext
             self.showContexts(self.currentTask)
             for contx in self.contextsBox.items():
-                if contx.objectName() == self.currentContext.objectName():
+                if contx.objectName() == currentContext.objectName():
                     self.currentContext = contx
                     break
         else: pc.warning('No Task selected...')
@@ -147,11 +150,12 @@ class MyTasks(cui.Explorer):
 
     def updateContextsBox(self, contexts, l1, l2):
         if self.currentTask:
+            currentContext = self.currentContext
             self.showContexts(self.currentTask)
-            if self.currentContext:
+            if currentContext:
                 flag = False
                 for contx in self.contextsBox.items():
-                    if contx.objectName() == self.currentContext.objectName():
+                    if contx.objectName() == currentContext.objectName():
                         self.currentContext = contx
                         flag = True
                         break
@@ -159,4 +163,3 @@ class MyTasks(cui.Explorer):
                     self.currentContext = None
                 else:
                     self.showFiles(self.currentContext)
-                    self.reselectFile

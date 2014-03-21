@@ -57,7 +57,7 @@ class Dialog(Form, Base):
                 if self.parent.currentContext:
                     context = self.parent.currentContext.title().split('/')[-1]
             if context:
-                self.parent.checkin(int(self.percentBox.value()), selected)
+                self.parent.checkin(context, int(self.percentBox.value()), selected)
                 self.accept()
             else:
                 pc.warning('No context selected/specified')
