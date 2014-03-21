@@ -102,12 +102,11 @@ class MyTasks(cui.Explorer):
     def showCheckinputDialog(self):
         checkinput.Dialog(self).show()
     
-    def checkin(self, context, percent, detail):
-        desc = str(percent) + detail
+    def checkin(self, context, detail):
         if self.currentTask:
             sobj = util.get_sobject_from_task(str(self.currentTask.objectName()))
             backend.checkin(sobj, context, process = util.get_task_process(str(self.currentTask.objectName())),
-                            description = desc)           
+                            description = detail)           
             # redisplay the the contextsBox/filesBox
             currentContext = self.currentContext
             self.showContexts(self.currentTask)
