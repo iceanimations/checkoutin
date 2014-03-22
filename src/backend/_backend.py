@@ -81,5 +81,5 @@ def checkin(sobject, context, process = None,
     if process:
         server.update(search_key, data = {'process': process})
     # path = checkout(search_key) if not 
-    return {search_key: op.basename(path)}
+    return True
     
