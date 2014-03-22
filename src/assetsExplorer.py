@@ -35,6 +35,12 @@ class AssetsExplorer(cui.Explorer):
         
         self.setProjectsBox()
         
+        import site
+        # update the database, how many times this app is used
+        site.addsitedir(r'r:/pipe_repo/users/qurban')
+        import appUsageApp
+        appUsageApp.updateDatabase('AssetsExplorer')
+        
     def setProjectsBox(self):
         for project in util.get_all_projects():
             self.projects[project['title']] = project['code']

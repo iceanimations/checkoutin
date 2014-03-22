@@ -19,11 +19,11 @@ class Dialog(Form, Base):
         self.setValidator()
         self.detailBoxes = []
         
-        self.radioTexts = ['helloddddddddddddddddddddddddddddddddddd',
-                           'yellowssssssssssssssssssssssssssssss',
-                           'wellosssssssssssssssssssssssssssssssssssssssssss',
-                           'lsdkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk',
-                           'ksldfjjjjjjjjjjjjjjjjjalsdkfjlaskdjflksaj']
+        self.radioTexts = ['Optional description 1',
+                           'Optional description 2',
+                           'Optional description 3',
+                           'Optional description 4',
+                           'Optional description 5']
         
         self.scrollArea.horizontalScrollBar().setFixedHeight(12)
         self.scrollArea.verticalScrollBar().setFixedWidth(12)
@@ -45,7 +45,7 @@ class Dialog(Form, Base):
             self.radioLayout.addWidget(btn)
         
     def ok(self):
-        selected = None
+        selected = 'No description'
         for btn in self.detailBoxes:
             if btn.isChecked():
                 selected = str(btn.text())
