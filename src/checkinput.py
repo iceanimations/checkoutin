@@ -30,6 +30,7 @@ class Dialog(Form, Base):
         
         self.okButton.clicked.connect(self.ok)
         self.cancelButton.clicked.connect(self.cancel)
+        self.browseButton.clicked.connect(self.showFileDialog)
         
         self.setRadioButtons()
         
@@ -43,12 +44,28 @@ class Dialog(Form, Base):
             btn = QRadioButton(txt, self)
             self.detailBoxes.append(btn)
             self.radioLayout.addWidget(btn)
+            
+    def showFileDialog(self):
+        fileName = str(QFileDialog.getOpenFileName(self, 'Select File', '', '*.mb *.ma'))
+        if fileName:
+            self.pathBox.setText(fileName)
         
     def ok(self):
         selected = 'No description'
         for btn in self.detailBoxes:
             if btn.isChecked():
                 selected = str(btn.text())
+        path = str(self.pathBox.text())
+        if path:
+            if osp.exists(path):
+                if osp.isfile(path):
+                    pass
+                else:
+                    pc.warning('Specified path is not a file...')
+                    return
+            else:
+                pc.warning('File path does not exist...')
+                return
         if selected:
             context = None
             if self.newContextButton.isChecked():
@@ -57,7 +74,7 @@ class Dialog(Form, Base):
                 if self.parent.currentContext:
                     context = self.parent.currentContext.title().split('/')[-1]
             if context:
-                self.parent.checkin(context, str(self.percentBox.value())+'% - '+selected)
+                self.parent.checkin(context, str(self.percentBox.value())+'% - '+selected, file = path)
                 self.accept()
             else:
                 pc.warning('No context selected/specified')

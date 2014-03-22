@@ -130,11 +130,11 @@ class AssetsExplorer(cui.Explorer):
         if self.currentFile:
             backend.checkout(str(self.currentFile.objectName()))
     
-    def checkin(self, context, detail):
+    def checkin(self, context, detail, filePath = None):
         if self.currentAsset:
             sobj = str(self.currentAsset.objectName())
             pro = self.currentContext.title().split('/')[0]
-            backend.checkin(sobj, context, process = pro, description = detail)
+            backend.checkin(sobj, context, process = pro, description = detail, file = filePath)
             
             # redisplay the contextsProcessesBox/filesBox
             currentContext = self.currentContext
