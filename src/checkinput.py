@@ -74,7 +74,7 @@ class Dialog(Form, Base):
                 if self.parent.currentContext:
                     context = self.parent.currentContext.title().split('/')[-1]
             if context:
-                self.parent.checkin(context, str(self.percentBox.value())+'% - '+selected, file = path)
+                self.parent.checkin(context, str(self.percentBox.value())+'% - '+selected, filePath = path)
                 self.accept()
             else:
                 pc.warning('No context selected/specified')
