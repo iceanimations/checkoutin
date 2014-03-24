@@ -208,4 +208,4 @@ class AssetsExplorer(cui.Explorer):
             if not flag:
                 self.currentContext = None
             else:
-                self.showFiles(self.currentContext)
+                self.showFiles(self.currentContext, self.snapshots)
