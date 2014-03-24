@@ -69,8 +69,8 @@ def checkin(sobject, context, process = None,
                               )).replace("\\", "/")
     print tmpfile if not file else file
     print sobject, context
-    save_path = m.save(tmpfile if not file else file, file_type = "mayaBinary"
-                       if pc.sceneName().endswith(".mb") else "mayaAscii")
+    save_path = m.save(tmpfile, file_type = "mayaBinary"
+                       if pc.sceneName().endswith(".mb") else "mayaAscii") if not file else file
     snapshot = user.get_server().simple_checkin(sobject, context,
                                                 save_path,
                                                 use_handoff_dir=True,
