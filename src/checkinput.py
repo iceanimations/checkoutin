@@ -31,8 +31,31 @@ class Dialog(Form, Base):
         self.okButton.clicked.connect(self.ok)
         self.cancelButton.clicked.connect(self.cancel)
         self.browseButton.clicked.connect(self.showFileDialog)
+        self.newContextButton.clicked.connect(self.handleNewContextButtonClick)
+        self.newContextBox.textChanged.connect(self.handleNewName)
         
         self.setRadioButtons()
+        
+    def handleNewName(self, name):
+        if not str(name):
+            name = '-'
+        self.setContext(name)
+        
+    def handleNewContextButtonClick(self):
+        if self.newContextButton.isChecked():
+            name = str(self.newContextBox.text())
+            if not name:
+                name = '-'
+            self.setContext(name)
+        else:
+            if self.parent.currentContext:
+                self.setContext(self.parent.currentContext.title())
+        
+    def setMainName(self, name='-'):
+        self.assetLabel.setText(name)
+    
+    def setContext(self, context='-'):
+        self.contextLabel.setText(context)
         
     def setValidator(self):
         regex = QRegExp('[a-z_]*')
@@ -88,4 +111,5 @@ class Dialog(Form, Base):
     
     def closeEvent(self, event):
         self.parent.saveButton.setEnabled(True)
+        self.parent.checkinputDialog = None
         self.deleteLater()

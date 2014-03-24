@@ -9,7 +9,7 @@ reload(checkinput)
 import backend
 reload(backend)
 reload(util)
-#reload(cui)
+reload(cui)
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
@@ -62,6 +62,9 @@ class AssetsExplorer(cui.Explorer):
             self.assetsBox.clearItems()
             self.currentAsset = None
         self.showAssets(assets)
+        if self.checkinputDialog:
+            self.checkinputDialog.setMainName()
+            self.checkinputDialog.setContext()
         
     def showAssets(self, assets):
         for asset in assets:
@@ -95,6 +98,11 @@ class AssetsExplorer(cui.Explorer):
                 self.contextsProcessesBox.addItem(item)
         map(lambda widget: self.bindClickEventForFiles(widget, self.showFiles, self.snapshots), self.contextsProcessesBox.items())
         
+        # handle child windows
+        if self.checkinputDialog:
+            self.checkinputDialog.setMainName(self.currentAsset.title())
+            self.checkinputDialog.setContext()
+        
     def contextsProcesses(self):
         contexts = {}
         self.snapshots = util.get_snapshot_from_sobject(str(self.currentAsset.objectName()))
@@ -122,7 +130,10 @@ class AssetsExplorer(cui.Explorer):
     
     def showCheckinputDialog(self):
         if self.currentContext:
-            checkinput.Dialog(self).show()
+            self.checkinputDialog = checkinput.Dialog(self)
+            self.checkinputDialog.setMainName(self.currentAsset.title())
+            self.checkinputDialog.setContext(self.currentContext.title())
+            self.checkinputDialog.show()
         else:
             pc.warning('No Process/Context selected')
     
@@ -194,6 +205,9 @@ class AssetsExplorer(cui.Explorer):
             if self.currentAsset in removables:
                 self.clearContextsProcesses()
                 self.currentAsset = None
+                if self.checkinputDialog:
+                    self.checkinputDialog.setMainName()
+                    self.checkinputDialog.setContext()
                 
     def updateContextsProcessesBox(self):
         currentContext = self.currentContext
@@ -207,5 +221,6 @@ class AssetsExplorer(cui.Explorer):
                     break
             if not flag:
                 self.currentContext = None
+                self.checkinputDialog.setContext()
             else:
                 self.showFiles(self.currentContext, self.snapshots)

@@ -8,7 +8,7 @@ import checkinput
 import backend
 reload(checkinput)
 reload(util)
-#reload(cui)
+reload(cui)
 reload(backend)
 
 rootPath = osp.dirname(osp.dirname(__file__))
@@ -76,6 +76,11 @@ class MyTasks(cui.Explorer):
         # add the contexts
         self.addContexts(contexts, task)
         
+        # handle child windows
+        if self.checkinputDialog:
+            self.checkinputDialog.setMainName(self.currentTask.title())
+            self.checkinputDialog.setContext()
+        
         # if there is only one context, show the files
         if len(contexts) == 1:
             self.showFiles(self.contextsBox.items()[0])
@@ -106,7 +111,15 @@ class MyTasks(cui.Explorer):
             backend.checkout(str(self.currentFile.objectName()))
             
     def showCheckinputDialog(self):
-        checkinput.Dialog(self).show()
+        if self.currentTask:
+            self.checkinputDialog = checkinput.Dialog(self)
+            self.checkinputDialog.setMainName(self.currentTask.title())
+            if self.currentContext:
+                self.checkinputDialog.setContext(self.currentContext.title())
+            self.checkinputDialog.show()
+        else:
+            pc.warning('No Task selected')
+            
     
     def checkin(self, context, detail, filePath = None):
         if self.currentTask:
@@ -151,6 +164,9 @@ class MyTasks(cui.Explorer):
             if self.currentTask in removedTasks:
                 self.clearContexts()
                 self.currentTask = None
+                if self.checkinputDialog:
+                    self.checkinputDialog.setMainName()
+                    self.checkinputDialog.setContext()
             
 
     def updateContextsBox(self, contexts, l1, l2):
@@ -166,5 +182,7 @@ class MyTasks(cui.Explorer):
                         break
                 if not flag:
                     self.currentContext = None
+                    if self.checkinputDialog:
+                        self.checkinputDialog.setContext()
                 else:
                     self.showFiles(self.currentContext)
