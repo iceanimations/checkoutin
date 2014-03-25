@@ -95,7 +95,8 @@ class Dialog(Form, Base):
                 context = str(self.newContextBox.text())
             else:
                 if self.parent.currentContext:
-                    context = self.parent.currentContext.title().split('/')[-1]
+                    split = self.parent.currentContext.title().split('/')
+                    context = split[0] if len(split) == 1 else '/'.join(split[1:])
             if context:
                 self.parent.checkin(context, str(self.percentBox.value())+'% - '+selected, filePath = path)
                 self.accept()

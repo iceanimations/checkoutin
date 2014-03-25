@@ -62,21 +62,30 @@ def checkin(sobject, context, process = None,
     @context: context of the sobject
     @version: version number of the snapshot (functionality not implemented)
     '''
+
+
     
     server = user.get_server()
     tmpfile = op.normpath(getTemp(prefix = dt.now().
                                   strftime("%Y-%M-%d %H-%M-%S")
                               )).replace("\\", "/")
-    print tmpfile if not file else file
-    print sobject, context
+
     save_path = m.save(tmpfile, file_type = "mayaBinary"
                        if pc.sceneName().endswith(".mb") else "mayaAscii") if not file else file
+    
+    if process != context:
+        context = '/'.join([process, context])
+
+    print tmpfile if not file else file
+    print sobject, context
+
     snapshot = user.get_server().simple_checkin(sobject, context,
                                                 save_path,
-                                                use_handoff_dir=True,
+                                                use_handoff_dir = True,
                                                 mode = 'copy',
+                                                keep_file_name = False,
                                                 description = description)
-
+    
     search_key = snapshot['__search_key__']
     if process:
         server.update(search_key, data = {'process': process})
