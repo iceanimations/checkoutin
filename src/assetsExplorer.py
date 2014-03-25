@@ -8,8 +8,8 @@ import checkinput
 reload(checkinput)
 import backend
 reload(backend)
-#reload(util)
-reload(cui)
+reload(util)
+#reload(cui)
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
@@ -21,9 +21,7 @@ class AssetsExplorer(cui.Explorer):
         super(AssetsExplorer, self).__init__(parent)
         self.setWindowTitle("AssetsExplorer")
         
-        self.assetsBox = None
         self.currentAsset = None
-        self.contextsProcessesBox = None
         self.projects = {}
         
         self.projectsBox.activated.connect(self.setProject)
@@ -31,7 +29,8 @@ class AssetsExplorer(cui.Explorer):
         self.saveButton.clicked.connect(self.showCheckinputDialog)
         
         self.assetsBox = self.createScroller("Assets")
-        self.scrollerLayout.addWidget(self.assetsBox)
+        self.contextsProcessesBox = self.createScroller('Process/Context')
+        self.addFilesBox()
         
         self.setProjectsBox()
         
@@ -52,12 +51,9 @@ class AssetsExplorer(cui.Explorer):
             return
         assets = util.all_assets(self.projects[projectName])
         # clear the window
-        if self.contextsProcessesBox:
-            self.contextsProcessesBox.clearItems()
-            self.currentContext = None
-        if self.filesBox:
-            self.filesBox.deleteLater()
-            self.filesBox = None
+        self.contextsProcessesBox.clearItems()
+        self.currentContext = None
+        self.filesBox.clearItems()
         if self.assetsBox:
             self.assetsBox.clearItems()
             self.currentAsset = None
@@ -82,10 +78,7 @@ class AssetsExplorer(cui.Explorer):
         self.currentAsset = asset
         self.currentAsset.setStyleSheet("background-color: #666666")
         
-        if self.contextsProcessesBox:
-            self.clearContextsProcesses()
-        else:
-            self.contextsProcessesBox = self.createScroller("Process/Context")
+        self.clearContextsProcesses()
             
         contexts = self.contextsProcesses()
         
@@ -123,10 +116,8 @@ class AssetsExplorer(cui.Explorer):
         self.contextsProcessesBox.clearItems()
         self.currentContext = None
         
-        if self.filesBox:
-            self.filesBox.deleteLater()
-            self.filesBox = None
-            self.currentFile = None
+        self.filesBox.clearItems()
+        self.currentFile = None
     
     def showCheckinputDialog(self):
         if self.currentContext:

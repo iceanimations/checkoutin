@@ -22,7 +22,6 @@ class MyTasks(cui.Explorer):
         self.setWindowTitle("MyTasks")
         
         self.currentTask = None
-        self.contextsBox = None
         self.tasksBox = None
         
         self.projectsBox.hide()
@@ -31,6 +30,8 @@ class MyTasks(cui.Explorer):
         self.saveButton.clicked.connect(self.showCheckinputDialog)
         
         self.showTasks()
+        self.contextsBox = self.createScroller('Contexts')
+        self.addFilesBox()
         
         import site
         # update the database, how many times this app is used
@@ -62,12 +63,7 @@ class MyTasks(cui.Explorer):
         self.currentTask.setStyleSheet("background-color: #666666")
         
         # remove the showed contexts
-        if self.contextsBox:
-            self.clearContexts()
-        else:
-            # create the scroller
-            self.contextsBox = self.createScroller("Context")
-
+        self.clearContexts()
         
         # get the new contexts
         task = str(self.currentTask.objectName())
@@ -98,12 +94,10 @@ class MyTasks(cui.Explorer):
         
     def clearContexts(self):
         self.contextsBox.clearItems()
-        self.currentContext = None
         
         # remove the showed files
         if self.filesBox:
-            self.filesBox.deleteLater()
-            self.filesBox = None
+            self.filesBox.clearItems()
             self.currentFile = None
     
     def checkout(self):
