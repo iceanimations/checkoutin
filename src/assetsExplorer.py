@@ -9,7 +9,7 @@ reload(checkinput)
 import backend
 reload(backend)
 reload(util)
-#reload(cui)
+reload(cui)
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')

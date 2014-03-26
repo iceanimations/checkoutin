@@ -19,22 +19,20 @@ class Dialog(Form, Base):
         self.setValidator()
         self.detailBoxes = []
         
-        self.radioTexts = ['Optional description 1',
-                           'Optional description 2',
-                           'Optional description 3',
-                           'Optional description 4',
-                           'Optional description 5']
-        
-        self.scrollArea.horizontalScrollBar().setFixedHeight(12)
-        self.scrollArea.verticalScrollBar().setFixedWidth(12)
+        self.descriptionBox.horizontalScrollBar().setFixedHeight(12)
+        self.descriptionBox.verticalScrollBar().setFixedWidth(12)
         
         self.okButton.clicked.connect(self.ok)
         self.cancelButton.clicked.connect(self.cancel)
         self.browseButton.clicked.connect(self.showFileDialog)
         self.newContextButton.clicked.connect(self.handleNewContextButtonClick)
         self.newContextBox.textChanged.connect(self.handleNewName)
+        self.descriptionBox.focusOutEvent = lambda event: self.setDescription()
         
-        self.setRadioButtons()
+    def setDescription(self):
+        desc = str(self.descriptionBox.toPlainText())
+        if not desc:
+            self.descriptionBox.setPlainText('No description')
         
     def handleNewName(self, name):
         if not str(name):
@@ -61,12 +59,6 @@ class Dialog(Form, Base):
         regex = QRegExp('[a-z_]*')
         validator = QRegExpValidator(regex, self)
         self.newContextBox.setValidator(validator)
-        
-    def setRadioButtons(self):
-        for txt in self.radioTexts:
-            btn = QRadioButton(txt, self)
-            self.detailBoxes.append(btn)
-            self.radioLayout.addWidget(btn)
             
     def showFileDialog(self):
         fileName = str(QFileDialog.getOpenFileName(self, 'Select File', '', '*.mb *.ma'))
@@ -74,22 +66,17 @@ class Dialog(Form, Base):
             self.pathBox.setText(fileName)
         
     def ok(self):
-        selected = 'No description'
-        for btn in self.detailBoxes:
-            if btn.isChecked():
-                selected = str(btn.text())
+        description = str(self.descriptionBox.toPlainText())
         path = str(self.pathBox.text())
         if path:
             if osp.exists(path):
-                if osp.isfile(path):
-                    pass
-                else:
+                if not osp.isfile(path):
                     pc.warning('Specified path is not a file...')
                     return
             else:
                 pc.warning('File path does not exist...')
                 return
-        if selected:
+        if description:
             context = None
             if self.newContextButton.isChecked():
                 context = str(self.newContextBox.text())
@@ -98,7 +85,7 @@ class Dialog(Form, Base):
                     split = self.parent.currentContext.title().split('/')
                     context = split[0] if len(split) == 1 else '/'.join(split[1:])
             if context:
-                self.parent.checkin(context, str(self.percentBox.value())+'% - '+selected, filePath = path)
+                self.parent.checkin(context, description, filePath = path)
                 self.accept()
             else:
                 pc.warning('No context selected/specified')
