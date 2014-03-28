@@ -17,7 +17,6 @@ class Dialog(Form, Base):
         self.parent = parent
         self.parent.saveButton.setEnabled(False)
         self.setValidator()
-        self.detailBoxes = []
         
         self.descriptionBox.horizontalScrollBar().setFixedHeight(12)
         self.descriptionBox.verticalScrollBar().setFixedWidth(12)

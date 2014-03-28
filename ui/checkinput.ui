@@ -211,12 +211,12 @@ padding-left: 5px;</string>
    <slot>setEnabled(bool)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>260</x>
-     <y>28</y>
+     <x>96</x>
+     <y>177</y>
     </hint>
     <hint type="destinationlabel">
-     <x>400</x>
-     <y>24</y>
+     <x>236</x>
+     <y>173</y>
     </hint>
    </hints>
   </connection>
@@ -227,12 +227,12 @@ padding-left: 5px;</string>
    <slot>setFocus()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>260</x>
-     <y>28</y>
+     <x>96</x>
+     <y>177</y>
     </hint>
     <hint type="destinationlabel">
-     <x>408</x>
-     <y>26</y>
+     <x>244</x>
+     <y>175</y>
     </hint>
    </hints>
   </connection>
@@ -244,11 +244,11 @@ padding-left: 5px;</string>
    <hints>
     <hint type="sourcelabel">
      <x>132</x>
-     <y>46</y>
+     <y>18</y>
     </hint>
     <hint type="destinationlabel">
      <x>213</x>
-     <y>52</y>
+     <y>24</y>
     </hint>
    </hints>
   </connection>
@@ -260,11 +260,27 @@ padding-left: 5px;</string>
    <hints>
     <hint type="sourcelabel">
      <x>141</x>
-     <y>51</y>
+     <y>23</y>
     </hint>
     <hint type="destinationlabel">
      <x>417</x>
-     <y>53</y>
+     <y>25</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>radioButton_2</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>pathBox</receiver>
+   <slot>clear()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>55</x>
+     <y>17</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>307</x>
+     <y>22</y>
     </hint>
    </hints>
   </connection>
