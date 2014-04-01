@@ -1,5 +1,5 @@
 from auth import user
-import util
+import app.util as util
 import tempfile
 import pymel.core as pc
 import tactic_client_lib.application.maya as maya

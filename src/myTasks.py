@@ -3,7 +3,7 @@ import os.path as osp
 import sys
 from customui import ui as cui
 import pymel.core as pc
-import util
+import app.util as util
 import checkinput
 import backend
 reload(checkinput)
