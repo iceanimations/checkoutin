@@ -128,9 +128,12 @@ class AssetsExplorer(cui.Explorer):
         else:
             pc.warning('No Process/Context selected')
     
-    def checkout(self):
+    def checkout(self, r = False):
         if self.currentFile:
-            backend.checkout(str(self.currentFile.objectName()))
+            backend.checkout(str(self.currentFile.objectName()), r = r)
+            
+    def addReference(self):
+        self.checkout(r = True)
     
     def checkin(self, context, detail, filePath = None):
         if self.currentAsset:
