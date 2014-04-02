@@ -84,7 +84,7 @@ padding-left: 5px;</string>
      <item>
       <widget class="QCheckBox" name="newContextButton">
        <property name="enabled">
-        <bool>false</bool>
+        <bool>true</bool>
        </property>
        <property name="text">
         <string>New Context</string>
