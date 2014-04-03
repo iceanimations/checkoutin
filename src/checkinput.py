@@ -24,8 +24,8 @@ class Dialog(Form, Base):
         self.okButton.clicked.connect(self.ok)
         self.cancelButton.clicked.connect(self.cancel)
         self.browseButton.clicked.connect(self.showFileDialog)
-        self.newContextButton.clicked.connect(self.handleNewContextButtonClick)
         self.newContextBox.textChanged.connect(self.handleNewName)
+        self.newContextButton.clicked.connect(self.handleNewContextButtonClick)
         self.descriptionBox.focusOutEvent = lambda event: self.setDescription()
         
     def setDescription(self):
@@ -34,19 +34,18 @@ class Dialog(Form, Base):
             self.descriptionBox.setPlainText('No description')
         
     def handleNewName(self, name):
-        if not str(name):
-            name = '-'
-        self.setContext(name)
+        if not self.parent.currentContext:
+            pc.warning('Select a Context...')
+            return
+        pro = self.parent.currentContext.title().split('/')[0]
+        self.setContext(pro +'/'+ name)
         
     def handleNewContextButtonClick(self):
         if self.newContextButton.isChecked():
-            name = str(self.newContextBox.text())
-            if not name:
-                name = '-'
-            self.setContext(name)
+            self.setContext(self.parent.currentContext.title().split('/')[0] +'/'+ str(self.newContextBox.text()))
         else:
-            if self.parent.currentContext:
-                self.setContext(self.parent.currentContext.title())
+            self.setContext(self.parent.currentContext.title())
+            self.newContextBox.clear()
         
     def setMainName(self, name='-'):
         self.assetLabel.setText(name)
@@ -55,7 +54,7 @@ class Dialog(Form, Base):
         self.contextLabel.setText(context)
         
     def setValidator(self):
-        regex = QRegExp('[a-z_]*')
+        regex = QRegExp('[1-9a-z_]*')
         validator = QRegExpValidator(regex, self)
         self.newContextBox.setValidator(validator)
             
@@ -75,19 +74,19 @@ class Dialog(Form, Base):
             else:
                 pc.warning('File path does not exist...')
                 return
-        if description:
-            context = None
+        context = None
+        if self.parent.currentContext:
             if self.newContextButton.isChecked():
                 context = str(self.newContextBox.text())
             else:
-                if self.parent.currentContext:
-                    split = self.parent.currentContext.title().split('/')
-                    context = split[0] if len(split) == 1 else '/'.join(split[1:])
+                split = self.parent.currentContext.title().split('/')
+                context = split[0] if len(split) == 1 else '/'.join(split[1:])
             if context:
                 self.parent.checkin(context, description, filePath = path)
                 self.accept()
-            else:
-                pc.warning('No context selected/specified')
+            else: pc.warning('Specify a context or uncheck the "New Context" button')
+        else:
+            pc.warning('No context selected...')
                             
     
     def cancel(self):

@@ -35,7 +35,7 @@
      <item>
       <widget class="QRadioButton" name="radioButton">
        <property name="text">
-        <string>File Pah</string>
+        <string>File Path</string>
        </property>
       </widget>
      </item>

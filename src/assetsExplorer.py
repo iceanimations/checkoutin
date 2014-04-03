@@ -81,10 +81,9 @@ class AssetsExplorer(cui.Explorer):
         self.clearContextsProcesses()
             
         contexts = self.contextsProcesses()
-        
         for pro in contexts:
             for contx in contexts[pro]:
-                title = pro +'/'+ contx if pro != contx else pro
+                title = contx
                 item = self.createItem(title,
                                        '', '', '')
                 item.setObjectName(pro +'>'+ contx)
@@ -204,17 +203,17 @@ class AssetsExplorer(cui.Explorer):
                     self.checkinputDialog.setContext()
                 
     def updateContextsProcessesBox(self):
-        currentContext = self.currentContext
+        #currentContext = self.currentContext
         self.showContextsProcesses(self.currentAsset)
-        if currentContext:
-            flag = False
-            for contx in self.contextsProcessesBox.items():
-                if contx.objectName() == currentContext.objectName():
-                    self.currentContext = contx
-                    flag = True
-                    break
-            if not flag:
-                self.currentContext = None
-                self.checkinputDialog.setContext()
-            else:
-                self.showFiles(self.currentContext, self.snapshots)
+#         if currentContext:
+#             flag = False
+#             for contx in self.contextsProcessesBox.items():
+#                 if contx.objectName() == currentContext.objectName():
+#                     self.currentContext = contx
+#                     flag = True
+#                     break
+#             if not flag:
+#                 self.currentContext = None
+#                 self.checkinputDialog.setContext()
+#             else:
+#                 self.showFiles(self.currentContext, self.snapshots)
