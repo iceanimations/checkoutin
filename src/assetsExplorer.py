@@ -147,7 +147,8 @@ class AssetsExplorer(cui.Explorer):
                 if contx.objectName() == currentContext.objectName():
                     self.currentContext = contx
                     break
-            self.showFiles(self.currentContext, self.snapshots)
+            if self.currentContext:
+                self.showFiles(self.currentContext, self.snapshots)
         else: pc.warning('No Asset selected...')
     
     def bindClickEventForFiles(self, widget, func, args):

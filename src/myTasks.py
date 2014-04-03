@@ -130,6 +130,8 @@ class MyTasks(cui.Explorer):
                 if contx.objectName() == currentContext.objectName():
                     self.currentContext = contx
                     break
+            if self.currentContext:
+                self.showFiles(self.currentContext)
         else: pc.warning('No Task selected...')
         
     def updateWindow(self):
