@@ -29,7 +29,7 @@ class AssetsExplorer(cui.Explorer):
         self.saveButton.clicked.connect(self.showCheckinputDialog)
         
         self.assetsBox = self.createScroller("Assets")
-        self.contextsProcessesBox = self.createScroller('Process/Context')
+        self.contextsBox = self.createScroller('Process/Context')
         self.addFilesBox()
         
         self.setProjectsBox()
@@ -39,6 +39,9 @@ class AssetsExplorer(cui.Explorer):
         site.addsitedir(r'r:/pipe_repo/users/qurban')
         import appUsageApp
         appUsageApp.updateDatabase('AssetsExplorer')
+        
+        # testing ....................................................
+        #util.pretty_print(util.get_all_users())
         
     def setProjectsBox(self):
         for project in util.get_all_projects():
@@ -51,7 +54,7 @@ class AssetsExplorer(cui.Explorer):
             return
         assets = util.all_assets(self.projects[projectName])
         # clear the window
-        self.contextsProcessesBox.clearItems()
+        self.contextsBox.clearItems()
         self.currentContext = None
         self.filesBox.clearItems()
         if self.assetsBox:
@@ -87,8 +90,8 @@ class AssetsExplorer(cui.Explorer):
                 item = self.createItem(title,
                                        '', '', '')
                 item.setObjectName(pro +'>'+ contx)
-                self.contextsProcessesBox.addItem(item)
-        map(lambda widget: self.bindClickEventForFiles(widget, self.showFiles, self.snapshots), self.contextsProcessesBox.items())
+                self.contextsBox.addItem(item)
+        map(lambda widget: self.bindClickEventForFiles(widget, self.showFiles, self.snapshots), self.contextsBox.items())
         
         # handle child windows
         if self.checkinputDialog:
@@ -112,7 +115,7 @@ class AssetsExplorer(cui.Explorer):
         return contexts
     
     def clearContextsProcesses(self):
-        self.contextsProcessesBox.clearItems()
+        self.contextsBox.clearItems()
         self.currentContext = None
         
         self.filesBox.clearItems()
@@ -140,10 +143,10 @@ class AssetsExplorer(cui.Explorer):
             pro = self.currentContext.title().split('/')[0]
             backend.checkin(sobj, context, process = pro, description = detail, file = filePath)
             
-            # redisplay the contextsProcessesBox/filesBox
+            # redisplay the contextsBox/filesBox
             currentContext = self.currentContext
             self.showContextsProcesses(self.currentAsset)
-            for contx in self.contextsProcessesBox.items():
+            for contx in self.contextsBox.items():
                 if contx.objectName() == currentContext.objectName():
                     self.currentContext = contx
                     break
@@ -169,9 +172,9 @@ class AssetsExplorer(cui.Explorer):
         assetsLen1 = len(newAssets); assetsLen2 = len(self.assetsBox.items())
         if assetsLen1 != assetsLen2:
             self.updateAssetsBox(assetsLen1, assetsLen2, newAssets)
-        if self.currentAsset and self.contextsProcessesBox:
-            if len(self.contextsProcessesBox.items()) != self.contextsLen(self.contextsProcesses()):
-                self.updateContextsProcessesBox()
+        if self.currentAsset and self.contextsBox:
+            if len(self.contextsBox.items()) != self.contextsLen(self.contextsProcesses()):
+                self.updatecontextsBox()
             if self.currentContext and self.filesBox:
                 if len(self.filesBox.items()) != len([snap for snap in self.snapshots if snap['process'] == self.currentContext.title().split('/')[0]]):
                     self.showFiles(self.currentContext, self.snapshots)
@@ -203,12 +206,12 @@ class AssetsExplorer(cui.Explorer):
                     self.checkinputDialog.setMainName()
                     self.checkinputDialog.setContext()
                 
-    def updateContextsProcessesBox(self):
+    def updatecontextsBox(self):
         #currentContext = self.currentContext
         self.showContextsProcesses(self.currentAsset)
 #         if currentContext:
 #             flag = False
-#             for contx in self.contextsProcessesBox.items():
+#             for contx in self.contextsBox.items():
 #                 if contx.objectName() == currentContext.objectName():
 #                     self.currentContext = contx
 #                     flag = True

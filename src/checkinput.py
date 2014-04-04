@@ -38,6 +38,13 @@ class Dialog(Form, Base):
             pc.warning('Select a Context...')
             return
         pro = self.parent.currentContext.title().split('/')[0]
+        if name == pro:
+            self.warningLabel.setText('Context name matches the Process name')
+            self.okButton.setEnabled(False)
+        elif name in ['/'.join(ctx.title().split('/')[1:]) if len(ctx.title().split('/')) > 1 else '-' for ctx in self.parent.contextsBox.items() if ctx.title().split('/')[0] == pro]:
+            self.warningLabel.setText('Context name already exists')
+            self.okButton.setEnabled(False)
+        else: self.okButton.setEnabled(True); self.warningLabel.setText('')
         self.setContext(pro +'/'+ name)
         
     def handleNewContextButtonClick(self):
@@ -81,10 +88,10 @@ class Dialog(Form, Base):
             else:
                 split = self.parent.currentContext.title().split('/')
                 context = split[0] if len(split) == 1 else '/'.join(split[1:])
-            if context:
-                self.parent.checkin(context, description, filePath = path)
-                self.accept()
-            else: pc.warning('Specify a context or uncheck the "New Context" button')
+            if not context:
+                context = self.parent.currentContext.title().split('/')[0]
+            self.parent.checkin(context, description, filePath = path)
+            self.accept()
         else:
             pc.warning('No context selected...')
                             
