@@ -1,15 +1,22 @@
-import qtify_maya_window as qtfy
+parent = None
+try:
+    import qtify_maya_window as qtfy
+    parent = qtfy.getMayaWindow()
+except:
+    pass
 import os.path as osp
 import sys
+from PyQt4.QtGui import QMessageBox
 from customui import ui as cui
-import pymel.core as pc
 import app.util as util
 import checkinput
-import backend
+try:
+    import backend
+    reload(backend)
+except: pass
 reload(checkinput)
 reload(util)
 #reload(cui)
-reload(backend)
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
@@ -17,10 +24,15 @@ iconPath = osp.join(rootPath, 'icons')
 
 class MyTasks(cui.Explorer):
 
-    def __init__(self, parent=qtfy.getMayaWindow()):
+    def __init__(self, parent=parent, standalone=False):
         super(MyTasks, self).__init__(parent)
         self.setWindowTitle("MyTasks")
         
+        if standalone:
+            self.openButton.setEnabled(False)
+            self.referenceButton.setEnabled(False)
+        
+        self.standalone = standalone
         self.currentTask = None
         self.tasksBox = None
         
@@ -115,7 +127,8 @@ class MyTasks(cui.Explorer):
                 self.checkinputDialog.setContext(self.currentContext.title())
             self.checkinputDialog.show()
         else:
-            pc.warning('No Task selected')
+            cui.showMessage(self, title='MyTasks', msg='No Task selected',
+                            icon=QMessageBox.Warning)
             
     
     def checkin(self, context, detail, filePath = None):
@@ -132,7 +145,9 @@ class MyTasks(cui.Explorer):
                     break
             if self.currentContext:
                 self.showFiles(self.currentContext)
-        else: pc.warning('No Task selected...')
+        else:
+            cui.showMessage(self, title='MyTasks', msg='No Task selected',
+                            icon=QMessageBox.Warning)
         
     def updateWindow(self):
         newTasks = util.get_all_task()

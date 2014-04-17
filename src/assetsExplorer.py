@@ -1,13 +1,20 @@
-import qtify_maya_window as qtfy
+parent = None
+try:
+    import qtify_maya_window as qtfy
+    parent = qtfy.getMayaWindow()
+except:
+    pass
 import os.path as osp
 import sys
+from PyQt4.QtGui import QMessageBox
 from customui import ui as cui
-import pymel.core as pc
 import app.util as util
 import checkinput
 reload(checkinput)
-import backend
-reload(backend)
+try:
+    import backend
+    reload(backend)
+except: pass
 reload(util)
 reload(cui)
 
@@ -17,10 +24,15 @@ iconPath = osp.join(rootPath, 'icons')
 
 class AssetsExplorer(cui.Explorer):
 
-    def __init__(self, parent=qtfy.getMayaWindow()):
+    def __init__(self, parent=parent, standalone=False):
         super(AssetsExplorer, self).__init__(parent)
         self.setWindowTitle("AssetsExplorer")
         
+        if standalone:
+            self.openButton.setEnabled(False)
+            self.referenceButton.setEnabled(False)
+        
+        self.standalone = standalone
         self.currentAsset = None
         self.projects = {}
         
@@ -128,7 +140,8 @@ class AssetsExplorer(cui.Explorer):
             self.checkinputDialog.setContext(self.currentContext.title())
             self.checkinputDialog.show()
         else:
-            pc.warning('No Process/Context selected')
+            cui.showMessage(self, title='AssetsExplorer', msg='No Process/Context selected',
+                            icon=QMessageBox.Warning)
     
     def checkout(self, r = False):
         if self.currentFile:
@@ -152,7 +165,9 @@ class AssetsExplorer(cui.Explorer):
                     break
             if self.currentContext:
                 self.showFiles(self.currentContext, self.snapshots)
-        else: pc.warning('No Asset selected...')
+        else:
+            cui.showMessage(self, title='AssetsExplorer', msg='No asset selected',
+                            icon=QMessageBox.Warning)
     
     def bindClickEventForFiles(self, widget, func, args):
         widget.mouseReleaseEvent = lambda event: func(widget, args)
