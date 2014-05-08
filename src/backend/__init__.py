@@ -4,5 +4,3 @@ reload(_backend)
 from ._backend import *
 
 asd(r"r:/Pipe_Repo/Users/Hussain/utilities")
-asd(r"r:/Pipe_Repo/Projects/TACTIC")
-
