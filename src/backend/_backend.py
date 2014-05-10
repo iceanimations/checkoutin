@@ -223,7 +223,7 @@ def checkin_texture(search_key, context):
 
     if texture_children:
         # one texture sobject/asset
-        texture_child = texture_children[0]
+         texture_child = texture_children[0]
     else:
         data = {'asset_code': server.split_search_key(sobject)[1],
                 'asset_context': 'texture',
@@ -236,21 +236,28 @@ def checkin_texture(search_key, context):
     texture_snap = server.create_snapshot(texture_child['__search_key__'],
                                           context)
 
-    server.add_directory(server.split_search_key(
-        texture_snap['__search_key__'])[1], tmpdir)
+    server.add_file(server.split_search_key(texture_snap['__search_key__'])[1],
+                    
+                    # bug in expects '/' path separator
+                    [op.join(tmpdir, name).replace('\\', '/') 
+                     for name in os.listdir(tmpdir)],
+                    
+                    file_type = ['image'] * len(os.listdir(tmpdir)),
+                    mode = 'copy', create_icon = False)
 
     print texture_snap['__search_key__']
-    print server.get_paths(texture_child,
-                           versionless = True)
-    
+ 
     client_dir = op.dirname(server.get_paths(texture_child, context,
-                                             versionless = True)
+                                             versionless = True,
+                                             file_type = 'image')
                             ['client_lib_paths'][0])
-
+    util.pretty_print(server.get_paths(texture_child, context,
+                             versionless = True,
+                             file_type = 'image'))
     
     for ftn in mi.textureFiles(selection = False):
 
-        ftn_to_central[ftn] = op.normpath(op.join(client_dir, context, 
+        ftn_to_central[ftn] = op.normpath(op.join(client_dir, 
                                                   op.basename(tex_location_map[
                                                       present_to_norm[ftn]])))
 
@@ -289,7 +296,10 @@ def collect_textures(dest):
         
         filename = iutil.lCUFN(dest, op.basename(fl))
         copy_to = op.join(dest, filename)
-        shutil.copy(fl, copy_to)
+        try:
+            shutil.copy(fl, copy_to)
+        except:
+            continue
         mapping[fl] = copy_to
     
     return mapping
