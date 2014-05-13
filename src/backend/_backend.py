@@ -137,7 +137,7 @@ def checkin(sobject, context, process = None,
 
 
     server = user.get_server()
-
+    
     tmpfile = op.normpath(iutil.getTemp(prefix = dt.now().
                                         strftime("%Y-%M-%d %H-%M-%S")
                                     )).replace("\\", "/")
@@ -147,18 +147,16 @@ def checkin(sobject, context, process = None,
         
     if 'shaded' in context:
         ftn_to_central = checkin_texture(sobject, context)
-    
         central_to_ftn = map_textures(ftn_to_central)
-    
     
     save_path = (m.save(tmpfile, file_type = "mayaBinary"
                         if pc.sceneName().endswith(".mb")
                         else "mayaAscii")
                  if not file else file)
-
+    
     print tmpfile if not file else file
     print sobject, context
-
+    
     snapshot = server.simple_checkin(sobject, context,
                                      save_path,
                                      use_handoff_dir = True,
@@ -167,13 +165,13 @@ def checkin(sobject, context, process = None,
                                      description = description)
     
     if 'shaded' in context:
-        print central_to_ftn
-        print ftn_to_central
+        map(util.pretty_print, [central_to_ftn, ftn_to_central])
         map_textures(central_to_ftn)
     
     search_key = snapshot['__search_key__']
     if process:
         server.update(search_key, data = {'process': process})
+    
     # path = checkout(search_key) if not 
 
     return True
@@ -189,12 +187,12 @@ def asset_textures(search_key):
     directory = server.get_paths(server.get_all_children(search_key,
                                                          'vfx/texture')[0]
                                  ['__search_key__'])['client_lib_paths']
+    
     return [op.join(directory, basename) for basename in os.listdir(directory)]
 
 def checkin_texture(search_key, context):
-
+    
     context = '/'.join(['texture'] + context.split('/')[1:])
-    print 'context: ',  context
     server = util.get_server()
     sobject = search_key
     texture_type = 'vfx/texture'
@@ -202,25 +200,25 @@ def checkin_texture(search_key, context):
                                        strftime("%Y-%M-%d %H-%M-%S"),
                                        mkd = True
                                    )).replace("\\", "/")
-
+    
     # texture location mapping in temp
     # normalized and lowercased -> temppath
     norm_to_temp = tex_location_map = collect_textures(tmpdir)
-
+    
     # present -> normalized
     present_to_norm = {}
-    for tex in set(mi.textureFiles(selection = False)):
+    for tex in set(mi.textureFiles(selection = False, key = op.exists)):
         present_to_norm[tex] = op.normpath(iutil.lower(tex))
     
     # set the project
     prj_tag = 'project='
     server.set_project(search_key[search_key.find(prj_tag) + len(prj_tag)
                                   :search_key.find('&')])
-
+    
     texture_children = server.get_all_children(sobject, texture_type)
     util.pretty_print(texture_children)
     
-
+    
     if texture_children:
         # one texture sobject/asset
          texture_child = texture_children[0]
@@ -230,39 +228,36 @@ def checkin_texture(search_key, context):
                 'category': 'texture'}
         
         texture_child = server.insert(texture_type, data, parent_key = sobject)
-
+    
     
     ftn_to_central = {}
     texture_snap = server.create_snapshot(texture_child['__search_key__'],
                                           context)
-
+    
     server.add_file(server.split_search_key(texture_snap['__search_key__'])[1],
-                    
+                                      
                     # bug in expects '/' path separator
-                    [op.join(tmpdir, name).replace('\\', '/') 
-                     for name in os.listdir(tmpdir)],
+                                      [op.join(tmpdir, name).replace('\\', '/') 
+                                       for name in os.listdir(tmpdir)],
                     
                     file_type = ['image'] * len(os.listdir(tmpdir)),
                     mode = 'copy', create_icon = False)
-
-    print texture_snap['__search_key__']
  
     client_dir = op.dirname(server.get_paths(texture_child, context,
                                              versionless = True,
                                              file_type = 'image')
                             ['client_lib_paths'][0])
+    
     util.pretty_print(server.get_paths(texture_child, context,
                              versionless = True,
                              file_type = 'image'))
     
-    for ftn in mi.textureFiles(selection = False):
+    for ftn in set(mi.textureFiles(selection = False, key = op.exists)):
 
         ftn_to_central[ftn] = op.normpath(op.join(client_dir, 
-                                                  op.basename(tex_location_map[
+                                                  op.basename(norm_to_temp[
                                                       present_to_norm[ftn]])))
 
-
-    
     return ftn_to_central
 
 def map_textures(mapping):
@@ -270,11 +265,13 @@ def map_textures(mapping):
     reverse = {}
     
     for fileNode in mi.getFileNodes():
-        path = pc.getAttr(fileNode + '.ftn')
-        pc.setAttr(fileNode +'.ftn',
-                   mapping[path])
-        
-        reverse[pc.getAttr(fileNode + '.ftn')] = path
+        if op.exists(fileNode.ftn.get()):
+            
+            path = pc.getAttr(fileNode + '.ftn')
+            pc.setAttr(fileNode +'.ftn',
+                       mapping[path])
+
+            reverse[pc.getAttr(fileNode + '.ftn')] = path
 
     return reverse
         
@@ -282,10 +279,11 @@ def collect_textures(dest):
     ''' 
     @return: {ftn: tmp}
     '''
+    
     # normalized -> temp
     mapping = {}
     
-    scene_textures = mi.textureFiles(selection = False)
+    scene_textures = mi.textureFiles(selection = False, key = op.exists)
     
     # current to lowercase and norm paths. for uniqueness
     present_mod = {}
@@ -293,13 +291,10 @@ def collect_textures(dest):
         present_mod[tex] = op.normpath(iutil.lower(tex))
     
     for fl in set(present_mod.values()):
-        
-        filename = iutil.lCUFN(dest, op.basename(fl))
+        root, ext = op.splitext(fl)
+        filename = iutil.lCUFN(dest, op.basename(root.strip() + ext).replace(' ', '_'))
         copy_to = op.join(dest, filename)
-        try:
-            shutil.copy(fl, copy_to)
-        except:
-            continue
+        shutil.copy(fl, copy_to)
         mapping[fl] = copy_to
     
     return mapping
