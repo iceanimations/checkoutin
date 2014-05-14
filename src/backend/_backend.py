@@ -13,14 +13,15 @@ import shutil
 
 dt = datetime.datetime
 m = maya.Maya()
+TEXTURE_TYPE = 'vfx/texture'
 
-
-
-def checkout(snapshot, r = False):
+def checkout(snapshot, r = False, with_texture = True):
     '''
     @snapshot: snapshot search_key
     '''
+    
     server = user.get_server()
+    
     if user.user_registered():
         server = user.get_server()
         snap = server.get_by_search_key(snapshot)
@@ -30,23 +31,87 @@ def checkout(snapshot, r = False):
                                     snap['project_code']))
         print snap['version']
         util.pretty_print(snap)
-        file_type = server.get_by_search_key(
-            server.query('sthpw/file',
-                         filters = [('snapshot_code', snap['code']),
-                                    ('project_code',
-                                     snap['project_code'])])[0]
-            ['__search_key__'])
+        # file_type = server.get_by_search_key(
+        #     server.query('sthpw/file',
+        #                  filters = [('snapshot_code', snap['code']),
+        #                             ('project_code',
+        #                              snap['project_code'])])[0]
+        #     ['__search_key__'])
+        
         if not r:
+            
             paths = server.checkout(sobj['__search_key__'],
                                     snap['context'],
                                     to_sandbox_dir = True,
                                     version = snap['version'],
-                                    file_type = file_type["type"])
+                                    file_type = 'maya')
+
             pc.openFile(paths[0], force = True)
+
+            # checkout texture
+            tex = server.get_all_children(sobj['__search_key__'], TEXTURE_TYPE)
+            print tex
+            if tex and with_texture:
+                context_comp = snap['context'].split('/')
+
+                # the required context
+                req_context = context_comp[1:] if len(context_comp) > 1 else []
+                snaps = util.get_snapshot_from_sobject(
+                    tex[0]['__search_key__'])
+                snaps = [snap for snap in snaps
+                        if (snap['context'] == '/'.join(['texture']
+                                                        + req_context)
+                            and snap['version'] == -1)]
+                
+                util.pretty_print(snaps)
+                
+                if snaps:
+                    snap = snaps[0]
+                else:
+                    return paths[0]
+
+                tex_path = server.checkout(tex[0]['__search_key__'],
+                                           snap['context'],
+                                           to_sandbox_dir = True,
+                                           mode = 'copy',
+                                           file_type = '*')
+                util.pretty_print(tex_path)
+                tex_mapping = {}
+                tex_path_base = map(op.basename, tex_path)
+                for ftn in mi.textureFiles(False, key = op.exists):
+                    
+                    tex_mapping[ftn] = tex_path[
+                        tex_path_base.index(op.basename(ftn))]
+
+                map_textures(tex_mapping)
+                pc.mel.eval('file -save')
+                    
             return paths[0]
 
         else:
+            
             return _reference(snap)
+
+def get_tactic_file_info():
+
+    tactic_raw = mi.FileInfo.get('TACTIC')
+
+    if tactic_raw:
+        tactic = json.loads(tactic_raw)
+    else:
+        tactic = {}
+
+    tactic['__ver__'] = "0.1"
+
+    return tactic
+
+def set_tactic_file_info(tactic):
+    '''
+    @tactic: dict
+    '''
+
+    return mi.FileInfo.save('TACTIC', json.dumps(tactic))
+
 
 def _reference(snapshot):
 
@@ -57,15 +122,7 @@ def _reference(snapshot):
     except:
         pass
     
-    tactic_raw = mi.FileInfo.get('TACTIC')
-    
-    if tactic_raw:
-        tactic = json.loads(tactic_raw)
-    
-    else:
-        tactic = {}
-
-    tactic['__ver__'] = "0.1"
+    tactic = get_tactic_file_info()
     
     assets = tactic.get('assets', [])
     # just to ensure the 'assets' key is part of the dictionary
@@ -78,7 +135,9 @@ def _reference(snapshot):
             asset.get('process') == snapshot.get('process') and
             asset.get('context') == snapshot.get('context')):
             present = True
-            return True
+
+            # should be able to reference multiple times
+            # return True
             
     # {"is_synced": true, 
     #  "code": "SNAPSHOT", 
@@ -121,7 +180,7 @@ def _reference(snapshot):
                        'snapshot', 'login', 'revision'])
             
     assets.append(snapshot)
-    mi.FileInfo.save('TACTIC', json.dumps(tactic))
+    set_tactic_file_info(tactic)
     return True
         
 
@@ -134,8 +193,9 @@ def checkin(sobject, context, process = None,
     @version: version number of the snapshot (functionality not implemented)
     '''
 
-
-
+    
+    
+    shaded = context.startswith('shaded')
     server = user.get_server()
     
     tmpfile = op.normpath(iutil.getTemp(prefix = dt.now().
@@ -143,11 +203,21 @@ def checkin(sobject, context, process = None,
                                     )).replace("\\", "/")
     
     if process and process != context:
+        
         context = '/'.join([process, context])
         
-    if 'shaded' in context:
+    if shaded:
+        
         ftn_to_central = checkin_texture(sobject, context)
         central_to_ftn = map_textures(ftn_to_central)
+
+
+    snapshot = server.create_snapshot(sobject, context)
+
+    tactic = get_tactic_file_info()
+
+    tactic['whoami'] = snapshot['__search_key__']
+    set_tactic_file_info(tactic)
     
     save_path = (m.save(tmpfile, file_type = "mayaBinary"
                         if pc.sceneName().endswith(".mb")
@@ -156,23 +226,20 @@ def checkin(sobject, context, process = None,
     
     print tmpfile if not file else file
     print sobject, context
+
+
+    snap_code = server.split_search_key(snapshot['__search_key__'])[1]
+    server.add_file(snap_code, save_path, file_type = 'maya',
+                      mode = 'copy', create_icon = False)
     
-    snapshot = server.simple_checkin(sobject, context,
-                                     save_path,
-                                     use_handoff_dir = True,
-                                     mode = 'copy',
-                                     keep_file_name = False,
-                                     description = description)
-    
-    if 'shaded' in context:
+    if shaded:
+        
         map(util.pretty_print, [central_to_ftn, ftn_to_central])
         map_textures(central_to_ftn)
     
     search_key = snapshot['__search_key__']
     if process:
         server.update(search_key, data = {'process': process})
-    
-    # path = checkout(search_key) if not 
 
     return True
             
@@ -195,7 +262,6 @@ def checkin_texture(search_key, context):
     context = '/'.join(['texture'] + context.split('/')[1:])
     server = util.get_server()
     sobject = search_key
-    texture_type = 'vfx/texture'
     tmpdir = op.normpath(iutil.getTemp(prefix = dt.now().
                                        strftime("%Y-%M-%d %H-%M-%S"),
                                        mkd = True
@@ -215,7 +281,7 @@ def checkin_texture(search_key, context):
     server.set_project(search_key[search_key.find(prj_tag) + len(prj_tag)
                                   :search_key.find('&')])
     
-    texture_children = server.get_all_children(sobject, texture_type)
+    texture_children = server.get_all_children(sobject, TEXTURE_TYPE)
     util.pretty_print(texture_children)
     
     
@@ -227,7 +293,7 @@ def checkin_texture(search_key, context):
                 'asset_context': 'texture',
                 'category': 'texture'}
         
-        texture_child = server.insert(texture_type, data, parent_key = sobject)
+        texture_child = server.insert(TEXTURE_TYPE, data, parent_key = sobject)
     
     
     ftn_to_central = {}
@@ -237,8 +303,8 @@ def checkin_texture(search_key, context):
     server.add_file(server.split_search_key(texture_snap['__search_key__'])[1],
                                       
                     # bug in expects '/' path separator
-                                      [op.join(tmpdir, name).replace('\\', '/') 
-                                       for name in os.listdir(tmpdir)],
+                    [op.join(tmpdir, name).replace('\\', '/') 
+                     for name in os.listdir(tmpdir)],
                     
                     file_type = ['image'] * len(os.listdir(tmpdir)),
                     mode = 'copy', create_icon = False)
