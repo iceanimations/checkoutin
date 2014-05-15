@@ -16,7 +16,7 @@ m = maya.Maya()
 TEXTURE_TYPE = 'vfx/texture'
 
 def set_project(project = None, search_key = None):
-    
+    print project, search_key
     server = user.get_server()
     
     if project:
@@ -33,7 +33,6 @@ def checkout(snapshot, r = False, with_texture = True):
     '''
     
     server = user.get_server()
-    set_project(search_key = snapshot)
     if user.user_registered():
         server = user.get_server()
         snap = server.get_by_search_key(snapshot)
@@ -41,6 +40,7 @@ def checkout(snapshot, r = False, with_texture = True):
             server.build_search_key(snap['search_type'],
                                     snap['search_code'],
                                     snap['project_code']))
+        set_project(project = snap['project_code'])
         print snap['version']
         util.pretty_print(snap)
         # file_type = server.get_by_search_key(
