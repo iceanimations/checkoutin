@@ -21,7 +21,7 @@ def set_project(project = None, search_key = None):
     
     if project:
         server.set_project(project)
-    elif sobject:
+    elif search_key:
         prj_tag = 'project='
         server.set_project(search_key[search_key.find(prj_tag) + len(prj_tag)
                                       :search_key.find('&')])
