@@ -15,13 +15,24 @@ dt = datetime.datetime
 m = maya.Maya()
 TEXTURE_TYPE = 'vfx/texture'
 
+def set_project(project = None, search_key = None):
+    
+    server = user.get_server()
+    
+    if project:
+        server.set_project(project)
+    elif sobject:
+        prj_tag = 'project='
+        server.set_project(search_key[search_key.find(prj_tag) + len(prj_tag)
+                                      :search_key.find('&')])
+
 def checkout(snapshot, r = False, with_texture = True):
     '''
     @snapshot: snapshot search_key
     '''
     
     server = user.get_server()
-    
+    set_project(search_key = snapshot)
     if user.user_registered():
         server = user.get_server()
         snap = server.get_by_search_key(snapshot)
@@ -44,10 +55,12 @@ def checkout(snapshot, r = False, with_texture = True):
                                     snap['context'],
                                     to_sandbox_dir = True,
                                     version = snap['version'],
-                                    file_type = 'maya')
+                                    file_type = '*')
 
             pc.openFile(paths[0], force = True)
-
+            tactic = get_tactic_file_info()
+            tactic['whoami'] = snapshot
+            set_tactic_file_info(tactic)
             # checkout texture
             tex = server.get_all_children(sobj['__search_key__'], TEXTURE_TYPE)
             print tex
@@ -192,7 +205,7 @@ def checkin(sobject, context, process = None,
     '''
 
     server = user.get_server()
-    
+    set_project(search_key = sobj)
     tmpfile = op.normpath(iutil.getTemp(prefix = dt.now().
                                         strftime("%Y-%M-%d %H-%M-%S")
                                     )).replace("\\", "/")
@@ -276,9 +289,7 @@ def checkin_texture(search_key, context):
         present_to_norm[tex] = op.normpath(iutil.lower(tex))
     
     # set the project
-    prj_tag = 'project='
-    server.set_project(search_key[search_key.find(prj_tag) + len(prj_tag)
-                                  :search_key.find('&')])
+    set_project(search_key = search_key)
     
     texture_children = server.get_all_children(sobject, TEXTURE_TYPE)
     util.pretty_print(texture_children)
