@@ -67,7 +67,7 @@ class AssetsExplorer(cui.Explorer):
         
     def showAssets(self, assets):
         for asset in assets:
-            item = self.createItem(asset['name'],
+            item = self.createItem('%s (%s)' %(asset['name'], asset['code']),
                                    asset['asset_category'],
                                    '', asset['description'] if asset['description'] else '')
             item.setObjectName(asset['__search_key__'])
