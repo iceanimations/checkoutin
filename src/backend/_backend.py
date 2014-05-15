@@ -112,7 +112,6 @@ def set_tactic_file_info(tactic):
 
     return mi.FileInfo.save('TACTIC', json.dumps(tactic))
 
-
 def _reference(snapshot):
 
     server = user.get_server()
@@ -183,7 +182,6 @@ def _reference(snapshot):
     set_tactic_file_info(tactic)
     return True
         
-
 def checkin(sobject, context, process = None,
             version=-1, description = 'No description',
             file = None):
@@ -193,9 +191,6 @@ def checkin(sobject, context, process = None,
     @version: version number of the snapshot (functionality not implemented)
     '''
 
-    
-    
-    shaded = context.startswith('shaded')
     server = user.get_server()
     
     tmpfile = op.normpath(iutil.getTemp(prefix = dt.now().
@@ -205,9 +200,12 @@ def checkin(sobject, context, process = None,
     if process and process != context:
         
         context = '/'.join([process, context])
-        
+
+    shaded = context.startswith('shaded')
+    print context
+    print shaded
     if shaded:
-        
+        print context
         ftn_to_central = checkin_texture(sobject, context)
         central_to_ftn = map_textures(ftn_to_central)
 
@@ -258,8 +256,9 @@ def asset_textures(search_key):
     return [op.join(directory, basename) for basename in os.listdir(directory)]
 
 def checkin_texture(search_key, context):
-    
+    print context
     context = '/'.join(['texture'] + context.split('/')[1:])
+    print context
     server = util.get_server()
     sobject = search_key
     tmpdir = op.normpath(iutil.getTemp(prefix = dt.now().
