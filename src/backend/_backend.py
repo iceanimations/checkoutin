@@ -25,6 +25,7 @@ def set_project(project = None, search_key = None):
         prj_tag = 'project='
         server.set_project(search_key[search_key.find(prj_tag) + len(prj_tag)
                                       :search_key.find('&')])
+    print "================PROJECT: %s" %server.get_project()
 
 def checkout(snapshot, r = False, with_texture = True):
     '''
