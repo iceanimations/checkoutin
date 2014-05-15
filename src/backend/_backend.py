@@ -42,7 +42,7 @@ def checkout(snapshot, r = False, with_texture = True):
                                     snap['project_code']))
         set_project(project = snap['project_code'])
         print snap['version']
-        util.pretty_print(snap)
+        # util.pretty_print(snap)
         # file_type = server.get_by_search_key(
         #     server.query('sthpw/file',
         #                  filters = [('snapshot_code', snap['code']),
@@ -77,7 +77,7 @@ def checkout(snapshot, r = False, with_texture = True):
                                                         + req_context)
                             and snap['version'] == -1)]
                 
-                util.pretty_print(snaps)
+                # util.pretty_print(snaps)
                 
                 if snaps:
                     snap = snaps[0]
@@ -89,7 +89,7 @@ def checkout(snapshot, r = False, with_texture = True):
                                            to_sandbox_dir = True,
                                            mode = 'copy',
                                            file_type = '*')
-                util.pretty_print(tex_path)
+                # util.pretty_print(tex_path)
                 tex_mapping = {}
                 tex_path_base = map(op.basename, tex_path)
                 for ftn in mi.textureFiles(False, key = op.exists):
@@ -206,7 +206,7 @@ def checkin(sobject, context, process = None,
     '''
 
     server = user.get_server()
-    set_project(search_key = sobj)
+    set_project(search_key = sobject)
     tmpfile = op.normpath(iutil.getTemp(prefix = dt.now().
                                         strftime("%Y-%M-%d %H-%M-%S")
                                     )).replace("\\", "/")
@@ -246,7 +246,7 @@ def checkin(sobject, context, process = None,
     
     if shaded:
         
-        map(util.pretty_print, [central_to_ftn, ftn_to_central])
+        # map(util.pretty_print, [central_to_ftn, ftn_to_central])
         map_textures(central_to_ftn)
     
     search_key = snapshot['__search_key__']
@@ -293,7 +293,7 @@ def checkin_texture(search_key, context):
     set_project(search_key = search_key)
     
     texture_children = server.get_all_children(sobject, TEXTURE_TYPE)
-    util.pretty_print(texture_children)
+    # util.pretty_print(texture_children)
     
     
     if texture_children:
@@ -325,9 +325,9 @@ def checkin_texture(search_key, context):
                                              file_type = 'image')
                             ['client_lib_paths'][0])
     
-    util.pretty_print(server.get_paths(texture_child, context,
-                             versionless = True,
-                             file_type = 'image'))
+    # util.pretty_print(server.get_paths(texture_child, context,
+    #                          versionless = True,
+    #                          file_type = 'image'))
     
     for ftn in set(mi.textureFiles(selection = False, key = op.exists)):
 
