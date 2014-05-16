@@ -69,10 +69,13 @@ class AssetsExplorer(cui.Explorer):
         for asset in assets:
             item = self.createItem('%s (%s)' %(asset['name'], asset['code']),
                                    asset['asset_category'],
-                                   '', asset['description'] if asset['description'] else '')
+                                   '', asset['description']
+                                   if asset['description'] else '')
             item.setObjectName(asset['__search_key__'])
             self.assetsBox.addItem(item)
-        map(lambda widget: self.bindClickEvent(widget, self.showContextsProcesses), self.assetsBox.items())
+        map(lambda widget: self.bindClickEvent(widget,
+                                               self.showContextsProcesses),
+            self.assetsBox.items())
         
     def showContextsProcesses(self, asset):
         # highlight the selected widget
@@ -91,7 +94,9 @@ class AssetsExplorer(cui.Explorer):
                                        '', '', '')
                 item.setObjectName(pro +'>'+ contx)
                 self.contextsBox.addItem(item)
-        map(lambda widget: self.bindClickEventForFiles(widget, self.showFiles, self.snapshots), self.contextsBox.items())
+        map(lambda widget: self.bindClickEventForFiles(widget, self.showFiles,
+                                                       self.snapshots),
+            self.contextsBox.items())
         
         # handle child windows
         if self.checkinputDialog:
@@ -100,7 +105,8 @@ class AssetsExplorer(cui.Explorer):
         
     def contextsProcesses(self):
         contexts = {}
-        self.snapshots = util.get_snapshot_from_sobject(str(self.currentAsset.objectName()))
+        self.snapshots = util.get_snapshot_from_sobject(str(
+            self.currentAsset.objectName()))
         
         for snap in self.snapshots:
             if contexts.has_key(snap['process']):
@@ -141,7 +147,8 @@ class AssetsExplorer(cui.Explorer):
         if self.currentAsset:
             sobj = str(self.currentAsset.objectName())
             pro = self.currentContext.title().split('/')[0]
-            backend.checkin(sobj, context, process = pro, description = detail, file = filePath)
+            backend.checkin(sobj, context, process = pro, description = detail,
+                            file = filePath)
             
             # redisplay the contextsBox/filesBox
             currentContext = self.currentContext
@@ -173,10 +180,15 @@ class AssetsExplorer(cui.Explorer):
         if assetsLen1 != assetsLen2:
             self.updateAssetsBox(assetsLen1, assetsLen2, newAssets)
         if self.currentAsset and self.contextsBox:
-            if len(self.contextsBox.items()) != self.contextsLen(self.contextsProcesses()):
+            if (len(self.contextsBox.items()) !=
+                self.contextsLen(self.contextsProcesses())):
                 self.updatecontextsBox()
             if self.currentContext and self.filesBox:
-                if len(self.filesBox.items()) != len([snap for snap in self.snapshots if snap['process'] == self.currentContext.title().split('/')[0]]):
+                if len(self.filesBox.items()) != len(
+                        [snap
+                         for snap in self.snapshots
+                         if snap['process'] ==
+                         self.currentContext.title().split('/')[0]]):
                     self.showFiles(self.currentContext, self.snapshots)
                     
     

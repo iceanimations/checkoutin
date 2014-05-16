@@ -37,19 +37,26 @@ class Dialog(Form, Base):
         if not self.parent.currentContext:
             pc.warning('Select a Context...')
             return
-        pro = self.parent.currentContext.title().split('/')[0]
+        pro = self.parent.currentContext.title()
         if name == pro:
             self.warningLabel.setText('Context name matches the Process name')
             self.okButton.setEnabled(False)
-        elif name in ['/'.join(ctx.title().split('/')[1:]) if len(ctx.title().split('/')) > 1 else '-' for ctx in self.parent.contextsBox.items() if ctx.title().split('/')[0] == pro]:
+        elif name in ['/'.join(ctx.title().split('/')[1:])
+                      if len(ctx.title().split('/')) > 1
+                      else '-' for ctx in self.parent.contextsBox.items()
+                      if ctx.title().split('/')[0] == pro]:
             self.warningLabel.setText('Context name already exists')
             self.okButton.setEnabled(False)
-        else: self.okButton.setEnabled(True); self.warningLabel.setText('')
+        else:
+            self.okButton.setEnabled(True)
+            self.warningLabel.setText('')
+            
         self.setContext(pro +'/'+ name)
         
     def handleNewContextButtonClick(self):
         if self.newContextButton.isChecked():
-            self.setContext(self.parent.currentContext.title().split('/')[0] +'/'+ str(self.newContextBox.text()))
+            self.setContext(self.parent.currentContext.title() +
+                            '/' + str(self.newContextBox.text()))
         else:
             self.setContext(self.parent.currentContext.title())
             self.newContextBox.clear()
@@ -61,18 +68,21 @@ class Dialog(Form, Base):
         self.contextLabel.setText(context)
         
     def setValidator(self):
+        # should we provide the privelege to add '/' in the subcontext
+        # in order to add further subcontext, to certain users
         regex = QRegExp('[1-9a-z_]*')
         validator = QRegExpValidator(regex, self)
         self.newContextBox.setValidator(validator)
             
     def showFileDialog(self):
-        fileName = str(QFileDialog.getOpenFileName(self, 'Select File', '', '*.mb *.ma'))
-        if fileName:
-            self.pathBox.setText(fileName)
+        fl = QFileDialog.getOpenFileName(self, 'Select File', '',
+                                                   '*.mb *.ma')
+        if fl[0]:
+            self.pathBox.setText(fl[0])
         
     def ok(self):
         description = str(self.descriptionBox.toPlainText())
-        path = str(self.pathBox.text())
+        path = str(self.pathBox.text().strip('"\' '))
         if path:
             if osp.exists(path):
                 if not osp.isfile(path):
@@ -84,7 +94,7 @@ class Dialog(Form, Base):
         context = None
         if self.parent.currentContext:
             if self.newContextButton.isChecked():
-                context = str(self.newContextBox.text())
+                context = str('/'.join(self.contextLabel.text().split('/')[1:]))
             else:
                 split = self.parent.currentContext.title().split('/')
                 context = split[0] if len(split) == 1 else '/'.join(split[1:])

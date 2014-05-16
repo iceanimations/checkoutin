@@ -94,10 +94,16 @@ def checkout(snapshot, r = False, with_texture = True):
                 tex_path_base = map(op.basename, tex_path)
                 for ftn in mi.textureFiles(False, key = op.exists):
                     
-                    tex_mapping[ftn] = tex_path[
-                        tex_path_base.index(op.basename(ftn))]
+                    try:
+                        # this is proven to raise error in certain situations
+                        # therfore skip it the given iteration
+                        tex_mapping[ftn] = tex_path[
+                            tex_path_base.index(op.basename(ftn))]
+                    except Exception as e:
+                        print e
+                        print ftn
 
-                map_textures(tex_mapping)
+                    map_textures(tex_mapping)
                 pc.mel.eval('file -save')
                     
             return paths[0]
@@ -218,7 +224,7 @@ def checkin(sobject, context, process = None,
     shaded = context.startswith('shaded')
     print context
     print shaded
-    if shaded:
+    if shaded and not file:
         print context
         ftn_to_central = checkin_texture(sobject, context)
         central_to_ftn = map_textures(ftn_to_central)
@@ -226,10 +232,11 @@ def checkin(sobject, context, process = None,
 
     snapshot = server.create_snapshot(sobject, context)
 
-    tactic = get_tactic_file_info()
+    if not file:
+        tactic = get_tactic_file_info()
 
-    tactic['whoami'] = snapshot['__search_key__']
-    set_tactic_file_info(tactic)
+        tactic['whoami'] = snapshot['__search_key__']
+        set_tactic_file_info(tactic)
     
     save_path = (m.save(tmpfile, file_type = "mayaBinary"
                         if pc.sceneName().endswith(".mb")
@@ -244,7 +251,7 @@ def checkin(sobject, context, process = None,
     server.add_file(snap_code, save_path, file_type = 'maya',
                       mode = 'copy', create_icon = False)
     
-    if shaded:
+    if shaded and not file:
         
         # map(util.pretty_print, [central_to_ftn, ftn_to_central])
         map_textures(central_to_ftn)
