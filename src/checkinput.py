@@ -82,7 +82,7 @@ class Dialog(Form, Base):
         
     def ok(self):
         description = str(self.descriptionBox.toPlainText())
-        path = str(self.pathBox.text().strip('"\' '))
+        path = str(self.pathBox.text()).strip('"\' ')
         if path:
             if osp.exists(path):
                 if not osp.isfile(path):
