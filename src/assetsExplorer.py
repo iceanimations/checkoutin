@@ -18,6 +18,7 @@ iconPath = osp.join(rootPath, 'icons')
 class AssetsExplorer(cui.Explorer):
 
     def __init__(self, parent=qtfy.getMayaWindow()):
+        
         super(AssetsExplorer, self).__init__(parent)
         self.setWindowTitle("AssetsExplorer")
         
@@ -41,7 +42,7 @@ class AssetsExplorer(cui.Explorer):
         appUsageApp.updateDatabase('AssetsExplorer')
         
         # testing ....................................................
-        #util.pretty_print(util.get_all_users())
+        # util.pretty_print(util.get_all_users())
         
     def setProjectsBox(self):
         for project in util.get_all_projects():
@@ -116,8 +117,13 @@ class AssetsExplorer(cui.Explorer):
                 
         if 'model' not in contexts:
             contexts['model'] = set(['model'])
+            
         if 'rig' not in contexts:
             contexts['rig'] = set(['rig'])
+            
+        if 'shaded' not in contexts:
+            contexts['shaded'] = set(['shaded'])
+            
         return contexts
     
     def clearContextsProcesses(self):
@@ -176,7 +182,8 @@ class AssetsExplorer(cui.Explorer):
         if proj == '--Select Project--':
             return
         newAssets = util.all_assets(self.projects[proj])
-        assetsLen1 = len(newAssets); assetsLen2 = len(self.assetsBox.items())
+        assetsLen1 = len(newAssets)
+        assetsLen2 = len(self.assetsBox.items())
         if assetsLen1 != assetsLen2:
             self.updateAssetsBox(assetsLen1, assetsLen2, newAssets)
         if self.currentAsset and self.contextsBox:
@@ -191,7 +198,6 @@ class AssetsExplorer(cui.Explorer):
                          self.currentContext.title().split('/')[0]]):
                     self.showFiles(self.currentContext, self.snapshots)
                     
-    
     def updateAssetsBox(self, l1, l2, assets):
         if l1 > l2:
             newAssets = []

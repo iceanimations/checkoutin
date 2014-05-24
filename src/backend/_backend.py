@@ -10,22 +10,11 @@ import os
 import os.path as op
 import json
 import shutil
+import auth.security as security
 
 dt = datetime.datetime
 m = maya.Maya()
 TEXTURE_TYPE = 'vfx/texture'
-
-def set_project(project = None, search_key = None):
-    print project, search_key
-    server = user.get_server()
-    
-    if project:
-        server.set_project(project)
-    elif search_key:
-        prj_tag = 'project='
-        server.set_project(search_key[search_key.find(prj_tag) + len(prj_tag)
-                                      :search_key.find('&')])
-    print "================PROJECT: %s" %server.get_project()
 
 def checkout(snapshot, r = False, with_texture = True):
     '''
@@ -40,7 +29,7 @@ def checkout(snapshot, r = False, with_texture = True):
             server.build_search_key(snap['search_type'],
                                     snap['search_code'],
                                     snap['project_code']))
-        set_project(project = snap['project_code'])
+        util.set_project(project = snap['project_code'])
         print snap['version']
         # util.pretty_print(snap)
         # file_type = server.get_by_search_key(
@@ -205,6 +194,7 @@ def _reference(snapshot):
 def checkin(sobject, context, process = None,
             version=-1, description = 'No description',
             file = None):
+    
     '''
     @sobject: search_key of sobject to which the checkin belongs
     @context: context of the sobject
@@ -212,13 +202,15 @@ def checkin(sobject, context, process = None,
     '''
 
     server = user.get_server()
-    set_project(search_key = sobject)
+    if not security.checkinability(sobject):
+        raise Exception('Permission denied. You do not have permission to'+
+                        ' save here.')
+    util.set_project(search_key = sobject)
     tmpfile = op.normpath(iutil.getTemp(prefix = dt.now().
                                         strftime("%Y-%M-%d %H-%M-%S")
                                     )).replace("\\", "/")
     
     if process and process != context:
-        
         context = '/'.join([process, context])
 
     shaded = context.startswith('shaded')
@@ -234,10 +226,9 @@ def checkin(sobject, context, process = None,
 
     if not file:
         tactic = get_tactic_file_info()
-
         tactic['whoami'] = snapshot['__search_key__']
         set_tactic_file_info(tactic)
-    
+    orig_path = pc.sceneName()
     save_path = (m.save(tmpfile, file_type = "mayaBinary"
                         if pc.sceneName().endswith(".mb")
                         else "mayaAscii")
@@ -245,12 +236,9 @@ def checkin(sobject, context, process = None,
     
     print tmpfile if not file else file
     print sobject, context
-
-
     snap_code = server.split_search_key(snapshot['__search_key__'])[1]
     server.add_file(snap_code, save_path, file_type = 'maya',
                       mode = 'copy', create_icon = False)
-    
     if shaded and not file:
         
         # map(util.pretty_print, [central_to_ftn, ftn_to_central])
@@ -259,7 +247,7 @@ def checkin(sobject, context, process = None,
     search_key = snapshot['__search_key__']
     if process:
         server.update(search_key, data = {'process': process})
-
+    pc.openFile(orig_path, f = True)
     return True
             
 def asset_textures(search_key):
@@ -277,6 +265,11 @@ def asset_textures(search_key):
     return [op.join(directory, basename) for basename in os.listdir(directory)]
 
 def checkin_texture(search_key, context):
+
+    if not security.checkinability(search_key):
+        raise Exception('Permission denied. You do not have permission to'+
+                        ' save here.')
+
     print context
     context = '/'.join(['texture'] + context.split('/')[1:])
     print context
@@ -297,7 +290,7 @@ def checkin_texture(search_key, context):
         present_to_norm[tex] = op.normpath(iutil.lower(tex))
     
     # set the project
-    set_project(search_key = search_key)
+    util.set_project(search_key = search_key)
     
     texture_children = server.get_all_children(sobject, TEXTURE_TYPE)
     # util.pretty_print(texture_children)
