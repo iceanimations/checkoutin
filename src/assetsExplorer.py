@@ -124,6 +124,8 @@ class AssetsExplorer(cui.Explorer):
             contexts['model'] = set(['model'])
         if 'rig' not in contexts:
             contexts['rig'] = set(['rig'])
+        if 'shaded' not in contexts:
+            contexts['shaded'] = set(['shaded'])
         return contexts
     
     def clearContextsProcesses(self):
