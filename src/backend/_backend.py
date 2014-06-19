@@ -48,9 +48,9 @@ def checkout(snapshot, r = False, with_texture = True):
                                     file_type = '*')
 
             pc.openFile(paths[0], force = True)
-            tactic = get_tactic_file_info()
+            tactic = util.get_tactic_file_info()
             tactic['whoami'] = snapshot
-            set_tactic_file_info(tactic)
+            util.set_tactic_file_info(tactic)
             # checkout texture
             tex = server.get_all_children(sobj['__search_key__'], TEXTURE_TYPE)
             print tex
@@ -98,31 +98,10 @@ def checkout(snapshot, r = False, with_texture = True):
             return paths[0]
 
         else:
-            
             return _reference(snap)
 
-def get_tactic_file_info():
-
-    tactic_raw = mi.FileInfo.get('TACTIC')
-
-    if tactic_raw:
-        tactic = json.loads(tactic_raw)
-    else:
-        tactic = {}
-
-    tactic['__ver__'] = "0.1"
-
-    return tactic
-
-def set_tactic_file_info(tactic):
-    '''
-    @tactic: dict
-    '''
-
-    return mi.FileInfo.save('TACTIC', json.dumps(tactic))
-
 def _reference(snapshot):
-
+    print util.pretty_print(snapshot)
     server = user.get_server()
     filename = util.filename_from_snap(snapshot, mode = 'client_repo')
     try:
@@ -130,7 +109,7 @@ def _reference(snapshot):
     except:
         pass
     
-    tactic = get_tactic_file_info()
+    tactic = util.get_tactic_file_info()
     
     assets = tactic.get('assets', [])
     # just to ensure the 'assets' key is part of the dictionary
@@ -178,17 +157,11 @@ def _reference(snapshot):
     #  "login": "foo.bar", 
     #  "revision": 0
     # }
-    map(snapshot.pop, ['is_synced', 'code', 's_status', 'id',
-                       'column_name', 'label','is_latest',
-                       'level_id', 'lock_login', 'lock_date',
-                       'version', '__search_key__', 'level_type',
-                       'search_id', 'metadata', 'status',
-                       'description', 'timestamp', 'repo',
-                       'is_current', 'snapshot_type', 'server',
-                       'snapshot', 'login', 'revision'])
-            
+    map(snapshot.pop, ['is_synced', 's_status', 
+                       'server', 'login'])
+
     assets.append(snapshot)
-    set_tactic_file_info(tactic)
+    util.set_tactic_file_info(tactic)
     return True
         
 def checkin(sobject, context, process = None,
@@ -200,12 +173,15 @@ def checkin(sobject, context, process = None,
     @context: context of the sobject
     @version: version number of the snapshot (functionality not implemented)
     '''
-
+    
     server = user.get_server()
-    if not security.checkinability(sobject):
+    if not security.checkinability(sobject, process, context):
         raise Exception('Permission denied. You do not have permission to'+
                         ' save here.')
     util.set_project(search_key = sobject)
+
+    if 
+    
     tmpfile = op.normpath(iutil.getTemp(prefix = dt.now().
                                         strftime("%Y-%M-%d %H-%M-%S")
                                     )).replace("\\", "/")
@@ -220,14 +196,14 @@ def checkin(sobject, context, process = None,
         print context
         ftn_to_central = checkin_texture(sobject, context)
         central_to_ftn = map_textures(ftn_to_central)
-
-
+    
+        
     snapshot = server.create_snapshot(sobject, context)
-
+    
     if not file:
-        tactic = get_tactic_file_info()
+        tactic = util.get_tactic_file_info()
         tactic['whoami'] = snapshot['__search_key__']
-        set_tactic_file_info(tactic)
+        util.set_tactic_file_info(tactic)
     orig_path = pc.sceneName()
     save_path = (m.save(tmpfile, file_type = "mayaBinary"
                         if pc.sceneName().endswith(".mb")
@@ -236,7 +212,7 @@ def checkin(sobject, context, process = None,
     
     print tmpfile if not file else file
     print sobject, context
-    snap_code = server.split_search_key(snapshot['__search_key__'])[1]
+    snap_code = snapshot.get('code')
     server.add_file(snap_code, save_path, file_type = 'maya',
                       mode = 'copy', create_icon = False)
     if shaded and not file:
@@ -264,6 +240,12 @@ def asset_textures(search_key):
     
     return [op.join(directory, basename) for basename in os.listdir(directory)]
 
+def make_temp_dir():
+    return op.normpath(iutil.getTemp(prefix = dt.now().
+                                       strftime("%Y-%M-%d %H-%M-%S"),
+                                       mkd = True
+                                   )).replace("\\", "/")
+
 def checkin_texture(search_key, context):
 
     if not security.checkinability(search_key):
@@ -275,10 +257,7 @@ def checkin_texture(search_key, context):
     print context
     server = util.get_server()
     sobject = search_key
-    tmpdir = op.normpath(iutil.getTemp(prefix = dt.now().
-                                       strftime("%Y-%M-%d %H-%M-%S"),
-                                       mkd = True
-                                   )).replace("\\", "/")
+    tmpdir = make_temp_dir()
     
     # texture location mapping in temp
     # normalized and lowercased -> temppath
@@ -313,7 +292,7 @@ def checkin_texture(search_key, context):
     
     server.add_file(server.split_search_key(texture_snap['__search_key__'])[1],
                                       
-                    # bug in expects '/' path separator
+                    # bug in TACTIC expects '/' path separator
                     [op.join(tmpdir, name).replace('\\', '/') 
                      for name in os.listdir(tmpdir)],
                     
@@ -373,7 +352,103 @@ def collect_textures(dest):
         copy_to = op.join(dest, filename)
         shutil.copy(fl, copy_to)
         mapping[fl] = copy_to
-    
+        
     return mapping
 
+def checkin_cache(shot, objs, camera = None):
+    
+    '''
+    :shot: shot search key
+    :objs: objects or sets whose cache is to be generated
+    :camera: the camera using which the playblast is to be generated
+    '''
+    
+    server = user.get_server()
+    shot_sobj = server.get_by_search_key(shot)
+    # camera = get_shot_camera()  # tentative will mostly be supplied by from the interface
+    start_frame = shot_sobj.get('tc_frame_start') # stored in TACTIC
+    end_frame = shot_sobj.get('tc_frame_end')
+    context = 'cache'
+    
+
+    if camera:
+        # check if camera in and out respects shot_frame_range
+        # switch camera
+        playblast = mi.playblast(*args)
+        
+    else:
+        playblast = None    
+
+
+    tmpdir = make_temp_dir()
+    ref_path = util.get_references()
+    
+    version = [int(snap.get('version'))
+               for snap in util.get_snapshot_from_sobject(shot)
+               if snap.get('context') == context]
+    
+    version = (max(version) if version else 0) + 1
+    
+    t_info = util.get_tactic_file_info()
+    codes = [snap.get('search_code') for snap in t_info.get('assets')]
+    
+    naming = []
+
+    # filename template to for cache files 'code_objname_[version_]_cache
+    filename = (# shot_sobj.get('code') +
+        '{obj}' + '{inst}'
+        + '_v' +
+        str(version).zfill(3))
+
+    obj_ref = {}
+    path_snap = {}
+    code_naming = {}
+    for snap in t_info.get('assets'):
+        path_snap[op.normpath(util.get_filename_from_snap(snap, 'client_repo')).
+                  lower()] = snap
+    util.pretty_print(path_snap)
+    for obj in objs:
+        obj_ref[obj] = pc.PyNode(obj).referenceFile()
+        # print '='*2**10
+        # print '='*2**10
+        if not (util.cacheable(obj) and
+                server.query('vfx/asset_in_shot', filters = [
+                    ('shot_code', shot_sobj.get('code')),
+                    ('asset_code',
+                     path_snap[op.normpath(obj_ref[obj].path).
+                               lower()].get('search_code'))])):
+            
+            raise Exception('The object wasn\'t referenced via TACTIC')
+
+        obj = path_snap[op.normpath(obj_ref[obj].path).
+                        lower()].get('search_code')
+        
+        i = 0
+        while True:
+            
+            name = filename.format(obj = obj, inst = ''
+                                   if not i
+                                   else '_%s' %str(i).zfill(2))
+            if name in naming:
+                i += 1
+                
+            else:
+                
+                naming.append(name)
+                break
+    caches = mi.make_cache(objs, start_frame, end_frame, tmpdir, naming)
+    snapshot = server.create_snapshot(shot, context)
+    snap_code = snapshot.get('code')
+    util.pretty_print(caches)
+    for cache in xrange(0, len(caches), 2):
+        
+        server.add_file(snap_code, caches[cache:cache + 2],
+                        file_type = ['cache_xml', 'cache_mc'] , mode = 'copy',
+                        create_icon = False)
+        # get snapshot of ref'ed node whose cache this is
+        snap = path_snap[op.normpath(obj_ref[objs[cache/2]].path).lower()]
+        server.add_dependency(snap_code, server.get_path_from_snapshot(
+            util.get_search_key_code(snap['__search_key__'])))
+        
+    
 # server.get_paths(server.get_all_children(u'vfx/asset?project=vfx&code=prop002', 'vfx/texture')[0]['__search_key__'])
