@@ -100,6 +100,9 @@ def checkout(snapshot, r = False, with_texture = True):
         else:
             return _reference(snap)
 
+# check the set and obj check cache checkin simultaneously
+
+        
 def _reference(snapshot):
     print util.pretty_print(snapshot)
     server = user.get_server()
@@ -166,7 +169,7 @@ def _reference(snapshot):
         
 def checkin(sobject, context, process = None,
             version=-1, description = 'No description',
-            file = None):
+            file = None, geos = [], camera = None):
     
     '''
     @sobject: search_key of sobject to which the checkin belongs
@@ -180,7 +183,9 @@ def checkin(sobject, context, process = None,
                         ' save here.')
     util.set_project(search_key = sobject)
 
-    if 
+    if 'vfx/shot' in sobject:
+        if context.startswith('cache'):
+            checkin_cache(sobject, geos, camera)
     
     tmpfile = op.normpath(iutil.getTemp(prefix = dt.now().
                                         strftime("%Y-%M-%d %H-%M-%S")
@@ -223,12 +228,15 @@ def checkin(sobject, context, process = None,
     search_key = snapshot['__search_key__']
     if process:
         server.update(search_key, data = {'process': process})
-    pc.openFile(orig_path, f = True)
+    try:
+        pc.openFile(orig_path, f = True)
+    except:
+        pass
     return True
             
 def asset_textures(search_key):
+    
     '''
-
     @search_key: sobject's (vfx/asset) unique search_key
     @return: list of all files that the texture associated with `search_key'
     cotains
@@ -262,6 +270,11 @@ def checkin_texture(search_key, context):
     # texture location mapping in temp
     # normalized and lowercased -> temppath
     norm_to_temp = tex_location_map = collect_textures(tmpdir)
+
+    # if no reachable texture exists no need to go return dict
+    if not norm_to_temp:
+        return dict()
+    
     
     # present -> normalized
     present_to_norm = {}
@@ -290,7 +303,7 @@ def checkin_texture(search_key, context):
     texture_snap = server.create_snapshot(texture_child['__search_key__'],
                                           context)
     
-    server.add_file(server.split_search_key(texture_snap['__search_key__'])[1],
+    server.add_file(util.get_search_key_code(texture_snap['__search_key__']),
                                       
                     # bug in TACTIC expects '/' path separator
                     [op.join(tmpdir, name).replace('\\', '/') 
@@ -411,14 +424,30 @@ def checkin_cache(shot, objs, camera = None):
         obj_ref[obj] = pc.PyNode(obj).referenceFile()
         # print '='*2**10
         # print '='*2**10
+        # util.pretty_print(server.query('vfx/asset_in_shot', filters = [
+        #             ('shot_code', shot_sobj.get('code')),
+        #             ('asset_code',
+        #              path_snap[op.normpath(obj_ref[obj].path).
+        #                        lower()].get('search_code'))]))
+        # print repr(objs)
+        # print repr(obj_ref.values())
+        # print len(objs) == len(set(obj_ref.values()))
+        # print repr(obj_ref)
+        # print len(objs) == len(obj_ref)
+        # print util.cacheable(obj)
+        
+        # print '='*2**10
         if not (util.cacheable(obj) and
                 server.query('vfx/asset_in_shot', filters = [
                     ('shot_code', shot_sobj.get('code')),
                     ('asset_code',
                      path_snap[op.normpath(obj_ref[obj].path).
-                               lower()].get('search_code'))])):
+                               lower()].get('search_code'))]) 
+        ):
             
             raise Exception('The object wasn\'t referenced via TACTIC')
+
+ 
 
         obj = path_snap[op.normpath(obj_ref[obj].path).
                         lower()].get('search_code')
@@ -436,6 +465,12 @@ def checkin_cache(shot, objs, camera = None):
                 
                 naming.append(name)
                 break
+    if not (# to avoid repeated objs
+            len(objs) == len(obj_ref) and
+            # to avoid more than one objs belonging to particular ref node
+            len(objs) == len(set(obj_ref.values()))):
+
+        raise Exception
     caches = mi.make_cache(objs, start_frame, end_frame, tmpdir, naming)
     snapshot = server.create_snapshot(shot, context)
     snap_code = snapshot.get('code')
@@ -447,8 +482,10 @@ def checkin_cache(shot, objs, camera = None):
                         create_icon = False)
         # get snapshot of ref'ed node whose cache this is
         snap = path_snap[op.normpath(obj_ref[objs[cache/2]].path).lower()]
-        server.add_dependency(snap_code, server.get_path_from_snapshot(
-            util.get_search_key_code(snap['__search_key__'])))
+        server.add_dependency(snap_code,
+                              util.get_search_key_code(
+                                  snap['__search_key__']),
+                              type = 'input_ref')
         
     
 # server.get_paths(server.get_all_children(u'vfx/asset?project=vfx&code=prop002', 'vfx/texture')[0]['__search_key__'])
