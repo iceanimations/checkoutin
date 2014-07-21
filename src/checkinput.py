@@ -82,10 +82,17 @@ class Dialog(Form, Base):
         self.newContextBox.setValidator(validator)
             
     def showFileDialog(self):
-        fl = QFileDialog.getOpenFileName(self, 'Select File', '',
-                                                   '*.mb *.ma')
-        if fl[0]:
-            self.pathBox.setText(fl[0])
+        version = None
+        try:
+            import pymel.core as pc
+            import re
+            version = int(re.search('\d{4}', pc.about(v=True)).group())
+        except ImportError:
+            pass
+        fileName = QFileDialog.getOpenFileName(self, 'Select File', '', '*.mb *.ma')
+        if version and version > 2013:
+            fileName = fileName[0]
+        fileName = str(fileName)
         
     def ok(self):
         description = str(self.descriptionBox.toPlainText())
@@ -132,3 +139,6 @@ class Dialog(Form, Base):
         self.parent.saveButton.setEnabled(True)
         self.parent.checkinputDialog = None
         self.deleteLater()
+
+
+
