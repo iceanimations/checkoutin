@@ -92,7 +92,7 @@ def checkout(snapshot, r = False, with_texture = True):
                         print e
                         print ftn
 
-                    map_textures(tex_mapping)
+                map_textures(tex_mapping)
                 pc.mel.eval('file -save')
 
             return paths[0]
