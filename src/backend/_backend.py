@@ -246,6 +246,34 @@ def asset_textures(search_key):
 
     return [op.join(directory, basename) for basename in os.listdir(directory)]
 
+def checkin_preview(search_key):
+    '''
+    checkin the preview for snapshots belonging to stype 'vfx/[asset|shot]
+    :search_key: the search key of the snapshot whose preview is to be
+        checked in
+    '''
+
+    stypes = ['vfx/asset', 'vfx/shot']
+
+    # check if the snapshot belongs to the allowed stype
+    if not any([search_key.startswith(stype)
+                for stype in stypes]):
+
+        return None
+
+    server = user.get_server()
+
+    snapshot = server.get_by_search_key(search_key)
+
+    context = snapshot['context']
+
+    version = snapshot['version']
+
+    sobject_code = util.get_search_key_code(
+        util.get_sobject_from_snap(snapshot))
+
+    # build the file name
+
 def make_temp_dir():
     return op.normpath(iutil.getTemp(prefix = dt.now().
                                        strftime("%Y-%M-%d %H-%M-%S"),
