@@ -250,7 +250,7 @@ def asset_textures(search_key):
 
     return [op.join(directory, basename) for basename in os.listdir(directory)]
 
-def checkin_preview(search_key, file_type):
+def checkin_preview(search_key, path, file_type):
     '''
     checkin the preview for snapshots belonging to stype 'vfx/[asset|shot]
     :search_key: the search key of the snapshot whose preview is to be
@@ -276,7 +276,25 @@ def checkin_preview(search_key, file_type):
     sobject_code = util.get_search_key_code(
         util.get_sobject_from_snap(snapshot))
 
-    # build the file name
+    # use the function add_file to added the preview file to the snapshot whose search_key is passed in
+    # seems like maintaining separate subcontext for preview would be more suitable since that way a specific
+    # filenaming convention wouldn't have to constructed for the preview that'll reside next to main snapshot
+
+    # file_type of the snapshot will be "preview"
+    file_type = 'preview'
+
+
+
+    ## build the file name
+
+    # name of file currently in the snapshot
+    main = _s.get_path_from_snapshot(search_key, file_type = file_type)
+
+    a_ext, ext = op.splitext(op.basename(main))
+    snap = _s.add_file(search_key, path, file_type = 'preview', mode = 'copy',
+                file_naming = a_ext + '_preview' + ext)
+    print snap
+    return snap
 
 def make_temp_dir():
 
