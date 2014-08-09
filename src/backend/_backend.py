@@ -47,7 +47,11 @@ def checkout(snapshot, r = False, with_texture = True):
                                     version = snap['version'],
                                     file_type = '*')
 
+            # this has the potential of failing in case of multiple files
+            # and the first file returns a non-Maya file
             pc.openFile(paths[0], force = True)
+
+            # get the tactic file for identification
             tactic = util.get_tactic_file_info()
             tactic['whoami'] = snapshot
             util.set_tactic_file_info(tactic)
@@ -246,7 +250,7 @@ def asset_textures(search_key):
 
     return [op.join(directory, basename) for basename in os.listdir(directory)]
 
-def checkin_preview(search_key):
+def checkin_preview(search_key, file_type):
     '''
     checkin the preview for snapshots belonging to stype 'vfx/[asset|shot]
     :search_key: the search key of the snapshot whose preview is to be
@@ -275,6 +279,7 @@ def checkin_preview(search_key):
     # build the file name
 
 def make_temp_dir():
+
     return op.normpath(iutil.getTemp(prefix = dt.now().
                                        strftime("%Y-%M-%d %H-%M-%S"),
                                        mkd = True
@@ -283,6 +288,7 @@ def make_temp_dir():
 def checkin_texture(search_key, context):
 
     if not security.checkinability(search_key):
+
         raise Exception('Permission denied. You do not have permission to'+
                         ' save here.')
 
