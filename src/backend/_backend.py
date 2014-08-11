@@ -250,24 +250,24 @@ def asset_textures(search_key):
 
     return [op.join(directory, basename) for basename in os.listdir(directory)]
 
-def checkin_preview(search_key, path, file_type):
+def checkin_preview(search_key, path, file_type = None):
     '''
     checkin the preview for snapshots belonging to stype 'vfx/[asset|shot]
     :search_key: the search key of the snapshot whose preview is to be
         checked in
     '''
-
+    _s = user.get_server()
     stypes = ['vfx/asset', 'vfx/shot']
-
-    # check if the snapshot belongs to the allowed stype
-    if not any([search_key.startswith(stype)
-                for stype in stypes]):
-
-        return None
 
     server = user.get_server()
 
     snapshot = server.get_by_search_key(search_key)
+
+
+    # check if the snapshot belongs to the allowed stype
+    if not any([snapshot['search_type'].startswith(stype)
+                for stype in stypes]):
+        return None
 
     context = snapshot['context']
 
@@ -281,19 +281,21 @@ def checkin_preview(search_key, path, file_type):
     # filenaming convention wouldn't have to constructed for the preview that'll reside next to main snapshot
 
     # file_type of the snapshot will be "preview"
-    file_type = 'preview'
+    ft_preview = 'preview'
 
 
 
     ## build the file name
 
     # name of file currently in the snapshot
-    main = _s.get_path_from_snapshot(search_key, file_type = file_type)
+    main = _s.get_path_from_snapshot(snapshot['code'], file_type = file_type)
 
     a_ext, ext = op.splitext(op.basename(main))
-    snap = _s.add_file(search_key, path, file_type = 'preview', mode = 'copy',
+
+    # assign the extension of the image to ext
+    ext, ext = op.splitext(path)
+    snap = _s.add_file(snapshot['code'], path, file_type = ft_preview, mode = 'copy',
                 file_naming = a_ext + '_preview' + ext)
-    print snap
     return snap
 
 def make_temp_dir():
@@ -521,6 +523,7 @@ def checkin_cache(shot, objs, camera = None):
         server.add_file(snap_code, caches[cache:cache + 2],
                         file_type = ['cache_xml', 'cache_mc'] , mode = 'copy',
                         create_icon = False)
+
         # get snapshot of ref'ed node whose cache this is
         snap = path_snap[op.normpath(obj_ref[objs[cache/2]].path).lower()]
         server.add_dependency(snap_code,
