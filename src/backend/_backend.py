@@ -171,7 +171,7 @@ def _reference(snapshot):
 
 def checkin(sobject, context, process = None,
             version=-1, description = 'No description',
-            file = None, geos = [], camera = None):
+            file = None, geos = [], camera = None, preview = None):
 
     '''
     @sobject: search_key of sobject to which the checkin belongs
@@ -228,8 +228,14 @@ def checkin(sobject, context, process = None,
         map_textures(central_to_ftn)
 
     search_key = snapshot['__search_key__']
+
     if process:
         server.update(search_key, data = {'process': process})
+
+    if (any([key in sobject for key in ['vfx/shot', 'vfx/asset']])
+        and preview and op.exist(preview)):
+        checkin_preview(sobject, preview, 'maya')
+
     try:
         pc.openFile(orig_path, f = True)
     except:
@@ -276,14 +282,18 @@ def checkin_preview(search_key, path, file_type = None):
     sobject_code = util.get_search_key_code(
         util.get_sobject_from_snap(snapshot))
 
-    # use the function add_file to added the preview file to the snapshot whose search_key is passed in
-    # seems like maintaining separate subcontext for preview would be more suitable since that way a specific
-    # filenaming convention wouldn't have to constructed for the preview that'll reside next to main snapshot
+    # use the function add_file to added the preview file to the
+    # snapshot whose search_key is passed in
+    # seems like maintaining separate subcontext for preview would be more
+    # suitable since that way a specific filenaming convention wouldn't
+    # have to constructed for the preview that'll reside next to main snapshot
 
     # file_type of the snapshot will be "preview"
     ft_preview = 'preview'
 
+    if _s.get_path_from_snapshot(snapshot['code'], file_type = ft_preview):
 
+        return snapshot
 
     ## build the file name
 
@@ -294,8 +304,8 @@ def checkin_preview(search_key, path, file_type = None):
 
     # assign the extension of the image to ext
     ext, ext = op.splitext(path)
-    snap = _s.add_file(snapshot['code'], path, file_type = ft_preview, mode = 'copy',
-                file_naming = a_ext + '_preview' + ext)
+    snap = _s.add_file(snapshot['code'], path, file_type = ft_preview,
+                       mode = 'copy', file_naming = a_ext + '_preview' + ext)
     return snap
 
 def make_temp_dir():
