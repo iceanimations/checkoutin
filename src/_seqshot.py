@@ -157,7 +157,7 @@ class ShotExplorer(cui.Explorer):
 
         # handle child windows
         if self.checkinputDialog:
-            self.checkinputDialog.setMainName(self.currentAsset.title())
+            self.checkinputDialog.setMainName(self.currentShot.title())
             self.checkinputDialog.setContext()
 
     def contexts(self):
@@ -213,7 +213,7 @@ class ShotExplorer(cui.Explorer):
                             icon=QMessageBox.Warning)
 
     def checkin(self, context, detail, filePath=None):
-        if self.currentAsset:
+        if self.currentShot:
             sobj = str(self.currentShot.objectName())
             pro = self.currentContext.title().split('/')[0]
             backend.checkin(sobj, context, process=pro,

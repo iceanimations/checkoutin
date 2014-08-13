@@ -208,14 +208,14 @@ class AssetsExplorer(cui.Explorer):
             self.updateAssetsBox(assetsLen1, assetsLen2, newAssets)
         if self.currentAsset and self.contextsBox:
             if (len(self.contextsBox.items()) !=
-                self.updateContextsBox()
-            if self.currentContext and self.filesBox:
-                if len(self.filesBox.items()) != len(
-                        [snap
-                         for snap in self.snapshots
-                         if snap['process'] ==
-                         self.currentContext.title().split('/')[0]]):
-                    self.showFiles(self.currentContext, self.snapshots)
+                self.updateContextsBox()):
+                if self.currentContext and self.filesBox:
+                    if len(self.filesBox.items()) != len(
+                            [snap
+                             for snap in self.snapshots
+                             if snap['process'] ==
+                             self.currentContext.title().split('/')[0]]):
+                        self.showFiles(self.currentContext, self.snapshots)
 
     def updateAssetsBox(self, l1, l2, assets):
         if l1 > l2:
