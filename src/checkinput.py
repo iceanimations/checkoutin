@@ -1,9 +1,12 @@
-from uiContainer import uic
+try:
+    from uiContainer import uic
+except:
+    from PyQt4 import uic
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 import os.path as osp
 import sys
-import pymel.core as pc
+from customui import ui as cui
 
 
 rootPath = osp.dirname(osp.dirname(__file__))
@@ -17,6 +20,10 @@ class Dialog(Form, Base):
         self.parent = parent
         self.parent.saveButton.setEnabled(False)
         self.setValidator()
+        
+        if self.parent.standalone:
+            self.currentSceneButton.setEnabled(False)
+            self.filePathButton.setChecked(True)
         
         self.descriptionBox.horizontalScrollBar().setFixedHeight(12)
         self.descriptionBox.verticalScrollBar().setFixedWidth(12)
@@ -35,7 +42,7 @@ class Dialog(Form, Base):
         
     def handleNewName(self, name):
         if not self.parent.currentContext:
-            pc.warning('Select a Context...')
+            cui.showMessage(self, title='Save', msg='No Context selected', icon=QMessageBox.Warning)
             return
         pro = self.parent.currentContext.title()
         if name == pro:
@@ -82,14 +89,22 @@ class Dialog(Form, Base):
         
     def ok(self):
         description = str(self.descriptionBox.toPlainText())
-        path = str(self.pathBox.text()).strip('"\' ')
-        if path:
-            if osp.exists(path):
-                if not osp.isfile(path):
-                    pc.warning('Specified path is not a file...')
+        path = ''
+        if self.filePathButton.isChecked():
+            path = str(self.pathBox.text()).strip('"\' ')
+            if path:
+                if osp.exists(path):
+                    if not osp.isfile(path):
+                        cui.showMessage(self, title='Save', msg='Specified path is not a file',
+                                        icon=QMessageBox.Warning)
+                        return
+                else:
+                    cui.showMessage(self, title='Save', msg='File path does not exist',
+                                    icon=QMessageBox.Warning)
                     return
             else:
-                pc.warning('File path does not exist...')
+                cui.showMessage(self, title='Save', msg='Path not specified',
+                                icon=QMessageBox.Warning)
                 return
         context = None
         if self.parent.currentContext:
@@ -103,7 +118,8 @@ class Dialog(Form, Base):
             self.parent.checkin(context, description, filePath = path)
             self.accept()
         else:
-            pc.warning('No context selected...')
+            cui.showMessage(self, title='Save', msg='No context selected',
+                            icon=QMessageBox.Warning)
                             
     
     def cancel(self):

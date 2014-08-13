@@ -23,7 +23,7 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_4">
      <item>
-      <widget class="QRadioButton" name="radioButton_2">
+      <widget class="QRadioButton" name="currentSceneButton">
        <property name="text">
         <string>Current Scene</string>
        </property>
@@ -33,7 +33,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QRadioButton" name="radioButton">
+      <widget class="QRadioButton" name="filePathButton">
        <property name="text">
         <string>File Path</string>
        </property>
@@ -240,7 +240,7 @@ padding-left: 5px;</string>
    </hints>
   </connection>
   <connection>
-   <sender>radioButton</sender>
+   <sender>filePathButton</sender>
    <signal>toggled(bool)</signal>
    <receiver>pathBox</receiver>
    <slot>setEnabled(bool)</slot>
@@ -256,7 +256,7 @@ padding-left: 5px;</string>
    </hints>
   </connection>
   <connection>
-   <sender>radioButton</sender>
+   <sender>filePathButton</sender>
    <signal>toggled(bool)</signal>
    <receiver>browseButton</receiver>
    <slot>setEnabled(bool)</slot>
@@ -272,7 +272,7 @@ padding-left: 5px;</string>
    </hints>
   </connection>
   <connection>
-   <sender>radioButton_2</sender>
+   <sender>currentSceneButton</sender>
    <signal>toggled(bool)</signal>
    <receiver>pathBox</receiver>
    <slot>clear()</slot>
