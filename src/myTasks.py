@@ -1,3 +1,8 @@
+'''
+Created on Dec 20, 2013
+
+@author: Qurban Ali (qurban_ali36@yahoo.com)
+'''
 parent = None
 try:
     import qtify_maya_window as qtfy
@@ -11,11 +16,13 @@ from customui import ui as cui
 import app.util as util
 import checkinput
 try:
-    import backend
+    import backend     
     reload(backend)
 except: pass
 reload(checkinput)
 reload(util)
+import auth.security as security
+reload(security)
 #reload(cui)
 
 rootPath = osp.dirname(osp.dirname(__file__))
@@ -25,18 +32,10 @@ iconPath = osp.join(rootPath, 'icons')
 class MyTasks(cui.Explorer):
 
     def __init__(self, parent=parent, standalone=False):
-        super(MyTasks, self).__init__(parent)
-        self.setWindowTitle("MyTasks")
+        super(MyTasks, self).__init__(parent, standalone)
+        self.setWindowTitle("My Tasks")
         
-        if standalone:
-            self.openButton.setEnabled(False)
-            self.referenceButton.setEnabled(False)
-        
-        self.standalone = standalone
         self.currentTask = None
-        self.tasksBox = None
-        
-        self.projectsBox.hide()
         
         self.openButton.clicked.connect(self.checkout)
         self.saveButton.clicked.connect(self.showCheckinputDialog)
@@ -121,11 +120,15 @@ class MyTasks(cui.Explorer):
             
     def showCheckinputDialog(self):
         if self.currentTask:
-            self.checkinputDialog = checkinput.Dialog(self)
-            self.checkinputDialog.setMainName(self.currentTask.title())
-            if self.currentContext:
-                self.checkinputDialog.setContext(self.currentContext.title())
-            self.checkinputDialog.show()
+            if security.checkinability((self.currentTask.objectName())):
+                self.checkinputDialog = checkinput.Dialog(self)
+                self.checkinputDialog.setMainName(self.currentTask.title())
+                if self.currentContext:
+                    self.checkinputDialog.setContext(self.currentContext.title())
+                self.checkinputDialog.show()
+            else:
+                cui.showMessage(self, title='My Tasks', msg='Access denied. You don\'t have permissions to make changes to the selected Process',
+                                icon=QMessageBox.Critical)
         else:
             cui.showMessage(self, title='MyTasks', msg='No Task selected',
                             icon=QMessageBox.Warning)

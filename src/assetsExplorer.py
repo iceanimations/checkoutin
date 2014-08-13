@@ -1,3 +1,9 @@
+'''
+Created on Feb 10, 2014
+
+@author: Qurban Ali (qurban_ali36@yahoo.com)
+copyright (c) at Ice Animations (Pvt) Ltd
+'''
 parent = None
 try:
     import qtify_maya_window as qtfy
@@ -17,7 +23,9 @@ try:
 except:
     pass
 reload(util)
-reload(cui)
+import auth.security as security
+reload(security)
+#reload(cui)
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
@@ -25,18 +33,15 @@ iconPath = osp.join(rootPath, 'icons')
 
 class AssetsExplorer(cui.Explorer):
 
-    def __init__(self, parent=parent, standalone=False):
+    def __init__(self, parent=parent, shot=None, standalone=False):
+        super(AssetsExplorer, self).__init__(parent, standalone)
+        self.setWindowTitle("Asset Explorer")
+        self.projectsBox.show()
 
-        super(AssetsExplorer, self).__init__(parent)
-        self.setWindowTitle("AssetsExplorer")
 
-        if standalone:
-            self.openButton.setEnabled(False)
-            self.referenceButton.setEnabled(False)
 
-        self.standalone = standalone
         self.currentAsset = None
-        self.projects = {}
+        self.shot = shot
 
         self.projectsBox.activated.connect(self.setProject)
         self.openButton.clicked.connect(self.checkout)
@@ -47,6 +52,12 @@ class AssetsExplorer(cui.Explorer):
         self.addFilesBox()
 
         self.setProjectsBox()
+        if self.shot:
+            self.projectsBox.hide()
+            self.saveButton.hide()
+            self.openButton.hide()
+            project, shot = self.shot.split('>')
+            self.showAssets(util.get_assets_in_shot(project, shot))
 
         import site
         # update the database, how many times this app is used
@@ -57,23 +68,15 @@ class AssetsExplorer(cui.Explorer):
         # testing ....................................................
         # util.pretty_print(util.get_all_users())
 
-    def setProjectsBox(self):
-        for project in util.get_all_projects():
-            self.projects[project['title']] = project['code']
-            self.projectsBox.addItem(project['title'])
 
     def setProject(self):
         projectName = str(self.projectsBox.currentText())
         if projectName == '--Select Project--':
+            self.clearWindow()
             return
         assets = util.all_assets(self.projects[projectName])
         # clear the window
-        self.contextsBox.clearItems()
-        self.currentContext = None
-        self.filesBox.clearItems()
-        if self.assetsBox:
-            self.assetsBox.clearItems()
-            self.currentAsset = None
+        self.clearWindow()
         self.showAssets(assets)
         if self.checkinputDialog:
             self.checkinputDialog.setMainName()
@@ -139,26 +142,25 @@ class AssetsExplorer(cui.Explorer):
 
         return contexts
 
-    def clearContextsProcesses(self):
-        self.contextsBox.clearItems()
-        self.currentContext = None
-
-        self.filesBox.clearItems()
-        self.currentFile = None
+    def clearWindow(self):
+        self.assetsBox.clearItems()
+        self.currentAsset = None
+        self.clearContextsProcesses()
 
     def showCheckinputDialog(self):
         if self.currentContext:
-            self.checkinputDialog = checkinput.Dialog(self)
-            self.checkinputDialog.setMainName(self.currentAsset.title())
-            self.checkinputDialog.setContext(self.currentContext.title())
-            self.checkinputDialog.show()
+            if security.checkinability(str(self.currentAsset.objectName()), self.currentContext.title().split('/')[0]):
+                self.checkinputDialog = checkinput.Dialog(self)
+                self.checkinputDialog.setMainName(self.currentAsset.title())
+                self.checkinputDialog.setContext(self.currentContext.title())
+                self.checkinputDialog.show()
+            else:
+                cui.showMessage(self, title='Assets Explorer', msg='Access denied. You don\'t have permissions to make changes to the selected Process',
+                                icon=QMessageBox.Critical)
         else:
-            cui.showMessage(self, title='AssetsExplorer', msg='No Process/Context selected',
+            cui.showMessage(self, title='Assets Explorer', msg='No Process/Context selected',
                             icon=QMessageBox.Warning)
 
-    def checkout(self, r = False):
-        if self.currentFile:
-            backend.checkout(str(self.currentFile.objectName()), r = r)
 
     def addReference(self):
         self.checkout(r = True)
@@ -180,11 +182,9 @@ class AssetsExplorer(cui.Explorer):
             if self.currentContext:
                 self.showFiles(self.currentContext, self.snapshots)
         else:
-            cui.showMessage(self, title='AssetsExplorer', msg='No asset selected',
+            cui.showMessage(self, title='Assets Explorer', msg='No asset selected',
                             icon=QMessageBox.Warning)
 
-    def bindClickEventForFiles(self, widget, func, args):
-        widget.mouseReleaseEvent = lambda event: func(widget, args)
 
     def contextsLen(self, contexts):
         length = 0
@@ -194,18 +194,21 @@ class AssetsExplorer(cui.Explorer):
         return length
 
     def updateWindow(self):
-        proj = str(self.projectsBox.currentText())
-        if proj == '--Select Project--':
-            return
-        newAssets = util.all_assets(self.projects[proj])
+        if self.shot:
+            project, shot = self.shot.split('>')
+            newAssets = util.get_assets_in_shot(project, shot)
+        else:
+            proj = str(self.projectsBox.currentText())
+            if proj == '--Select Project--':
+                return
+            newAssets = util.all_assets(self.projects[proj])
         assetsLen1 = len(newAssets)
         assetsLen2 = len(self.assetsBox.items())
         if assetsLen1 != assetsLen2:
             self.updateAssetsBox(assetsLen1, assetsLen2, newAssets)
         if self.currentAsset and self.contextsBox:
             if (len(self.contextsBox.items()) !=
-                self.contextsLen(self.contextsProcesses())):
-                self.updatecontextsBox()
+                self.updateContextsBox()
             if self.currentContext and self.filesBox:
                 if len(self.filesBox.items()) != len(
                         [snap
@@ -240,7 +243,7 @@ class AssetsExplorer(cui.Explorer):
                     self.checkinputDialog.setMainName()
                     self.checkinputDialog.setContext()
 
-    def updatecontextsBox(self):
+    def updateContextsBox(self):
         #currentContext = self.currentContext
         self.showContextsProcesses(self.currentAsset)
 #         if currentContext:

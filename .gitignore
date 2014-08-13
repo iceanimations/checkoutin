@@ -6,3 +6,4 @@
 *.pdc
 .project
 .pydevproject
+.emacs.*
