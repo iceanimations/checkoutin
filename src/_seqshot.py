@@ -36,9 +36,10 @@ iconPath = osp.join(rootPath, 'icons')
 class ShotExplorer(cui.Explorer):
 
     def __init__(self, parent=parent, standalone=False):
+        self.item_name = 'shot'
+        self.title = 'Shot Explorer'
         super(ShotExplorer, self).__init__(parent)
-        self.setWindowTitle('Shot Explorer')
-        self.projectsBox.show()
+
         self.episodeBox.show()
         self.sequenceBox.show()
         self.referenceButton.hide()
@@ -49,7 +50,7 @@ class ShotExplorer(cui.Explorer):
 
         self.standalone = standalone
         self.currentSequence = None
-        self.currentShot = None
+        self.currentItem = None
         self.episodes = {}
         self.sequences = {'None': None}
 
@@ -59,11 +60,13 @@ class ShotExplorer(cui.Explorer):
         self.openButton.clicked.connect(self.checkout)
         self.saveButton.clicked.connect(self.showCheckinputDialog)
 
-        self.shotsBox = self.createScroller("Shots")
+        self.itemsBox = self.createScroller("Shots")
         self.contextsBox = self.createScroller('Contexts')
         self.addFilesBox()
 
         self.setProjectsBox()
+
+
 
         # update the database, how many times this app is used
         site.addsitedir(r'r:/pipe_repo/users/qurban')
@@ -114,7 +117,7 @@ class ShotExplorer(cui.Explorer):
         act.triggered.connect(self.showAssetsExplorer)
 
     def showAssetsExplorer(self):
-        assetsExplorer.AssetsExplorer(self, shot=self.projects[str(self.projectsBox.currentText())]+'>'+str(self.currentShot.objectName())).show()
+        assetsExplorer.AssetsExplorer(self, shot=self.projects[str(self.projectsBox.currentText())]+'>'+str(self.currentItem.objectName())).show()
 
     def showShots(self, seq=None, ep=None):
         self.clearShotsContextsFiles()
@@ -132,16 +135,16 @@ class ShotExplorer(cui.Explorer):
                                    shot['timestamp'].split('.')[0],
                                    shot['description'] if shot['description'] else '')
             item.setObjectName(shot['__search_key__'])
-            self.shotsBox.addItem(item)
+            self.itemsBox.addItem(item)
             item.contextMenuEvent = self.shotContextMenu
-        map(lambda widget: self.bindClickEvent(widget, self.showContexts), self.shotsBox.items())
+        map(lambda widget: self.bindClickEvent(widget, self.showContexts), self.itemsBox.items())
 
     def showContexts(self, shot):
         # highlight the selected widget
-        if self.currentShot:
-            self.currentShot.setStyleSheet("background-color: None")
-        self.currentShot = shot
-        self.currentShot.setStyleSheet("background-color: #666666")
+        if self.currentItem:
+            self.currentItem.setStyleSheet("background-color: None")
+        self.currentItem = shot
+        self.currentItem.setStyleSheet("background-color: #666666")
 
         self.clearContextsProcesses()
 
@@ -157,12 +160,13 @@ class ShotExplorer(cui.Explorer):
 
         # handle child windows
         if self.checkinputDialog:
-            self.checkinputDialog.setMainName(self.currentShot.title())
+            self.checkinputDialog.setMainName(self.currentItem.title())
             self.checkinputDialog.setContext()
 
     def contexts(self):
+
         contexts = {}
-        self.snapshots = util.get_snapshot_from_sobject(str(self.currentShot.objectName()))
+        self.snapshots = util.get_snapshot_from_sobject(str(self.currentItem.objectName()))
 
         for snap in self.snapshots:
             if contexts.has_key(snap['process']):
@@ -186,20 +190,17 @@ class ShotExplorer(cui.Explorer):
         self.clearShotsContextsFiles()
 
     def clearShotsContextsFiles(self):
-        self.shotsBox.clearItems()
-        self.currentShot = None
+        self.itemsBox.clearItems()
+        self.currentItem = None
         self.clearContextsProcesses()
 
-    def checkout(self, r=False):
-        if self.currentFile:
-            backend.checkout(str(self.currentFile.objectName()), r=r)
-
     def showCheckinputDialog(self):
+
         if self.currentContext:
-            if security.checkinability(str(self.currentShot.objectName()),
+            if security.checkinability(str(self.currentItem.objectName()),
                                        self.currentContext.title().split('/')[0]):
                 self.checkinputDialog = checkinput.Dialog(self)
-                self.checkinputDialog.setMainName(self.currentShot.title())
+                self.checkinputDialog.setMainName(self.currentItem.title())
                 self.checkinputDialog.setContext(self.currentContext.title())
                 self.checkinputDialog.show()
             else:
@@ -213,15 +214,15 @@ class ShotExplorer(cui.Explorer):
                             icon=QMessageBox.Warning)
 
     def checkin(self, context, detail, filePath=None):
-        if self.currentShot:
-            sobj = str(self.currentShot.objectName())
+        if self.currentItem:
+            sobj = str(self.currentItem.objectName())
             pro = self.currentContext.title().split('/')[0]
             backend.checkin(sobj, context, process=pro,
                             description=detail, file=filePath)
 
             # redisplay the contextsBox/filesBox
             currentContext = self.currentContext
-            self.showContexts(self.currentShot)
+            self.showContexts(self.currentItem)
             for contx in self.contextsBox.items():
                 if contx.objectName() == currentContext.objectName():
                     self.currentContext = contx
@@ -233,6 +234,7 @@ class ShotExplorer(cui.Explorer):
                             icon=QMessageBox.Warning)
 
     def updateWindow(self):
+
         proj = str(self.projectsBox.currentText())
         epi = str(self.episodeBox.currentText())
         seq = str(self.sequenceBox.currentText())
@@ -240,20 +242,23 @@ class ShotExplorer(cui.Explorer):
         epi = None if epi == '--Select Episode--' else self.episodes[epi]
         seq = None if seq == '--Select Sequence--' else self.sequences[seq]
         newShots = util.get_shots(self.projects[proj], sequence=seq, episode=epi)
-        assetsLen1 = len(newShots); assetsLen2 = len(self.shotsBox.items())
+        assetsLen1 = len(newShots); assetsLen2 = len(self.itemsBox.items())
         if assetsLen1 != assetsLen2:
             self.updateAssetsBox(assetsLen1, assetsLen2, newShots)
-        if self.currentShot and self.contextsBox:
+        if self.currentItem and self.contextsBox:
             if len(self.contextsBox.items()) != self.contextsLen(self.contextsProcesses()):
                 self.updateContextsBox()
             if self.currentContext and self.filesBox:
-                if len(self.filesBox.items()) != len([snap for snap in self.snapshots if snap['process'] == self.currentContext.title().split('/')[0]]):
+                if (len(self.filesBox.items()) !=
+                    len([snap for snap in self.snapshots
+                         if snap['process'] ==
+                         self.currentContext.title().split('/')[0]])):
                     self.showFiles(self.currentContext, self.snapshots)
 
     def updateAssetsBox(self, l1, l2, assets):
         if l1 > l2:
             newAssets = []
-            objNames = [str(obj.objectName()) for obj in self.shotsBox.items()]
+            objNames = [str(obj.objectName()) for obj in self.itemsBox.items()]
             for asset in assets:
                 if asset['__search_key__'] in objNames:
                     pass
@@ -263,18 +268,18 @@ class ShotExplorer(cui.Explorer):
         elif l1 < l2:
             removables = []
             keys = [mem['__search_key__'] for mem in assets]
-            for item in self.shotsBox.items():
+            for item in self.itemsBox.items():
                 if str(item.objectName()) in keys:
                     pass
                 else:
                     removables.append(item)
-            self.shotsBox.removeItems(removables)
-            if self.currentShot in removables:
+            self.itemsBox.removeItems(removables)
+            if self.currentItem in removables:
                 self.clearContextsProcesses()
-                self.currentShot = None
+                self.currentItem = None
                 if self.checkinputDialog:
                     self.checkinputDialog.setMainName()
                     self.checkinputDialog.setContext()
 
     def updateContextsBox(self):
-        self.showContexts(self.currentShot)
+        self.showContexts(self.currentItem)

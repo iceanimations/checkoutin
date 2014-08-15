@@ -16,7 +16,7 @@ from customui import ui as cui
 import app.util as util
 import checkinput
 try:
-    import backend     
+    import backend
     reload(backend)
 except: pass
 reload(checkinput)
@@ -34,26 +34,26 @@ class MyTasks(cui.Explorer):
     def __init__(self, parent=parent, standalone=False):
         super(MyTasks, self).__init__(parent, standalone)
         self.setWindowTitle("My Tasks")
-        
+
         self.currentTask = None
-        
+
         self.openButton.clicked.connect(self.checkout)
         self.saveButton.clicked.connect(self.showCheckinputDialog)
-        
+
         self.showTasks()
         self.contextsBox = self.createScroller('Contexts')
         self.addFilesBox()
-        
+
         import site
         # update the database, how many times this app is used
         site.addsitedir(r'r:/pipe_repo/users/qurban')
         import appUsageApp
         appUsageApp.updateDatabase('MyTasks')
-    
+
     def showTasks(self):
         self.tasksBox = self.createScroller("Tasks")
         self.addTasks(util.get_all_task())
-        
+
     def addTasks(self, tasks):
         for tsk in tasks:
             title = util.get_task_process(tsk)
@@ -64,34 +64,34 @@ class MyTasks(cui.Explorer):
             self.tasksBox.addItem(item)
             item.setObjectName(tsk)
         map(lambda widget: self.bindClickEvent(widget, self.showContexts), self.tasksBox.items())
-        
+
     def showContexts(self, taskWidget):
-        
+
         # highlight the item
         if self.currentTask:
             self.currentTask.setStyleSheet("background-color: None")
         self.currentTask = taskWidget
         self.currentTask.setStyleSheet("background-color: #666666")
-        
+
         # remove the showed contexts
         self.clearContexts()
-        
+
         # get the new contexts
         task = str(self.currentTask.objectName())
         contexts = util.get_contexts_from_task(task)
-        
+
         # add the contexts
         self.addContexts(contexts, task)
-        
+
         # handle child windows
         if self.checkinputDialog:
             self.checkinputDialog.setMainName(self.currentTask.title())
             self.checkinputDialog.setContext()
-        
+
         # if there is only one context, show the files
         if len(contexts) == 1:
             self.showFiles(self.contextsBox.items()[0])
-    
+
     def addContexts(self, contexts, task):
         for context in contexts:
             item = self.createItem(context,
@@ -102,22 +102,22 @@ class MyTasks(cui.Explorer):
             item.setObjectName(context +'>'+ task)
         # bind the click event
         map(lambda widget: self.bindClickEvent(widget, self.showFiles), self.contextsBox.items())
-        
+
     def clearContexts(self):
         self.contextsBox.clearItems()
-        
+
         # remove the showed files
         if self.filesBox:
             self.filesBox.clearItems()
             self.currentFile = None
-    
+
     def checkout(self, r = False):
         if self.currentFile:
             backend.checkout(str(self.currentFile.objectName()), r = r)
-            
+
     def addReference(self):
         self.checkout(r = True)
-            
+
     def showCheckinputDialog(self):
         if self.currentTask:
             if security.checkinability((self.currentTask.objectName())):
@@ -132,13 +132,13 @@ class MyTasks(cui.Explorer):
         else:
             cui.showMessage(self, title='MyTasks', msg='No Task selected',
                             icon=QMessageBox.Warning)
-            
-    
+
+
     def checkin(self, context, detail, filePath = None):
         if self.currentTask:
             sobj = util.get_sobject_from_task(str(self.currentTask.objectName()))
             backend.checkin(sobj, context, process = util.get_task_process(str(self.currentTask.objectName())),
-                            description = detail, file = filePath)           
+                            description = detail, file = filePath)
             # redisplay the the contextsBox/filesBox
             currentContext = self.currentContext
             self.showContexts(self.currentTask)
@@ -151,7 +151,7 @@ class MyTasks(cui.Explorer):
         else:
             cui.showMessage(self, title='MyTasks', msg='No Task selected',
                             icon=QMessageBox.Warning)
-        
+
     def updateWindow(self):
         newTasks = util.get_all_task()
         taskLen1 = len(newTasks); taskLen2 = len(self.tasksBox.items())
@@ -168,7 +168,7 @@ class MyTasks(cui.Explorer):
                 filesLen1 = len(files); filesLen2 = len(self.filesBox.items())
                 if filesLen1 != filesLen2:
                     self.updateFilesBox()
-                     
+
     def updateTasksBox(self, tasks, l1, l2):
         tasksNow = set([str(t.objectName()) for t in self.tasksBox.items()])
         tasks = set(tasks)
@@ -176,7 +176,7 @@ class MyTasks(cui.Explorer):
             self.addTasks(tasks.difference(tasksNow))
         else:
             removedTasks = self.tasksBox.removeItemsON(tasksNow.difference(tasks))
-            
+
             # check if the currentTask is removed
             if self.currentTask in removedTasks:
                 self.clearContexts()
@@ -184,7 +184,7 @@ class MyTasks(cui.Explorer):
                 if self.checkinputDialog:
                     self.checkinputDialog.setMainName()
                     self.checkinputDialog.setContext()
-            
+
 
     def updateContextsBox(self, contexts, l1, l2):
         if self.currentTask:

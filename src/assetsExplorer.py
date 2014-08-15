@@ -10,10 +10,10 @@ try:
     parent = qtfy.getMayaWindow()
 except:
     pass
+from ._base import Explorer
 import os.path as osp
 import sys
 from PyQt4.QtGui import QMessageBox
-from customui import ui as cui
 import app.util as util
 import checkinput
 reload(checkinput)
@@ -31,23 +31,21 @@ rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
 iconPath = osp.join(rootPath, 'icons')
 
-class AssetsExplorer(cui.Explorer):
+class AssetsExplorer(Explorer):
 
     def __init__(self, parent=parent, shot=None, standalone=False):
+        self.item_name = 'asset'
+        self.title = 'Asset Explorer'
         super(AssetsExplorer, self).__init__(parent, standalone)
-        self.setWindowTitle("Asset Explorer")
-        self.projectsBox.show()
 
-
-
-        self.currentAsset = None
+        self.currentItem = None
         self.shot = shot
 
         self.projectsBox.activated.connect(self.setProject)
         self.openButton.clicked.connect(self.checkout)
         self.saveButton.clicked.connect(self.showCheckinputDialog)
 
-        self.assetsBox = self.createScroller("Assets")
+        self.itemsBox = self.createScroller("Assets")
         self.contextsBox = self.createScroller('Process/Context')
         self.addFilesBox()
 
@@ -67,11 +65,6 @@ class AssetsExplorer(cui.Explorer):
 
         # testing ....................................................
         # util.pretty_print(util.get_all_users())
-
-
-    def checkout(self, r = False):
-        if self.currentFile:
-            backend.checkout(str(self.currentFile.objectName()), r = r)
 
 
     def setProject(self):
@@ -94,17 +87,17 @@ class AssetsExplorer(cui.Explorer):
                                    '', asset['description']
                                    if asset['description'] else '')
             item.setObjectName(asset['__search_key__'])
-            self.assetsBox.addItem(item)
+            self.itemsBox.addItem(item)
         map(lambda widget: self.bindClickEvent(widget,
                                                self.showContextsProcesses),
-            self.assetsBox.items())
+            self.itemsBox.items())
 
     def showContextsProcesses(self, asset):
         # highlight the selected widget
-        if self.currentAsset:
-            self.currentAsset.setStyleSheet("background-color: None")
-        self.currentAsset = asset
-        self.currentAsset.setStyleSheet("background-color: #666666")
+        if self.currentItem:
+            self.currentItem.setStyleSheet("background-color: None")
+        self.currentItem = asset
+        self.currentItem.setStyleSheet("background-color: #666666")
 
         self.clearContextsProcesses()
 
@@ -122,13 +115,13 @@ class AssetsExplorer(cui.Explorer):
 
         # handle child windows
         if self.checkinputDialog:
-            self.checkinputDialog.setMainName(self.currentAsset.title())
+            self.checkinputDialog.setMainName(self.currentItem.title())
             self.checkinputDialog.setContext()
 
     def contextsProcesses(self):
         contexts = {}
         self.snapshots = util.get_snapshot_from_sobject(str(
-            self.currentAsset.objectName()))
+            self.currentItem.objectName()))
 
         for snap in self.snapshots:
             if contexts.has_key(snap['process']):
@@ -148,19 +141,20 @@ class AssetsExplorer(cui.Explorer):
         return contexts
 
     def clearWindow(self):
-        self.assetsBox.clearItems()
-        self.currentAsset = None
+        self.itemsBox.clearItems()
+        self.currentItem = None
         self.clearContextsProcesses()
 
     def showCheckinputDialog(self):
         if self.currentContext:
-            if security.checkinability(str(self.currentAsset.objectName()), self.currentContext.title().split('/')[0]):
+            if security.checkinability(str(self.currentItem.objectName()), self.currentContext.title().split('/')[0]):
                 self.checkinputDialog = checkinput.Dialog(self)
-                self.checkinputDialog.setMainName(self.currentAsset.title())
+                self.checkinputDialog.setMainName(self.currentItem.title())
                 self.checkinputDialog.setContext(self.currentContext.title())
                 self.checkinputDialog.show()
             else:
-                cui.showMessage(self, title='Assets Explorer', msg='Access denied. You don\'t have permissions to make changes to the selected Process',
+                cui.showMessage(self, title='Assets Explorer',
+                                msg='Access denied. You don\'t have permissions to make changes to the selected Process',
                                 icon=QMessageBox.Critical)
         else:
             cui.showMessage(self, title='Assets Explorer', msg='No Process/Context selected',
@@ -169,26 +163,6 @@ class AssetsExplorer(cui.Explorer):
 
     def addReference(self):
         self.checkout(r = True)
-
-    def checkin(self, context, detail, filePath = None):
-        if self.currentAsset:
-            sobj = str(self.currentAsset.objectName())
-            pro = self.currentContext.title().split('/')[0]
-            backend.checkin(sobj, context, process = pro, description = detail,
-                            file = filePath)
-
-            # redisplay the contextsBox/filesBox
-            currentContext = self.currentContext
-            self.showContextsProcesses(self.currentAsset)
-            for contx in self.contextsBox.items():
-                if contx.objectName() == currentContext.objectName():
-                    self.currentContext = contx
-                    break
-            if self.currentContext:
-                self.showFiles(self.currentContext, self.snapshots)
-        else:
-            cui.showMessage(self, title='Assets Explorer', msg='No asset selected',
-                            icon=QMessageBox.Warning)
 
 
     def contextsLen(self, contexts):
@@ -208,10 +182,10 @@ class AssetsExplorer(cui.Explorer):
                 return
             newAssets = util.all_assets(self.projects[proj])
         assetsLen1 = len(newAssets)
-        assetsLen2 = len(self.assetsBox.items())
+        assetsLen2 = len(self.itemsBox.items())
         if assetsLen1 != assetsLen2:
             self.updateAssetsBox(assetsLen1, assetsLen2, newAssets)
-        if self.currentAsset and self.contextsBox:
+        if self.currentItem and self.contextsBox:
             if (len(self.contextsBox.items()) !=
                 self.updateContextsBox()):
                 if self.currentContext and self.filesBox:
@@ -224,33 +198,33 @@ class AssetsExplorer(cui.Explorer):
 
     def updateAssetsBox(self, l1, l2, assets):
         if l1 > l2:
-            newAssets = []
-            objNames = [str(obj.objectName()) for obj in self.assetsBox.items()]
+            newItems = []
+            objNames = [str(obj.objectName()) for obj in self.itemsBox.items()]
             for asset in assets:
                 if asset['__search_key__'] in objNames:
                     pass
                 else:
-                    newAssets.append(asset)
+                    newItems.append(asset)
             self.showAssets(newAssets)
         elif l1 < l2:
             removables = []
             keys = [mem['__search_key__'] for mem in assets]
-            for item in self.assetsBox.items():
+            for item in self.itemsBox.items():
                 if str(item.objectName()) in keys:
                     pass
                 else:
                     removables.append(item)
-            self.assetsBox.removeItems(removables)
-            if self.currentAsset in removables:
+            self.itemsBox.removeItems(removables)
+            if self.currentItem in removables:
                 self.clearContextsProcesses()
-                self.currentAsset = None
+                self.currentItem = None
                 if self.checkinputDialog:
                     self.checkinputDialog.setMainName()
                     self.checkinputDialog.setContext()
 
     def updateContextsBox(self):
         #currentContext = self.currentContext
-        self.showContextsProcesses(self.currentAsset)
+        self.showContextsProcesses(self.currentItem)
 #         if currentContext:
 #             flag = False
 #             for contx in self.contextsBox.items():
