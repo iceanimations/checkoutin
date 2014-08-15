@@ -57,13 +57,15 @@ class MyTasks(cui.Explorer):
     def addTasks(self, tasks):
         for tsk in tasks:
             title = util.get_task_process(tsk)
-            item = self.createItem(title,
-                                   util.get_sobject_name(util.get_sobject_from_task(tsk)),
-                                   util.get_project_title(util.get_project_from_task(tsk)),
-                                   util.get_sobject_description(tsk))
+            item = self.createItem(
+                title,
+                util.get_sobject_name(util.get_sobject_from_task(tsk)),
+                util.get_project_title(util.get_project_from_task(tsk)),
+                util.get_sobject_description(tsk))
             self.tasksBox.addItem(item)
             item.setObjectName(tsk)
-        map(lambda widget: self.bindClickEvent(widget, self.showContexts), self.tasksBox.items())
+        map(lambda widget: self.bindClickEvent(widget, self.showContexts),
+            self.tasksBox.items())
 
     def showContexts(self, taskWidget):
 
@@ -101,7 +103,8 @@ class MyTasks(cui.Explorer):
             self.contextsBox.addItem(item)
             item.setObjectName(context +'>'+ task)
         # bind the click event
-        map(lambda widget: self.bindClickEvent(widget, self.showFiles), self.contextsBox.items())
+        map(lambda widget: self.bindClickEvent(widget, self.showFiles),
+            self.contextsBox.items())
 
     def clearContexts(self):
         self.contextsBox.clearItems()
@@ -124,10 +127,15 @@ class MyTasks(cui.Explorer):
                 self.checkinputDialog = checkinput.Dialog(self)
                 self.checkinputDialog.setMainName(self.currentTask.title())
                 if self.currentContext:
-                    self.checkinputDialog.setContext(self.currentContext.title())
+                    self.checkinputDialog.setContext(
+                        self.currentContext.title())
                 self.checkinputDialog.show()
             else:
-                cui.showMessage(self, title='My Tasks', msg='Access denied. You don\'t have permissions to make changes to the selected Process',
+                cui.showMessage(self,
+                                title='My Tasks',
+                                msg='Access denied. '+
+                                'You don\'t have permissions to make changes '+
+                                'to the selected Process',
                                 icon=QMessageBox.Critical)
         else:
             cui.showMessage(self, title='MyTasks', msg='No Task selected',
@@ -136,8 +144,11 @@ class MyTasks(cui.Explorer):
 
     def checkin(self, context, detail, filePath = None):
         if self.currentTask:
-            sobj = util.get_sobject_from_task(str(self.currentTask.objectName()))
-            backend.checkin(sobj, context, process = util.get_task_process(str(self.currentTask.objectName())),
+            sobj = util.get_sobject_from_task(
+                str(self.currentTask.objectName()))
+            backend.checkin(sobj, context,
+                            process = util.get_task_process(str(
+                                self.currentTask.objectName())),
                             description = detail, file = filePath)
             # redisplay the the contextsBox/filesBox
             currentContext = self.currentContext
@@ -158,8 +169,10 @@ class MyTasks(cui.Explorer):
         if taskLen1 != taskLen2:
             self.updateTasksBox(newTasks, taskLen1, taskLen2)
         if self.currentTask and self.contextsBox:
-            contexts = util.get_contexts_from_task(str(self.currentTask.objectName()))
-            contextsLen1 = len(contexts); contextsLen2 = len(self.contextsBox.items())
+            contexts = util.get_contexts_from_task(str(
+                self.currentTask.objectName()))
+            contextsLen1 = len(contexts)
+            contextsLen2 = len(self.contextsBox.items())
             if contextsLen1 != contextsLen2:
                 self.updateContextsBox(contexts, contextsLen1, contextsLen2)
             if self.currentContext and self.filesBox:
@@ -175,7 +188,8 @@ class MyTasks(cui.Explorer):
         if l1 > l2:
             self.addTasks(tasks.difference(tasksNow))
         else:
-            removedTasks = self.tasksBox.removeItemsON(tasksNow.difference(tasks))
+            removedTasks = self.tasksBox.removeItemsON(
+                tasksNow.difference(tasks))
 
             # check if the currentTask is removed
             if self.currentTask in removedTasks:
