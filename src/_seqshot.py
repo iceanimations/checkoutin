@@ -14,7 +14,7 @@ except:
 import os.path as osp
 import sys
 from PyQt4.QtGui import QMessageBox, QMenu, QCursor
-from customui import ui as cui
+from ._base import Explorer
 import app.util as util
 import assetsExplorer
 import auth.security as security
@@ -33,7 +33,7 @@ rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
 iconPath = osp.join(rootPath, 'icons')
 
-class ShotExplorer(cui.Explorer):
+class ShotExplorer(Explorer):
 
     def __init__(self, parent=parent, standalone=False):
         self.item_name = 'shot'
@@ -194,26 +194,6 @@ class ShotExplorer(cui.Explorer):
                             msg='No Context selected',
                             icon=QMessageBox.Warning)
 
-    def checkin(self, context, detail, filePath=None):
-        if self.currentItem:
-            sobj = str(self.currentItem.objectName())
-            pro = self.currentContext.title().split('/')[0]
-            backend.checkin(sobj, context, process=pro,
-                            description=detail, file=filePath)
-
-            # redisplay the contextsBox/filesBox
-            currentContext = self.currentContext
-            self.showContexts(self.currentItem)
-            for contx in self.contextsBox.items():
-                if contx.objectName() == currentContext.objectName():
-                    self.currentContext = contx
-                    break
-            if self.currentContext:
-                self.showFiles(self.currentContext, self.snapshots)
-        else:
-            cui.showMessage(self, title='Shot Explorer', msg='No Shot selected',
-                            icon=QMessageBox.Warning)
-
     def updateWindow(self):
 
         proj = str(self.projectsBox.currentText())
@@ -222,12 +202,14 @@ class ShotExplorer(cui.Explorer):
         if proj == '--Select Project--': return
         epi = None if epi == '--Select Episode--' else self.episodes[epi]
         seq = None if seq == '--Select Sequence--' else self.sequences[seq]
-        newShots = util.get_shots(self.projects[proj], sequence=seq, episode=epi)
-        assetsLen1 = len(newShots); assetsLen2 = len(self.itemsBox.items())
+        newItems = util.get_shots(self.projects[proj], sequence=seq, episode=epi)
+        assetsLen1 = len(newItems)
+        assetsLen2 = len(self.itemsBox.items())
         if assetsLen1 != assetsLen2:
-            self.updateItemsBox(assetsLen1, assetsLen2, newShots)
+            self.updateItemsBox(assetsLen1, assetsLen2, newItems)
         if self.currentItem and self.contextsBox:
-            if len(self.contextsBox.items()) != self.contextsLen(self.contextsProcesses()):
+            if (len(self.contextsBox.items()) !=
+                self.contextsLen(self.contextsProcesses())):
                 self.updateContextsBox()
             if self.currentContext and self.filesBox:
                 if (len(self.filesBox.items()) !=
@@ -235,6 +217,7 @@ class ShotExplorer(cui.Explorer):
                          if snap['process'] ==
                          self.currentContext.title().split('/')[0]])):
                     self.showFiles(self.currentContext, self.snapshots)
+
 
     def updateContextsBox(self):
         self.showContexts(self.currentItem)

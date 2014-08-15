@@ -17,11 +17,6 @@ from PyQt4.QtGui import QMessageBox
 import app.util as util
 import checkinput
 reload(checkinput)
-try:
-    import backend
-    reload(backend)
-except:
-    pass
 reload(util)
 import auth.security as security
 reload(security)
@@ -157,16 +152,18 @@ class AssetsExplorer(Explorer):
     def updateWindow(self):
         if self.shot:
             project, shot = self.shot.split('>')
-            newAssets = util.get_assets_in_shot(project, shot)
+            newItems = util.get_assets_in_shot(project, shot)
         else:
             proj = str(self.projectsBox.currentText())
             if proj == '--Select Project--':
                 return
+            # What's the use of this line?
             newAssets = util.all_assets(self.projects[proj])
-        assetsLen1 = len(newAssets)
+
+        assetsLen1 = len(newItems)
         assetsLen2 = len(self.itemsBox.items())
         if assetsLen1 != assetsLen2:
-            self.updateItemsBox(assetsLen1, assetsLen2, newAssets)
+            self.updateItemsBox(assetsLen1, assetsLen2, newItems)
         if self.currentItem and self.contextsBox:
             if (len(self.contextsBox.items()) !=
                 self.updateContextsBox()):
