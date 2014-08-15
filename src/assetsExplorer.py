@@ -69,6 +69,11 @@ class AssetsExplorer(cui.Explorer):
         # util.pretty_print(util.get_all_users())
 
 
+    def checkout(self, r = False):
+        if self.currentFile:
+            backend.checkout(str(self.currentFile.objectName()), r = r)
+
+
     def setProject(self):
         projectName = str(self.projectsBox.currentText())
         if projectName == '--Select Project--':
