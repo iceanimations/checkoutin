@@ -38,34 +38,16 @@ class AssetsExplorer(Explorer):
         self.title = 'Asset Explorer'
         super(AssetsExplorer, self).__init__(parent, standalone)
 
-        self.currentItem = None
         self.shot = shot
+        self.scroller_arg = 'Process/Context'
 
-        self.projectsBox.activated.connect(self.setProject)
-        self.openButton.clicked.connect(self.checkout)
-        self.saveButton.clicked.connect(self.showCheckinputDialog)
 
-        self.itemsBox = self.createScroller("Assets")
-        self.contextsBox = self.createScroller('Process/Context')
-        self.addFilesBox()
-
-        self.setProjectsBox()
         if self.shot:
             self.projectsBox.hide()
             self.saveButton.hide()
             self.openButton.hide()
             project, shot = self.shot.split('>')
-            self.showAssets(util.get_assets_in_shot(project, shot))
-
-        import site
-        # update the database, how many times this app is used
-        site.addsitedir(r'r:/pipe_repo/users/qurban')
-        import appUsageApp
-        appUsageApp.updateDatabase('AssetsExplorer')
-
-        # testing ....................................................
-        # util.pretty_print(util.get_all_users())
-
+            self.shotItems(util.get_assets_in_shot(project, shot))
 
     def setProject(self):
         projectName = str(self.projectsBox.currentText())
@@ -75,12 +57,12 @@ class AssetsExplorer(Explorer):
         assets = util.all_assets(self.projects[projectName])
         # clear the window
         self.clearWindow()
-        self.showAssets(assets)
+        self.shotItems(assets)
         if self.checkinputDialog:
             self.checkinputDialog.setMainName()
             self.checkinputDialog.setContext()
 
-    def showAssets(self, assets):
+    def shotItems(self, assets):
         for asset in assets:
             item = self.createItem('%s (%s)' %(asset['name'], asset['code']),
                                    asset['asset_category'],
@@ -184,7 +166,7 @@ class AssetsExplorer(Explorer):
         assetsLen1 = len(newAssets)
         assetsLen2 = len(self.itemsBox.items())
         if assetsLen1 != assetsLen2:
-            self.updateAssetsBox(assetsLen1, assetsLen2, newAssets)
+            self.updateItemsBox(assetsLen1, assetsLen2, newAssets)
         if self.currentItem and self.contextsBox:
             if (len(self.contextsBox.items()) !=
                 self.updateContextsBox()):
@@ -196,31 +178,6 @@ class AssetsExplorer(Explorer):
                              self.currentContext.title().split('/')[0]]):
                         self.showFiles(self.currentContext, self.snapshots)
 
-    def updateAssetsBox(self, l1, l2, assets):
-        if l1 > l2:
-            newItems = []
-            objNames = [str(obj.objectName()) for obj in self.itemsBox.items()]
-            for asset in assets:
-                if asset['__search_key__'] in objNames:
-                    pass
-                else:
-                    newItems.append(asset)
-            self.showAssets(newAssets)
-        elif l1 < l2:
-            removables = []
-            keys = [mem['__search_key__'] for mem in assets]
-            for item in self.itemsBox.items():
-                if str(item.objectName()) in keys:
-                    pass
-                else:
-                    removables.append(item)
-            self.itemsBox.removeItems(removables)
-            if self.currentItem in removables:
-                self.clearContextsProcesses()
-                self.currentItem = None
-                if self.checkinputDialog:
-                    self.checkinputDialog.setMainName()
-                    self.checkinputDialog.setContext()
 
     def updateContextsBox(self):
         #currentContext = self.currentContext
