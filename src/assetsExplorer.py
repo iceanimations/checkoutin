@@ -10,7 +10,9 @@ try:
     parent = qtfy.getMayaWindow()
 except:
     pass
-from ._base import Explorer
+from . import _base as base
+reload(base)
+Explorer = base.Explorer
 import os.path as osp
 import sys
 from PyQt4.QtGui import QMessageBox

@@ -14,7 +14,9 @@ except:
 import os.path as osp
 import sys
 from PyQt4.QtGui import QMessageBox, QMenu, QCursor
-from ._base import Explorer
+from . import _base as base
+reload(base)
+Explorer = base.Explorer
 import app.util as util
 import assetsExplorer
 import auth.security as security
