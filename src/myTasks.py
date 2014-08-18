@@ -3,55 +3,41 @@ Created on Dec 20, 2013
 
 @author: Qurban Ali (qurban_ali36@yahoo.com)
 '''
-parent = None
-try:
-    import qtify_maya_window as qtfy
-    parent = qtfy.getMayaWindow()
-except:
-    pass
+
 import os.path as osp
 import sys
 from PyQt4.QtGui import QMessageBox
 from customui import ui as cui
 import app.util as util
 import checkinput
+
 try:
     import backend
     reload(backend)
-except: pass
+except:
+    pass
+from . import _base as base
+reload(base)
+Explorer = base.Explorer
 reload(checkinput)
 reload(util)
 import auth.security as security
 reload(security)
-#reload(cui)
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
 iconPath = osp.join(rootPath, 'icons')
 
-class MyTasks(cui.Explorer):
+class MyTasks(Explorer):
 
-    def __init__(self, parent=parent, standalone=False):
-        super(MyTasks, self).__init__(parent, standalone)
-        self.setWindowTitle("My Tasks")
+    currentTask = None
+    title = "My Tasks"
+    scroller_arg = 'Contexts'
+    item_name = 'task'
 
-        self.currentTask = None
+    def __init__(self, standalone=False):
 
-        self.openButton.clicked.connect(self.checkout)
-        self.saveButton.clicked.connect(self.showCheckinputDialog)
-
-        self.showTasks()
-        self.contextsBox = self.createScroller('Contexts')
-        self.addFilesBox()
-
-        import site
-        # update the database, how many times this app is used
-        site.addsitedir(r'r:/pipe_repo/users/qurban')
-        import appUsageApp
-        appUsageApp.updateDatabase('MyTasks')
-
-    def showTasks(self):
-        self.tasksBox = self.createScroller("Tasks")
+        super(MyTasks, self).__init__(standalone=standalone)
         self.addTasks(util.get_all_task())
 
     def addTasks(self, tasks):
@@ -62,10 +48,10 @@ class MyTasks(cui.Explorer):
                 util.get_sobject_name(util.get_sobject_from_task(tsk)),
                 util.get_project_title(util.get_project_from_task(tsk)),
                 util.get_sobject_description(tsk))
-            self.tasksBox.addItem(item)
+            self.itemsBox.addItem(item)
             item.setObjectName(tsk)
         map(lambda widget: self.bindClickEvent(widget, self.showContexts),
-            self.tasksBox.items())
+            self.itemsBox.items())
 
     def showContexts(self, taskWidget):
 
@@ -165,7 +151,7 @@ class MyTasks(cui.Explorer):
 
     def updateWindow(self):
         newTasks = util.get_all_task()
-        taskLen1 = len(newTasks); taskLen2 = len(self.tasksBox.items())
+        taskLen1 = len(newTasks); taskLen2 = len(self.itemsBox.items())
         if taskLen1 != taskLen2:
             self.updateTasksBox(newTasks, taskLen1, taskLen2)
         if self.currentTask and self.contextsBox:
@@ -183,12 +169,12 @@ class MyTasks(cui.Explorer):
                     self.updateFilesBox()
 
     def updateTasksBox(self, tasks, l1, l2):
-        tasksNow = set([str(t.objectName()) for t in self.tasksBox.items()])
+        tasksNow = set([str(t.objectName()) for t in self.itemsBox.items()])
         tasks = set(tasks)
         if l1 > l2:
             self.addTasks(tasks.difference(tasksNow))
         else:
-            removedTasks = self.tasksBox.removeItemsON(
+            removedTasks = self.itemsBox.removeItemsON(
                 tasksNow.difference(tasks))
 
             # check if the currentTask is removed

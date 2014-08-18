@@ -4,9 +4,17 @@ Base class for explorer function. To avoid customui packages dependence
 on backend. Crudely thought out idea might need clean-up in future.
 '''
 from customui import ui as cui
+import site
 try:
     import backend
     reload(backend)
+except:
+    pass
+
+parent = None
+try:
+    import qtify_maya_window as qtfy
+    parent = qtfy.getMayaWindow()
 except:
     pass
 
@@ -28,17 +36,21 @@ class Explorer(cui.Explorer):
             self.openButton.setEnabled(False)
             self.referenceButton.setEnabled(False)
 
+        self.itemsBox = self.createScroller("%ss" %self.item_name.capitalize())
+        self.contextsBox = self.createScroller(self.scroller_arg)
+
         self.addFilesBox()
 
         self.setProjectsBox()
-        self.itemsBox = self.createScroller("%ss" %self.item_name.capitalize())
-        self.contextsBox = self.createScroller()
 
 
         # update the database, how many times this app is used
         site.addsitedir(r'r:/pipe_repo/users/qurban')
         import appUsageApp
         appUsageApp.updateDatabase('AssetsExplorer')
+
+    def setProject(self):
+        pass
 
 
     def checkout(self, r = False):

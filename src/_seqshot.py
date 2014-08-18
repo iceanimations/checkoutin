@@ -4,13 +4,7 @@ Created on Jun 2, 2014
 @author: Qurban Ali (qurban_ali36@yahoo.com)
 copyright (c) at Ice Animations (Pvt) Ltd.
 '''
-parent = None
-import site
-try:
-    import qtify_maya_window as qtfy
-    parent = qtfy.getMayaWindow()
-except:
-    pass
+
 import os.path as osp
 import sys
 from PyQt4.QtGui import QMessageBox, QMenu, QCursor
@@ -23,12 +17,7 @@ import auth.security as security
 reload(assetsExplorer)
 import checkinput
 reload(checkinput)
-try:
-    import backend
-    reload(backend)
-except: pass
 reload(util)
-reload(cui)
 reload(security)
 
 rootPath = osp.dirname(osp.dirname(__file__))
@@ -36,11 +25,12 @@ uiPath = osp.join(rootPath, 'ui')
 iconPath = osp.join(rootPath, 'icons')
 
 class ShotExplorer(Explorer):
+    item_name = 'shot'
+    title = 'Shot Explorer'
+    scroller_arg = 'Contexts'
 
-    def __init__(self, parent=parent, standalone=False):
-        self.item_name = 'shot'
-        self.title = 'Shot Explorer'
-        super(ShotExplorer, self).__init__(parent)
+    def __init__(self, standalone=False):
+        super(ShotExplorer, self).__init__()
 
         self.episodeBox.show()
         self.sequenceBox.show()
@@ -54,7 +44,7 @@ class ShotExplorer(Explorer):
         self.episodeBox.activated[str].connect(self.callSetSequenceBox)
         self.sequenceBox.activated[str].connect(self.shotItems)
 
-        self.scroller_arg = 'Contexts'
+
 
     def setProject(self):
         projectName = str(self.projectsBox.currentText())

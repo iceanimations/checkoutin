@@ -4,12 +4,6 @@ Created on Feb 10, 2014
 @author: Qurban Ali (qurban_ali36@yahoo.com)
 copyright (c) at Ice Animations (Pvt) Ltd
 '''
-parent = None
-try:
-    import qtify_maya_window as qtfy
-    parent = qtfy.getMayaWindow()
-except:
-    pass
 from . import _base as base
 reload(base)
 Explorer = base.Explorer
@@ -30,14 +24,16 @@ iconPath = osp.join(rootPath, 'icons')
 
 class AssetsExplorer(Explorer):
 
-    def __init__(self, parent=parent, shot=None, standalone=False):
-        self.item_name = 'asset'
-        self.title = 'Asset Explorer'
-        super(AssetsExplorer, self).__init__(parent, standalone)
+    item_name = 'asset'
+    title = 'Asset Explorer'
+    scroller_arg = 'Process/Context'
+
+
+    def __init__(self, shot=None, standalone=False):
+
+        super(AssetsExplorer, self).__init__(standalone=standalone)
 
         self.shot = shot
-        self.scroller_arg = 'Process/Context'
-
 
         if self.shot:
             self.projectsBox.hide()
@@ -72,6 +68,7 @@ class AssetsExplorer(Explorer):
             self.itemsBox.items())
 
     def showContextsProcesses(self, asset):
+
         # highlight the selected widget
         if self.currentItem:
             self.currentItem.setStyleSheet("background-color: None")
@@ -81,6 +78,7 @@ class AssetsExplorer(Explorer):
         self.clearContextsProcesses()
 
         contexts = self.contextsProcesses()
+
         for pro in contexts:
             for contx in contexts[pro]:
                 title = contx
@@ -88,6 +86,12 @@ class AssetsExplorer(Explorer):
                                        '', '', '')
                 item.setObjectName(pro +'>'+ contx)
                 self.contextsBox.addItem(item)
+
+            item = self.createItem(pro,
+                                   '', '', '')
+            item.setObjectName(pro)
+            self.contextsBox.addItem(item)
+
         map(lambda widget: self.bindClickEventForFiles(widget, self.showFiles,
                                                        self.snapshots),
             self.contextsBox.items())
@@ -98,6 +102,7 @@ class AssetsExplorer(Explorer):
             self.checkinputDialog.setContext()
 
     def contextsProcesses(self):
+
         contexts = {}
         self.snapshots = util.get_snapshot_from_sobject(str(
             self.currentItem.objectName()))
@@ -109,13 +114,13 @@ class AssetsExplorer(Explorer):
                 contexts[snap['process']] = set([snap['context']])
 
         if 'model' not in contexts:
-            contexts['model'] = set(['model'])
+            contexts['model'] = set()
 
         if 'rig' not in contexts:
-            contexts['rig'] = set(['rig'])
+            contexts['rig'] = set()
 
         if 'shaded' not in contexts:
-            contexts['shaded'] = set(['shaded'])
+            contexts['shaded'] = set()
 
         return contexts
 
@@ -126,17 +131,22 @@ class AssetsExplorer(Explorer):
 
     def showCheckinputDialog(self):
         if self.currentContext:
-            if security.checkinability(str(self.currentItem.objectName()), self.currentContext.title().split('/')[0]):
+            if security.checkinability(
+                    str(self.currentItem.objectName()),
+                    self.currentContext.title().split('/')[0]):
                 self.checkinputDialog = checkinput.Dialog(self)
                 self.checkinputDialog.setMainName(self.currentItem.title())
                 self.checkinputDialog.setContext(self.currentContext.title())
                 self.checkinputDialog.show()
             else:
                 cui.showMessage(self, title='Assets Explorer',
-                                msg='Access denied. You don\'t have permissions to make changes to the selected Process',
+                                msg='Access denied. You don\'t have '+
+                                'permissions to make changes to the '+
+                                'selected Process',
                                 icon=QMessageBox.Critical)
         else:
-            cui.showMessage(self, title='Assets Explorer', msg='No Process/Context selected',
+            cui.showMessage(self, title='Assets Explorer',
+                            msg='No Process/Context selected',
                             icon=QMessageBox.Warning)
 
 
@@ -152,6 +162,7 @@ class AssetsExplorer(Explorer):
         return length
 
     def updateWindow(self):
+
         if self.shot:
             project, shot = self.shot.split('>')
             newItems = util.get_assets_in_shot(project, shot)
@@ -159,8 +170,7 @@ class AssetsExplorer(Explorer):
             proj = str(self.projectsBox.currentText())
             if proj == '--Select Project--':
                 return
-            # What's the use of this line?
-            newAssets = util.all_assets(self.projects[proj])
+            newItems = util.all_assets(self.projects[proj])
 
         assetsLen1 = len(newItems)
         assetsLen2 = len(self.itemsBox.items())
