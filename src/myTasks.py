@@ -17,7 +17,7 @@ try:
 except:
     pass
 from . import _base as base
-reload(base)
+#reload(base)
 Explorer = base.Explorer
 reload(checkinput)
 reload(util)

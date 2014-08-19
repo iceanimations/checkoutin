@@ -5,7 +5,7 @@ Created on Feb 10, 2014
 copyright (c) at Ice Animations (Pvt) Ltd
 '''
 from . import _base as base
-reload(base)
+#reload(base)
 Explorer = base.Explorer
 import os.path as osp
 import sys

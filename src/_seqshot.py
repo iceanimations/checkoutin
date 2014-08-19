@@ -11,19 +11,19 @@ import os
 import subprocess
 from PyQt4.QtGui import QMessageBox, QMenu, QCursor
 from . import _base as base
-reload(base)
 import backend
-reload(backend)
-Explorer = base.Explorer
 from customui import ui as cui
 import app.util as util
 import assetsExplorer
 import auth.security as security
-#reload(assetsExplorer)
 import checkinput
-reload(checkinput)
-reload(util)
-reload(security)
+#reload(backend)
+#reload(assetsExplorer)
+#reload(base)
+#reload(checkinput)
+#reload(util)
+#reload(security)
+Explorer = base.Explorer
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
@@ -134,7 +134,7 @@ class ShotExplorer(Explorer):
                                        '', '', '')
                 item.setObjectName(pro +'>'+ contx)
                 self.contextsBox.addItem(item)
-                if title == 'cache':
+                if title == 'cache' or title == 'preview':
                     item.mouseDoubleClickEvent = self.cacheDoubleClick
         map(lambda widget: self.bindClickEventForFiles(widget, self.showFiles, self.snapshots), self.contextsBox.items())
 
