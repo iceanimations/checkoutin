@@ -4,7 +4,7 @@ Base class for explorer function. To avoid customui packages dependence
 on backend. Crudely thought out idea might need clean-up in future.
 '''
 from customui import ui as cui
-#reload(cui)
+reload(cui)
 import site
 try:
     import backend

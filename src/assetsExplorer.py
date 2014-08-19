@@ -5,18 +5,15 @@ Created on Feb 10, 2014
 copyright (c) at Ice Animations (Pvt) Ltd
 '''
 from . import _base as base
-#reload(base)
 Explorer = base.Explorer
 import os.path as osp
 import sys
 from PyQt4.QtGui import QMessageBox
 import app.util as util
 import checkinput
-reload(checkinput)
 reload(util)
 import auth.security as security
 reload(security)
-#reload(cui)
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')

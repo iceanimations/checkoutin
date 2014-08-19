@@ -11,18 +11,13 @@ import os
 import subprocess
 from PyQt4.QtGui import QMessageBox, QMenu, QCursor
 from . import _base as base
+reload(base)
 import backend
 from customui import ui as cui
 import app.util as util
 import assetsExplorer
 import auth.security as security
 import checkinput
-#reload(backend)
-#reload(assetsExplorer)
-#reload(base)
-#reload(checkinput)
-#reload(util)
-#reload(security)
 Explorer = base.Explorer
 
 rootPath = osp.dirname(osp.dirname(__file__))
