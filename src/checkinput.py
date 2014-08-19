@@ -93,8 +93,12 @@ class Dialog(Form, Base):
         if version and version > 2013:
             fileName = fileName[0]
         fileName = str(fileName)
+        if fileName:
+            self.pathBox.setText(fileName)
         
     def ok(self):
+        self.okButton.setEnabled(False)
+        qApp.processEvents()
         description = str(self.descriptionBox.toPlainText())
         path = ''
         if self.filePathButton.isChecked():
@@ -127,6 +131,8 @@ class Dialog(Form, Base):
         else:
             cui.showMessage(self, title='Save', msg='No context selected',
                             icon=QMessageBox.Warning)
+        self.okButton.setEnabled(True)
+        qApp.processEvents()
                             
     
     def cancel(self):

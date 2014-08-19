@@ -4,6 +4,7 @@ Base class for explorer function. To avoid customui packages dependence
 on backend. Crudely thought out idea might need clean-up in future.
 '''
 from customui import ui as cui
+reload(cui)
 import site
 try:
     import backend
@@ -59,14 +60,14 @@ class Explorer(cui.Explorer):
 
     def checkin(self, context, detail, filePath = None):
         if self.currentItem:
-            sobj = str(self.currentAsset.objectName())
+            sobj = str(self.currentItem.objectName())
             pro = self.currentContext.title().split('/')[0]
             backend.checkin(sobj, context, process = pro, description = detail,
                             file = filePath)
 
             # redisplay the contextsBox/filesBox
             currentContext = self.currentContext
-            self.showContextsProcesses(self.currentAsset)
+            self.showContexts(self.currentItem)
             for contx in self.contextsBox.items():
                 if contx.objectName() == currentContext.objectName():
                     self.currentContext = contx

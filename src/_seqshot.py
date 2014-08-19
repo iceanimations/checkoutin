@@ -10,11 +10,14 @@ import sys
 from PyQt4.QtGui import QMessageBox, QMenu, QCursor
 from . import _base as base
 reload(base)
+import backend
+reload(backend)
 Explorer = base.Explorer
+from customui import ui as cui
 import app.util as util
 import assetsExplorer
 import auth.security as security
-reload(assetsExplorer)
+#reload(assetsExplorer)
 import checkinput
 reload(checkinput)
 reload(util)
@@ -129,12 +132,19 @@ class ShotExplorer(Explorer):
                                        '', '', '')
                 item.setObjectName(pro +'>'+ contx)
                 self.contextsBox.addItem(item)
+                if title == 'cache':
+                    item.mouseDoubleClickEvent = self.cacheDoubleClick
         map(lambda widget: self.bindClickEventForFiles(widget, self.showFiles, self.snapshots), self.contextsBox.items())
 
         # handle child windows
         if self.checkinputDialog:
             self.checkinputDialog.setMainName(self.currentItem.title())
             self.checkinputDialog.setContext()
+            
+    def cacheDoubleClick(self, event):
+        path = backend.context_path(str(self.currentItem.objectName()), self.currentContext.title())
+        print path
+        
 
     def contexts(self):
 
@@ -153,6 +163,8 @@ class ShotExplorer(Explorer):
             contexts['cache'] = set(['cache'])
         if 'animation' not in contexts:
             contexts['animation'] = set(['animation'])
+        if 'preview' not in contexts:
+            contexts['preview'] = set(['preview'])
         return contexts
 
     def clearWindow(self):
