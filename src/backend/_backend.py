@@ -105,7 +105,7 @@ def _reference(snapshot):
     server = user.get_server()
     filename = util.filename_from_snap(snapshot, mode = 'client_repo')
     try:
-        mi.addReference(paths = [filename])
+        mi.addReference(paths = [filename], dup = True)
     except:
         pass
 
@@ -535,6 +535,23 @@ def checkin_cache(shot, objs, camera = None):
                               util.get_search_key_code(
                                   snap['__search_key__']),
                               type = 'input_ref')
+
+def context_path(search_key, context):
+
+    snaps = util.get_snapshot_from_sobject(search_key)
+    checked_in = False
+    for snap in snaps:
+        if snap['context'] == context:
+            checked_in = snap
+            break
+
+    if not checked_in:
+        path = iutil.getTemp()
+        print path
+        snap = user.get_server().simple_checkin(search_key, 'cache',  path, mode = 'copy')
+
+    return op.dirname(util.get_filename_from_snap(snap, mode = 'client_repo'))
+
 
 
 # server.get_paths(server.get_all_children(u'vfx/asset?project=vfx&code=prop002', 'vfx/texture')[0]['__search_key__'])
