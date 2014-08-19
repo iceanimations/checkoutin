@@ -7,6 +7,8 @@ copyright (c) at Ice Animations (Pvt) Ltd.
 
 import os.path as osp
 import sys
+import os
+import subprocess
 from PyQt4.QtGui import QMessageBox, QMenu, QCursor
 from . import _base as base
 reload(base)
@@ -143,7 +145,8 @@ class ShotExplorer(Explorer):
             
     def cacheDoubleClick(self, event):
         path = backend.context_path(str(self.currentItem.objectName()), self.currentContext.title())
-        print path
+        path = path.replace('/', '\\')
+        subprocess.call('explorer '+path, shell=True)
         
 
     def contexts(self):
