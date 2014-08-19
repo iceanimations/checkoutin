@@ -47,7 +47,7 @@ class Explorer(cui.Explorer):
         # update the database, how many times this app is used
         site.addsitedir(r'r:/pipe_repo/users/qurban')
         import appUsageApp
-        appUsageApp.updateDatabase('AssetsExplorer')
+        appUsageApp.updateDatabase(''.join(self.title.split()))
 
     def setProject(self):
         pass

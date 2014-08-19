@@ -25,7 +25,7 @@ iconPath = osp.join(rootPath, 'icons')
 class AssetsExplorer(Explorer):
 
     item_name = 'asset'
-    title = 'Asset Explorer'
+    title = 'Assets Explorer'
     scroller_arg = 'Process/Context'
 
 
@@ -81,7 +81,10 @@ class AssetsExplorer(Explorer):
 
         for pro in contexts:
             for contx in contexts[pro]:
+
                 title = contx
+                if title.lower() == pro.lower():
+                    continue
                 item = self.createItem(title,
                                        '', '', '')
                 item.setObjectName(pro +'>'+ contx)
