@@ -37,7 +37,7 @@ class AssetsExplorer(Explorer):
             self.saveButton.hide()
             self.openButton.hide()
             project, shot = self.shot.split('>')
-            self.shotItems(util.get_assets_in_shot(project, shot))
+            self.showAssets(util.get_assets_in_shot(project, shot))
 
     def setProject(self):
         projectName = str(self.projectsBox.currentText())
@@ -47,12 +47,12 @@ class AssetsExplorer(Explorer):
         assets = util.all_assets(self.projects[projectName])
         # clear the window
         self.clearWindow()
-        self.shotItems(assets)
+        self.showAssets(assets)
         if self.checkinputDialog:
             self.checkinputDialog.setMainName()
             self.checkinputDialog.setContext()
 
-    def shotItems(self, assets):
+    def showAssets(self, assets):
         for asset in assets:
             item = self.createItem('%s (%s)' %(asset['name'], asset['code']),
                                    asset['asset_category'],

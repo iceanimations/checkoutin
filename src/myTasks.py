@@ -34,6 +34,7 @@ class MyTasks(Explorer):
     def __init__(self, standalone=False):
 
         super(MyTasks, self).__init__(standalone=standalone)
+        self.projectsBox.hide()
         self.addTasks(util.get_all_task())
 
     def addTasks(self, tasks):
