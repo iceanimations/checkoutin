@@ -59,27 +59,28 @@ class Explorer(cui.Explorer):
         self.checkout(r = True)
         
     def call_checkout(self):
-        if backend.is_modified():
-            btn = cui.showMessage(self, title='Scene modified',
-                            msg='Current scene contains unsaved changes',
-                            ques='Do you want to save the changes?',
-                            btns=QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
-                            icon=QMessageBox.Question)
-            if btn == QMessageBox.Save:
-                path = backend.get_file_path()
-                if path == 'unknown':
-                    path =  QFileDialog.getSaveFileName(self, 'Save', '',
-                                                'MayaBinary(*.mb);; MayaAscii(*.ma)')
-                    if backend.get_maya_version() > 2013:
-                        path = path[0]
-                    backend.rename_scene(path)
-                backend.save_scene(osp.splitext(path)[-1])
+        if self.currentFile:
+            if backend.is_modified():
+                btn = cui.showMessage(self, title='Scene modified',
+                                msg='Current scene contains unsaved changes',
+                                ques='Do you want to save the changes?',
+                                btns=QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
+                                icon=QMessageBox.Question)
+                if btn == QMessageBox.Save:
+                    path = backend.get_file_path()
+                    if path == 'unknown':
+                        path =  QFileDialog.getSaveFileName(self, 'Save', '',
+                                                    'MayaBinary(*.mb);; MayaAscii(*.ma)')
+                        if backend.get_maya_version() > 2013:
+                            path = path[0]
+                        backend.rename_scene(path)
+                    backend.save_scene(osp.splitext(path)[-1])
+                    self.checkout()
+                elif btn == QMessageBox.Discard:
+                    self.checkout()
+                else: pass
+            else:
                 self.checkout()
-            elif btn == QMessageBox.Discard:
-                self.checkout()
-            else: pass
-        else:
-            self.checkout()
 
     def checkout(self, r = False):
         if self.currentFile:
