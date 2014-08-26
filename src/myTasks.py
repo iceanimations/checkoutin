@@ -27,7 +27,6 @@ iconPath = osp.join(rootPath, 'icons')
 
 class MyTasks(Explorer):
 
-    currentTask = None
     title = "My Tasks"
     scroller_arg = 'Contexts'
     item_name = 'task'
@@ -53,16 +52,16 @@ class MyTasks(Explorer):
     def showContexts(self, taskWidget):
 
         # highlight the item
-        if self.currentTask:
-            self.currentTask.setStyleSheet("background-color: None")
-        self.currentTask = taskWidget
-        self.currentTask.setStyleSheet("background-color: #666666")
+        if self.currentItem:
+            self.currentItem.setStyleSheet("background-color: None")
+        self.currentItem = taskWidget
+        self.currentItem.setStyleSheet("background-color: #666666")
 
         # remove the showed contexts
         self.clearContexts()
 
         # get the new contexts
-        task = str(self.currentTask.objectName())
+        task = str(self.currentItem.objectName())
         contexts = util.get_contexts_from_task(task)
 
         # add the contexts
@@ -70,7 +69,7 @@ class MyTasks(Explorer):
 
         # handle child windows
         if self.checkinputDialog:
-            self.checkinputDialog.setMainName(self.currentTask.title())
+            self.checkinputDialog.setMainName(self.currentItem.title())
             self.checkinputDialog.setContext()
 
         # if there is only one context, show the files
@@ -97,18 +96,11 @@ class MyTasks(Explorer):
             self.filesBox.clearItems()
             self.currentFile = None
 
-    def checkout(self, r = False):
-        if self.currentFile:
-            backend.checkout(str(self.currentFile.objectName()), r = r)
-
-    def addReference(self):
-        self.checkout(r = True)
-
     def showCheckinputDialog(self):
-        if self.currentTask:
-            if security.checkinability((self.currentTask.objectName())):
+        if self.currentItem:
+            if security.checkinability((self.currentItem.objectName())):
                 self.checkinputDialog = checkinput.Dialog(self)
-                self.checkinputDialog.setMainName(self.currentTask.title())
+                self.checkinputDialog.setMainName(self.currentItem.title())
                 if self.currentContext:
                     self.checkinputDialog.setContext(
                         self.currentContext.title())
@@ -126,16 +118,16 @@ class MyTasks(Explorer):
 
 
     def checkin(self, context, detail, filePath = None):
-        if self.currentTask:
+        if self.currentItem:
             sobj = util.get_sobject_from_task(
-                str(self.currentTask.objectName()))
+                str(self.currentItem.objectName()))
             backend.checkin(sobj, context,
                             process = util.get_task_process(str(
-                                self.currentTask.objectName())),
+                                self.currentItem.objectName())),
                             description = detail, file = filePath)
             # redisplay the the contextsBox/filesBox
             currentContext = self.currentContext
-            self.showContexts(self.currentTask)
+            self.showContexts(self.currentItem)
             for contx in self.contextsBox.items():
                 if contx.objectName() == currentContext.objectName():
                     self.currentContext = contx
@@ -151,16 +143,16 @@ class MyTasks(Explorer):
         taskLen1 = len(newTasks); taskLen2 = len(self.itemsBox.items())
         if taskLen1 != taskLen2:
             self.updateTasksBox(newTasks, taskLen1, taskLen2)
-        if self.currentTask and self.contextsBox:
+        if self.currentItem and self.contextsBox:
             contexts = util.get_contexts_from_task(str(
-                self.currentTask.objectName()))
+                self.currentItem.objectName()))
             contextsLen1 = len(contexts)
             contextsLen2 = len(self.contextsBox.items())
             if contextsLen1 != contextsLen2:
                 self.updateContextsBox(contexts, contextsLen1, contextsLen2)
             if self.currentContext and self.filesBox:
                 files = util.get_snapshots(self.currentContext.title(),
-                                           str(self.currentTask.objectName()))
+                                           str(self.currentItem.objectName()))
                 filesLen1 = len(files); filesLen2 = len(self.filesBox.items())
                 if filesLen1 != filesLen2:
                     self.updateFilesBox()
@@ -175,18 +167,18 @@ class MyTasks(Explorer):
                 tasksNow.difference(tasks))
 
             # check if the currentTask is removed
-            if self.currentTask in removedTasks:
+            if self.currentItem in removedTasks:
                 self.clearContexts()
-                self.currentTask = None
+                self.currentItem = None
                 if self.checkinputDialog:
                     self.checkinputDialog.setMainName()
                     self.checkinputDialog.setContext()
 
 
     def updateContextsBox(self, contexts, l1, l2):
-        if self.currentTask:
+        if self.currentItem:
             currentContext = self.currentContext
-            self.showContexts(self.currentTask)
+            self.showContexts(self.currentItem)
             if currentContext:
                 flag = False
                 for contx in self.contextsBox.items():

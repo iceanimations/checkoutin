@@ -2,6 +2,7 @@ from auth import user
 import app.util as util
 import tempfile
 import pymel.core as pc
+import maya.cmds as cmds
 import imaya as mi
 import iutil
 import tactic_client_lib.application.maya as maya
@@ -11,6 +12,7 @@ import os.path as op
 import json
 import shutil
 import auth.security as security
+import re
 
 dt = datetime.datetime
 m = maya.Maya()
@@ -552,6 +554,20 @@ def context_path(search_key, context):
 
     return op.dirname(util.get_filename_from_snap(snap, mode = 'client_repo'))
 
+def is_modified():
+    return cmds.file(q=True, modified=True)
 
+def get_file_path():
+    return cmds.file(q=True, location=True)
+
+def rename_scene(name):
+    cmds.file(rename=name)
+    
+def get_maya_version():
+    return int(re.search('\\d{4}', pc.about(v=True)).group())
+
+def save_scene(ext):
+    t = 'mayaBinary' if ext == '.mb' else 'mayaAscii'
+    cmds.file(save=True, type=t)
 
 # server.get_paths(server.get_all_children(u'vfx/asset?project=vfx&code=prop002', 'vfx/texture')[0]['__search_key__'])

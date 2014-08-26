@@ -6,6 +6,7 @@ on backend. Crudely thought out idea might need clean-up in future.
 from customui import ui as cui
 reload(cui)
 import site
+from PyQt4.QtGui import QMessageBox, QFileDialog
 try:
     import backend
     reload(backend)
@@ -18,6 +19,7 @@ try:
     parent = qtfy.getMayaWindow()
 except:
     pass
+import os.path as osp
 
 
 class Explorer(cui.Explorer):
@@ -28,7 +30,7 @@ class Explorer(cui.Explorer):
         self.no_item_selected = 'No %s selected' %self.item_name.capitalize()
         self.projectsBox.show()
         self.projectsBox.activated.connect(self.setProject)
-        self.openButton.clicked.connect(self.checkout)
+        self.openButton.clicked.connect(self.call_checkout)
         self.saveButton.clicked.connect(self.showCheckinputDialog)
         self.currentItem = None
         self.standalone = standalone
@@ -53,6 +55,31 @@ class Explorer(cui.Explorer):
     def setProject(self):
         pass
 
+    def addReference(self):
+        self.checkout(r = True)
+        
+    def call_checkout(self):
+        if backend.is_modified():
+            btn = cui.showMessage(self, title='Scene modified',
+                            msg='Current scene contains unsaved changes',
+                            ques='Do you want to save the changes?',
+                            btns=QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
+                            icon=QMessageBox.Question)
+            if btn == QMessageBox.Save:
+                path = backend.get_file_path()
+                if path == 'unknown':
+                    path =  QFileDialog.getSaveFileName(self, 'Save', '',
+                                                'MayaBinary(*.mb);; MayaAscii(*.ma)')
+                    if backend.get_maya_version() > 2013:
+                        path = path[0]
+                    backend.rename_scene(path)
+                backend.save_scene(osp.splitext(path)[-1])
+                self.checkout()
+            elif btn == QMessageBox.Discard:
+                self.checkout()
+            else: pass
+        else:
+            self.checkout()
 
     def checkout(self, r = False):
         if self.currentFile:

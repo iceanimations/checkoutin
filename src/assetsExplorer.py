@@ -150,10 +150,6 @@ class AssetsExplorer(Explorer):
                             icon=QMessageBox.Warning)
 
 
-    def addReference(self):
-        self.checkout(r = True)
-
-
     def contextsLen(self, contexts):
         length = 0
         for contx in contexts:
