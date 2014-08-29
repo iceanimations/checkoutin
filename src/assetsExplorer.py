@@ -6,6 +6,7 @@ copyright (c) at Ice Animations (Pvt) Ltd
 '''
 from . import _base as base
 Explorer = base.Explorer
+from customui import ui as cui
 import os.path as osp
 import sys
 from PyQt4.QtGui import QMessageBox
