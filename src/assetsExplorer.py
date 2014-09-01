@@ -62,10 +62,10 @@ class AssetsExplorer(Explorer):
             item.setObjectName(asset['__search_key__'])
             self.itemsBox.addItem(item)
         map(lambda widget: self.bindClickEvent(widget,
-                                               self.showContextsProcesses),
+                                               self.showContexts),
             self.itemsBox.items())
 
-    def showContextsProcesses(self, asset):
+    def showContexts(self, asset):
 
         # highlight the selected widget
         if self.currentItem:
@@ -187,7 +187,7 @@ class AssetsExplorer(Explorer):
 
     def updateContextsBox(self):
         #currentContext = self.currentContext
-        self.showContextsProcesses(self.currentItem)
+        self.showContexts(self.currentItem)
 #         if currentContext:
 #             flag = False
 #             for contx in self.contextsBox.items():
