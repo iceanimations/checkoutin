@@ -163,6 +163,8 @@ class ShotExplorer(Explorer):
             contexts['animation'] = set(['animation'])
         if 'preview' not in contexts:
             contexts['preview'] = set(['preview'])
+        if 'lighting' not in contexts:
+            contexts['lighting'] = set(['lighting'])
         return contexts
 
     def clearWindow(self):
