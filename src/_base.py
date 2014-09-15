@@ -6,7 +6,10 @@ on backend. Crudely thought out idea might need clean-up in future.
 from customui import ui as cui
 reload(cui)
 import site
+import imaya as mi
+import os.path as osp
 from PyQt4.QtGui import QMessageBox, QFileDialog
+
 try:
     import backend
     reload(backend)
@@ -15,12 +18,10 @@ except:
 
 parent = None
 try:
-    print 'yes'
     import qtify_maya_window as qtfy
     parent = qtfy.getMayaWindow()
 except:
     pass
-import os.path as osp
 import appUsageApp
 reload(appUsageApp)
 
@@ -58,21 +59,24 @@ class Explorer(cui.Explorer):
         
     def call_checkout(self):
         if self.currentFile:
-            if backend.is_modified():
-                btn = cui.showMessage(self, title='Scene modified',
-                                msg='Current scene contains unsaved changes',
-                                ques='Do you want to save the changes?',
-                                btns=QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
-                                icon=QMessageBox.Question)
+            if mi.is_modified():
+                btn = cui.showMessage(
+                    self, title='Scene modified',
+                    msg='Current scene contains unsaved changes',
+                    ques='Do you want to save the changes?',
+                    btns=QMessageBox.Save | QMessageBox.Discard |
+                    QMessageBox.Cancel,
+                    icon=QMessageBox.Question)
                 if btn == QMessageBox.Save:
-                    path = backend.get_file_path()
+                    path = mi.get_file_path()
                     if path == 'unknown':
-                        path =  QFileDialog.getSaveFileName(self, 'Save', '',
-                                                    'MayaBinary(*.mb);; MayaAscii(*.ma)')
-                        if backend.get_maya_version() > 2013:
+                        path =  QFileDialog.getSaveFileName(self,
+                                                            'Save', '',
+                                                            'MayaBinary(*.mb);; MayaAscii(*.ma)')
+                        if mi.maya_version() > 2013:
                             path = path[0]
-                        backend.rename_scene(path)
-                    backend.save_scene(osp.splitext(path)[-1])
+                        mi.rename_scene(path)
+                    mi.save_scene(osp.splitext(path)[-1])
                     self.checkout()
                 elif btn == QMessageBox.Discard:
                     self.checkout()
