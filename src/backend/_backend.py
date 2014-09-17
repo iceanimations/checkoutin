@@ -1,8 +1,8 @@
 from auth import user
 import app.util as util
 import tempfile
-#import pymel.core as pc
-#import maya.cmds as cmds
+import pymel.core as pc
+import maya.cmds as cmds
 import imaya as mi
 import iutil
 import tactic_client_lib.application.maya as maya
