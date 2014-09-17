@@ -15,12 +15,14 @@ except:
 
 parent = None
 try:
+    print 'yes'
     import qtify_maya_window as qtfy
     parent = qtfy.getMayaWindow()
 except:
     pass
 import os.path as osp
-
+import appUsageApp
+reload(appUsageApp)
 
 class Explorer(cui.Explorer):
 
@@ -46,10 +48,6 @@ class Explorer(cui.Explorer):
 
         self.setProjectsBox()
 
-
-        # update the database, how many times this app is used
-        site.addsitedir(r'r:/pipe_repo/users/qurban')
-        import appUsageApp
         appUsageApp.updateDatabase(''.join(self.title.split()))
 
     def setProject(self):

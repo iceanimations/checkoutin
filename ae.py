@@ -1,12 +1,12 @@
 import site
-site.addsitedir(r"R:/Python_Scripts")
+site.addsitedir(r"R:/Pipe_Repo/Users/Qurban/utilities")
 site.addsitedir(r"R:\Pipe_Repo\Projects\TACTIC")
 site.addsitedir(r"D:/My/Tasks/workSpace")
+import uiContainer
+from PyQt4.QtGui import QApplication, qApp
 import sys
-from PyQt4.QtGui import QApplication
-app = QApplication(sys.argv)
-def do():
 
+def do():
     # get the user
     import auth.user as user
     
@@ -19,5 +19,10 @@ def do():
     global win
     win = checkoutin.AssetsExplorer(standalone=True)
     win.show()
+
+app = qApp.instance()
+app.deleteLater()
+app.exec_()
+newApp = QApplication(sys.argv)
 do()
-sys.exit(app.exec_())
+sys.exit(newApp.exec_())
