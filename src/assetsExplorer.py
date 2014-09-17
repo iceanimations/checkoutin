@@ -55,7 +55,7 @@ class AssetsExplorer(Explorer):
 
     def showAssets(self, assets):
         for asset in assets:
-            item = self.createItem('%s (%s)' %(asset['name'], asset['code']),
+            item = self.createItem('%s'%asset['code'],
                                    asset['asset_category'],
                                    '', asset['description']
                                    if asset['description'] else '')
