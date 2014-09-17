@@ -20,9 +20,6 @@ def do():
     win = checkoutin.AssetsExplorer(standalone=True)
     win.show()
 
-app = qApp.instance()
-app.deleteLater()
-app.exec_()
 newApp = QApplication(sys.argv)
 do()
 sys.exit(newApp.exec_())
