@@ -30,8 +30,8 @@ class ShotExplorer(Explorer):
     scroller_arg = 'Contexts'
 
     def __init__(self, standalone=False):
-        super(ShotExplorer, self).__init__()
-
+        super(ShotExplorer, self).__init__(standalone=standalone)
+        
         self.episodeBox.show()
         self.sequenceBox.show()
         self.referenceButton.hide()

@@ -377,8 +377,8 @@ def checkin_texture(search_key, context):
         except ProtocolError as pe:
             files_uploaded = server.query('sthpw/file',
                     filters=[('snapshot_code', snapshot_code)])
-            ftu_names = { op.basename(f) for f in files_to_upload }
-            fu_names = { f['file_name'] for f in files_uploaded }
+            ftu_names = set([ op.basename(f) for f in files_to_upload ])
+            fu_names = set([ f['file_name'] for f in files_uploaded ])
             # names of files that could not be uploaded
             fnu_names = ftu_names.difference_update(fu_names)
             if not fnu_names:

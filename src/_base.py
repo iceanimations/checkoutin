@@ -27,7 +27,7 @@ reload(appUsageApp)
 class Explorer(cui.Explorer):
 
     def __init__(self, parent=parent, standalone=False):
-        super(Explorer, self).__init__(parent)
+        super(Explorer, self).__init__(parent, standalone)
         self.setWindowTitle(self.title)
         self.no_item_selected = 'No %s selected' %self.item_name.capitalize()
         self.projectsBox.show()
