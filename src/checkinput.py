@@ -108,14 +108,17 @@ class Dialog(Form, Base):
                     if not osp.isfile(path):
                         cui.showMessage(self, title='Save', msg='Specified path is not a file',
                                         icon=QMessageBox.Warning)
+                        self.okButton.setEnabled(True)
                         return
                 else:
                     cui.showMessage(self, title='Save', msg='File path does not exist',
                                     icon=QMessageBox.Warning)
+                    self.okButton.setEnabled(True)
                     return
             else:
                 cui.showMessage(self, title='Save', msg='Path not specified',
                                 icon=QMessageBox.Warning)
+                self.okButton.setEnabled(True)
                 return
         context = None
         if self.parent.currentContext:
@@ -136,9 +139,6 @@ class Dialog(Form, Base):
                             
     
     def cancel(self):
-        self.reject()
-        
-    def hideEvent(self, event):
         self.close()
     
     def closeEvent(self, event):
