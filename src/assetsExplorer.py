@@ -187,17 +187,4 @@ class AssetsExplorer(Explorer):
 
 
     def updateContextsBox(self):
-        #currentContext = self.currentContext
         self.showContexts(self.currentItem)
-#         if currentContext:
-#             flag = False
-#             for contx in self.contextsBox.items():
-#                 if contx.objectName() == currentContext.objectName():
-#                     self.currentContext = contx
-#                     flag = True
-#                     break
-#             if not flag:
-#                 self.currentContext = None
-#                 self.checkinputDialog.setContext()
-#             else:
-#                 self.showFiles(self.currentContext, self.snapshots)
