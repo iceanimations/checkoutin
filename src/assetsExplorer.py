@@ -9,7 +9,7 @@ Explorer = base.Explorer
 from customui import ui as cui
 import os.path as osp
 import sys
-from PyQt4.QtGui import QMessageBox
+from PyQt4.QtGui import QMessageBox, qApp
 import app.util as util
 import checkinput
 reload(util)
@@ -91,7 +91,7 @@ class AssetsExplorer(Explorer):
 
             item = self.createItem(pro,
                                    '', '', '')
-            item.setObjectName(asset.objectName() +'>'+ pro)
+            item.setObjectName(str(self.currentItem.objectName())+'>'+pro)
             self.contextsBox.addItem(item)
 
         map(lambda widget: self.bindClickEventForFiles(widget, self.showFiles,

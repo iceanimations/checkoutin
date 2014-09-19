@@ -9,7 +9,8 @@ import site
 import imaya as mi
 import os.path as osp
 from PyQt4.QtGui import QMessageBox, QFileDialog
-
+from PyQt4.QtCore import QThread
+import time
 try:
     import backend
     reload(backend)
@@ -37,6 +38,9 @@ class Explorer(cui.Explorer):
         self.saveButton.clicked.connect(self.showCheckinputDialog)
         self.currentItem = None
         self.standalone = standalone
+        self.testButton.hide()
+        self.testButton.released.connect(self.updateThumb)
+        
 
         if standalone:
             self.openButton.setEnabled(False)
@@ -49,7 +53,19 @@ class Explorer(cui.Explorer):
 
         self.setProjectsBox()
 
+        self.thread = Thread(self)
+        self.thread.start()
+
         appUsageApp.updateDatabase(''.join(self.title.split()))
+
+    def updateThumb(self):
+        self.itemsBox.scrolled(None)
+        self.contextsBox.scrolled(None)
+        self.filesBox.scrolled(None)
+        
+    def closeEvent(self, event):
+        self.thread.terminate()
+        self.deleteLater()
 
     def setProject(self):
         pass
@@ -160,3 +176,12 @@ class Explorer(cui.Explorer):
         '''
         
         timestamps = []
+class Thread(QThread):
+    def __init__(self, parent=None):
+        super(Thread, self).__init__(parent)
+        self.parentWin = parent
+        
+    def run(self):
+        while 1:
+            self.parentWin.testButton.released.emit()
+            time.sleep(1)
