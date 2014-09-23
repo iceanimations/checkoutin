@@ -84,7 +84,7 @@ class MyTasks(Explorer):
                                    '',
                                    util.get_sobject_description(task))
             self.contextsBox.addItem(item)
-            item.setObjectName(context +'>'+ task)
+            item.setObjectName(task +'>'+ context)
         # bind the click event
         map(lambda widget: self.bindClickEvent(widget, self.showFiles),
             self.contextsBox.items())
