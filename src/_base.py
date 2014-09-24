@@ -98,7 +98,7 @@ class Explorer(cui.Explorer):
         # since the latest file is append first it should be the
         # first file on the list
         if self.filesBox.items():
-            return self.filesBox.item()[0]
+            return self.filesBox.items()[0]
         else:
             None
 
