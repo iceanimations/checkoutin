@@ -84,7 +84,7 @@ class Explorer(cui.Explorer):
             else:
                 self.checkout()
         else:
-            latest = get_latest_file_item()
+            latest = self.get_latest_file_item()
             cur_orig = self.currentFile
             if latest:
                 self.currentFile = latest
