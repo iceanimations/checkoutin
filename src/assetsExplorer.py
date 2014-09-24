@@ -86,12 +86,12 @@ class AssetsExplorer(Explorer):
                     continue
                 item = self.createItem(title,
                                        '', '', '')
-                item.setObjectName(pro +'>'+ contx)
+                item.setObjectName(asset.objectName()+'>'+pro+'>'+contx)
                 self.contextsBox.addItem(item)
 
             item = self.createItem(pro,
                                    '', '', '')
-            item.setObjectName(pro)
+            item.setObjectName(asset.objectName() +'>'+ pro)
             self.contextsBox.addItem(item)
 
         map(lambda widget: self.bindClickEventForFiles(widget, self.showFiles,

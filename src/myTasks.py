@@ -26,7 +26,6 @@ uiPath = osp.join(rootPath, 'ui')
 iconPath = osp.join(rootPath, 'icons')
 
 class MyTasks(Explorer):
-
     title = "My Tasks"
     scroller_arg = 'Contexts'
     item_name = 'task'
@@ -59,7 +58,7 @@ class MyTasks(Explorer):
         self.currentItem.setStyleSheet("background-color: #666666")
 
         # remove the showed contexts
-        self.clearContexts()
+        self.clearContextsProcesses()
 
         # get the new contexts
         task = str(self.currentItem.objectName())
@@ -79,23 +78,13 @@ class MyTasks(Explorer):
 
     def addContexts(self, contexts, task):
         for context in contexts:
-            item = self.createItem(context,
-                                   '',
-                                   '',
-                                   util.get_sobject_description(task))
+            item = self.createItem(context, '', '',
+                    util.get_sobject_description(task))
             self.contextsBox.addItem(item)
-            item.setObjectName(context +'>'+ task)
+            item.setObjectName(task +'>'+ context)
         # bind the click event
         map(lambda widget: self.bindClickEvent(widget, self.showFiles),
             self.contextsBox.items())
-
-    def clearContexts(self):
-        self.contextsBox.clearItems()
-
-        # remove the showed files
-        if self.filesBox:
-            self.filesBox.clearItems()
-            self.currentFile = None
 
     def showCheckinputDialog(self):
         if self.currentItem:
@@ -116,7 +105,6 @@ class MyTasks(Explorer):
         else:
             cui.showMessage(self, title='MyTasks', msg='No Task selected',
                             icon=QMessageBox.Warning)
-
 
     def checkin(self, context, detail, filePath = None):
         if self.currentItem:
@@ -174,7 +162,6 @@ class MyTasks(Explorer):
                 if self.checkinputDialog:
                     self.checkinputDialog.setMainName()
                     self.checkinputDialog.setContext()
-
 
     def updateContextsBox(self, contexts, l1, l2):
         if self.currentItem:

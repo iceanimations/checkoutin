@@ -127,7 +127,7 @@ class ShotExplorer(Explorer):
                 title = contx
                 item = self.createItem(title,
                                        '', '', '')
-                item.setObjectName(pro +'>'+ contx)
+                item.setObjectName(shot.objectName() + '>' + pro + '>' + contx)
                 self.contextsBox.addItem(item)
                 if title == 'cache' or title == 'preview':
                     item.mouseDoubleClickEvent = self.cacheDoubleClick
