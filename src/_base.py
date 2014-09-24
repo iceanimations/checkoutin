@@ -83,6 +83,25 @@ class Explorer(cui.Explorer):
                 else: pass
             else:
                 self.checkout()
+        else:
+            latest = get_latest_file_item()
+            cur_orig = self.currentFile
+            if latest:
+                self.currentFile = latest
+                self.call_checkout()
+                self.currentFile = cur_orig
+
+    def get_latest_file_item(self):
+        '''
+        @return: Qt item that corresponds to the latest snapshot in the given context
+        '''
+        # since the latest file is append first it should be the
+        # first file on the list
+        if self.filesBox.items():
+            return self.filesBox.item()[0]
+        else:
+            None
+
 
     def checkout(self, r = False):
         if self.currentFile:
@@ -133,3 +152,11 @@ class Explorer(cui.Explorer):
                 if self.checkinputDialog:
                     self.checkinputDialog.setMainName()
                     self.checkinputDialog.setContext()
+
+    def get_latest_snapshot(snapshots):
+        '''
+        Given a set I snapshots return the latest one
+        @snapshots: list of dictionaries containing snapshot info
+        '''
+        
+        timestamps = []
