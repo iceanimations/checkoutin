@@ -130,7 +130,7 @@ class Dialog(Form, Base):
             if not context:
                 context = self.parent.currentContext.title().split('/')[0]
             self.parent.checkin(context, description, filePath = path)
-            self.accept()
+            self.close()
         else:
             cui.showMessage(self, title='Save', msg='No context selected',
                             icon=QMessageBox.Warning)
@@ -142,6 +142,7 @@ class Dialog(Form, Base):
         self.close()
     
     def closeEvent(self, event):
+        print 'closeEvent called............'
         self.parent.saveButton.setEnabled(True)
         self.parent.checkinputDialog = None
         self.deleteLater()

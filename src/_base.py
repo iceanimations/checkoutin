@@ -180,7 +180,7 @@ class Thread(QThread):
     def __init__(self, parent=None):
         super(Thread, self).__init__(parent)
         self.parentWin = parent
-        
+         
     def run(self):
         while 1:
             self.parentWin.testButton.released.emit()
