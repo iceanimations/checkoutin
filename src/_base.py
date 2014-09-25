@@ -74,38 +74,42 @@ class Explorer(cui.Explorer):
         self.checkout(r = True)
         
     def call_checkout(self):
-        if self.currentFile:
-            if mi.is_modified():
-                btn = cui.showMessage(
-                    self, title='Scene modified',
-                    msg='Current scene contains unsaved changes',
-                    ques='Do you want to save the changes?',
-                    btns=QMessageBox.Save | QMessageBox.Discard |
-                    QMessageBox.Cancel,
-                    icon=QMessageBox.Question)
-                if btn == QMessageBox.Save:
-                    path = mi.get_file_path()
-                    if path == 'unknown':
-                        path =  QFileDialog.getSaveFileName(self,
-                                                            'Save', '',
-                                                            'MayaBinary(*.mb);; MayaAscii(*.ma)')
-                        if mi.maya_version() > 2013:
-                            path = path[0]
-                        mi.rename_scene(path)
-                    mi.save_scene(osp.splitext(path)[-1])
+        if self.currentContext:
+            if self.currentFile:
+                if mi.is_modified():
+                    btn = cui.showMessage(
+                        self, title='Scene modified',
+                        msg='Current scene contains unsaved changes',
+                        ques='Do you want to save the changes?',
+                        btns=QMessageBox.Save | QMessageBox.Discard |
+                        QMessageBox.Cancel,
+                        icon=QMessageBox.Question)
+                    if btn == QMessageBox.Save:
+                        path = mi.get_file_path()
+                        if path == 'unknown':
+                            path =  QFileDialog.getSaveFileName(self,
+                                                                'Save', '',
+                                                                'MayaBinary(*.mb);; MayaAscii(*.ma)')
+                            if mi.maya_version() > 2013:
+                                path = path[0]
+                            mi.rename_scene(path)
+                        mi.save_scene(osp.splitext(path)[-1])
+                        self.checkout()
+                    elif btn == QMessageBox.Discard:
+                        self.checkout()
+                    else: pass
+                else:
                     self.checkout()
-                elif btn == QMessageBox.Discard:
-                    self.checkout()
-                else: pass
             else:
-                self.checkout()
+                latest = self.get_latest_file_item()
+                cur_orig = self.currentFile
+                if latest:
+                    self.currentFile = latest
+                    self.call_checkout()
+                    self.currentFile = cur_orig
         else:
-            latest = self.get_latest_file_item()
-            cur_orig = self.currentFile
-            if latest:
-                self.currentFile = latest
-                self.call_checkout()
-                self.currentFile = cur_orig
+            cui.showMessage(self, title='Warning',
+                            msg='No Process/Context selected')
 
     def get_latest_file_item(self):
         '''
