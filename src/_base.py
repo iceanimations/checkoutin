@@ -7,6 +7,7 @@ from customui import ui as cui
 reload(cui)
 import site
 import imaya as mi
+reload(mi)
 import os.path as osp
 from PyQt4.QtGui import QMessageBox, QFileDialog
 from PyQt4.QtCore import QThread
