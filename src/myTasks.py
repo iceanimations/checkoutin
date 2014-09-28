@@ -51,12 +51,7 @@ class MyTasks(Explorer):
 
     def showContexts(self, taskWidget):
 
-        # highlight the item
-        if self.currentItem:
-            self.currentItem.setStyleSheet("background-color: None")
-        self.currentItem = taskWidget
-        self.currentItem.setStyleSheet("background-color: #666666")
-
+        self._update_highlight(taskWidget)
         # remove the showed contexts
         self.clearContextsProcesses()
 
@@ -67,21 +62,17 @@ class MyTasks(Explorer):
         # add the contexts
         self.addContexts(contexts, task)
 
-        # handle child windows
-        if self.checkinputDialog:
-            self.checkinputDialog.setMainName(self.currentItem.title())
-            self.checkinputDialog.setContext()
-
+        self._update_child_window()
         # if there is only one context, show the files
         if len(contexts) == 1:
             self.showFiles(self.contextsBox.items()[0])
 
     def addContexts(self, contexts, task):
+        
         for context in contexts:
-            item = self.createItem(context, '', '',
-                    util.get_sobject_description(task))
-            self.contextsBox.addItem(item)
-            item.setObjectName(task +'>'+ context)
+            self.addContext(context, task +'>'+ context,
+                            util.get_sobject_description(task))
+
         # bind the click event
         map(lambda widget: self.bindClickEvent(widget, self.showFiles),
             self.contextsBox.items())

@@ -25,7 +25,7 @@ class AssetsExplorer(Explorer):
     item_name = 'asset'
     title = 'Assets Explorer'
     scroller_arg = 'Process/Context'
-
+    pre_defined_contexts = ['model', 'rig', 'shaded']
 
     def __init__(self, shot=None, standalone=False):
 
@@ -66,65 +66,28 @@ class AssetsExplorer(Explorer):
                                                self.showContexts),
             self.itemsBox.items())
 
-    def showContexts(self, asset):
+    # def contextsProcesses(self):
 
-        # highlight the selected widget
-        if self.currentItem:
-            self.currentItem.setStyleSheet("background-color: None")
-        self.currentItem = asset
-        self.currentItem.setStyleSheet("background-color: #666666")
+    #     contexts = {}
+    #     self.snapshots = util.get_snapshot_from_sobject(str(
+    #         self.currentItem.objectName()))
 
-        self.clearContextsProcesses()
+    #     for snap in self.snapshots:
+    #         if contexts.has_key(snap['process']):
+    #             contexts[snap['process']].add(snap['context'])
+    #         else:
+    #             contexts[snap['process']] = set([snap['context']])
 
-        contexts = self.contextsProcesses()
+    #     if 'model' not in contexts:
+    #         contexts['model'] = set()
 
-        for pro in contexts:
-            for contx in contexts[pro]:
+    #     if 'rig' not in contexts:
+    #         contexts['rig'] = set()
 
-                title = contx
-                if title.lower() == pro.lower():
-                    continue
-                item = self.createItem(title,
-                                       '', '', '')
-                item.setObjectName(asset.objectName()+'>'+pro+'>'+contx)
-                self.contextsBox.addItem(item)
+    #     if 'shaded' not in contexts:
+    #         contexts['shaded'] = set()
 
-            item = self.createItem(pro,
-                                   '', '', '')
-            item.setObjectName(str(self.currentItem.objectName())+'>'+pro)
-            self.contextsBox.addItem(item)
-
-        map(lambda widget: self.bindClickEventForFiles(widget, self.showFiles,
-                                                       self.snapshots),
-            self.contextsBox.items())
-
-        # handle child windows
-        if self.checkinputDialog:
-            self.checkinputDialog.setMainName(self.currentItem.title())
-            self.checkinputDialog.setContext()
-
-    def contextsProcesses(self):
-
-        contexts = {}
-        self.snapshots = util.get_snapshot_from_sobject(str(
-            self.currentItem.objectName()))
-
-        for snap in self.snapshots:
-            if contexts.has_key(snap['process']):
-                contexts[snap['process']].add(snap['context'])
-            else:
-                contexts[snap['process']] = set([snap['context']])
-
-        if 'model' not in contexts:
-            contexts['model'] = set()
-
-        if 'rig' not in contexts:
-            contexts['rig'] = set()
-
-        if 'shaded' not in contexts:
-            contexts['shaded'] = set()
-
-        return contexts
+    #     return contexts
 
     def clearWindow(self):
         self.itemsBox.clearItems()
@@ -151,13 +114,6 @@ class AssetsExplorer(Explorer):
                             msg='No Process/Context selected',
                             icon=QMessageBox.Warning)
 
-
-    def contextsLen(self, contexts):
-        length = 0
-        for contx in contexts:
-            for val in contexts[contx]:
-                length += 1
-        return length
 
     def updateWindow(self):
 

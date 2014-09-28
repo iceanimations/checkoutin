@@ -28,6 +28,11 @@ class ShotExplorer(Explorer):
     item_name = 'shot'
     title = 'Shot Explorer'
     scroller_arg = 'Contexts'
+    pre_defined_contexts = ['layout',
+                           'cache',
+                           'animation',
+                           'preview',
+                           'lighting'] 
 
     def __init__(self, standalone=False):
         super(ShotExplorer, self).__init__(standalone=standalone)
@@ -90,7 +95,10 @@ class ShotExplorer(Explorer):
         act.triggered.connect(self.showAssetsExplorer)
 
     def showAssetsExplorer(self):
-        assetsExplorer.AssetsExplorer(self, shot=self.projects[str(self.projectsBox.currentText())]+'>'+str(self.currentItem.objectName())).show()
+        assetsExplorer.AssetsExplorer(self, shot=
+                                      self.projects[str(
+                                          self.projectsBox.currentText())]+'>'
+                                      +str(self.currentItem.objectName())).show()
 
     def shotItems(self, seq=None, ep=None):
         self.clearShotsContextsFiles()
@@ -103,69 +111,52 @@ class ShotExplorer(Explorer):
         projectCode = self.projects[str(self.projectsBox.currentText())]
         for shot in util.get_shots(projectCode, episode=ep, sequence=self.sequences[str(seq)]):
             item = self.createItem(shot['code'],
-                                   'Start: '+ (str(shot['tc_frame_start']) +'\n' if shot['tc_frame_start']  else '\n') +
-                                   'End: ' + (str(shot['tc_frame_end']) if shot['tc_frame_end'] else ''),
+                                   'Start: '+ (str(shot['tc_frame_start']) +'\n'
+                                               if shot['tc_frame_start'] 
+                                               else '\n') +
+                                   'End: ' + (str(shot['tc_frame_end'])
+                                              if shot['tc_frame_end'] else ''),
                                    shot['timestamp'].split('.')[0],
-                                   shot['description'] if shot['description'] else '')
+                                   shot['description'] if shot['description']
+                                   else '')
+            
             item.setObjectName(shot['__search_key__'])
             self.itemsBox.addItem(item)
             item.contextMenuEvent = self.shotContextMenu
-        map(lambda widget: self.bindClickEvent(widget, self.showContexts), self.itemsBox.items())
+            
+        map(lambda widget: self.bindClickEvent(widget, self.showContexts),
+            self.itemsBox.items())
 
     def showContexts(self, shot):
-        # highlight the selected widget
-        if self.currentItem:
-            self.currentItem.setStyleSheet("background-color: None")
-        self.currentItem = shot
-        self.currentItem.setStyleSheet("background-color: #666666")
+        
+        super(ShotExplorer, self).showContexts(shot)
+        
+        for item in self.contextsBox.items():
+            if item.get_title().lower() in ['cache', 'preview']:
+                item.mouseDoubleClickEvent = self.cacheDoubleClick
 
-        self.clearContextsProcesses()
-
-        contexts = self.contexts()
-        for pro in contexts:
-            for contx in contexts[pro]:
-                title = contx
-                item = self.createItem(title,
-                                       '', '', '')
-                item.setObjectName(shot.objectName() + '>' + pro + '>' + contx)
-                self.contextsBox.addItem(item)
-                if title == 'cache' or title == 'preview':
-                    item.mouseDoubleClickEvent = self.cacheDoubleClick
-        map(lambda widget: self.bindClickEventForFiles(widget, self.showFiles, self.snapshots), self.contextsBox.items())
-
-        # handle child windows
-        if self.checkinputDialog:
-            self.checkinputDialog.setMainName(self.currentItem.title())
-            self.checkinputDialog.setContext()
-            
     def cacheDoubleClick(self, event):
-        path = backend.context_path(str(self.currentItem.objectName()), self.currentContext.title())
+        path = backend.context_path(str(self.currentItem.objectName()),
+                                    self.currentContext.title())
         path = path.replace('/', '\\')
         subprocess.call('explorer '+path, shell=True)
         
 
-    def contexts(self):
+    # def contexts(self):
 
-        contexts = {}
-        self.snapshots = util.get_snapshot_from_sobject(str(self.currentItem.objectName()))
+    #     contexts = {}
+    #     self.snapshots = util.get_snapshot_from_sobject(str(
+    #         self.currentItem.objectName()))
 
-        for snap in self.snapshots:
-            if contexts.has_key(snap['process']):
-                contexts[snap['process']].add(snap['context'])
-            else:
-                contexts[snap['process']] = set([snap['context']])
-
-        if 'layout' not in contexts:
-            contexts['layout'] = set(['layout'])
-        if 'cache' not in contexts:
-            contexts['cache'] = set(['cache'])
-        if 'animation' not in contexts:
-            contexts['animation'] = set(['animation'])
-        if 'preview' not in contexts:
-            contexts['preview'] = set(['preview'])
-        if 'lighting' not in contexts:
-            contexts['lighting'] = set(['lighting'])
-        return contexts
+    #     for snap in self.snapshots:
+    #         if contexts.has_key(snap['process']):
+    #             contexts[snap['process']].add(snap['context'])
+    #         else:
+    #             contexts[snap['process']] = set([snap['context']])
+    #     for context in pre_defined_contexts:
+    #         if context  not in contexts:
+    #             contexts[context] = set()
+    #     return contexts
 
     def clearWindow(self):
         self.episodeBox.clear()
@@ -211,6 +202,8 @@ class ShotExplorer(Explorer):
         assetsLen2 = len(self.itemsBox.items())
         if assetsLen1 != assetsLen2:
             self.updateItemsBox(assetsLen1, assetsLen2, newItems)
+        
+        # This is surely a dead block of code
         if self.currentItem and self.contextsBox:
             if (len(self.contextsBox.items()) !=
                 self.contextsLen(self.contextsProcesses())):

@@ -19,6 +19,28 @@ dt = datetime.datetime
 m = maya.Maya()
 TEXTURE_TYPE = 'vfx/texture'
 
+
+def create_first_snapshot(item, context, check_out=True):
+    '''
+    To be used only if there is no snapshot associated with the given
+    context of the item. Item could be task, shot or asset.
+    Caution: Clears the scene.
+    :item: search_key of item
+    :context: context of the item
+    :check_out: specify whether to create the newly created snapshot
+    :return: search_key of newly created snapshot
+    '''
+    # TODO: confirm that snapshot truly doesn't exists
+    mi.newScene()
+    if 'sthpw/task' in item:
+        sobject = util.get_sobject_from_task(item)
+    else:
+        sobject = item
+    snapshot = checkin(sobject, context)
+    if check_out:
+        checkout(snapshot)
+    return snapshot
+
 def checkout(snapshot, r = False, with_texture = True):
     '''
     @snapshot: snapshot search_key
@@ -172,9 +194,10 @@ def checkin(sobject, context, process = None,
             file = None, geos = [], camera = None, preview = None):
 
     '''
-    @sobject: search_key of sobject to which the checkin belongs
-    @context: context of the sobject
-    @version: version number of the snapshot (functionality not implemented)
+    :sobject: search_key of sobject to which the checkin belongs
+    :context: context of the sobject
+    :version: version number of the snapshot (functionality not implemented)
+    :return: search_key of the created snapshot
     '''
 
     server = user.get_server()
@@ -238,7 +261,8 @@ def checkin(sobject, context, process = None,
         pc.openFile(orig_path, f = True)
     except:
         pass
-    return True
+    
+    return snapshot['__search_key__']
 
 def asset_textures(search_key):
 
