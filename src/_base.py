@@ -189,4 +189,4 @@ class Thread(QThread):
     def run(self):
         while 1:
             self.parentWin.testButton.released.emit()
-            time.sleep(1)
+            time.sleep(2)
