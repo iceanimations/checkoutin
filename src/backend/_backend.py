@@ -353,17 +353,15 @@ def checkin_texture(search_key, context):
 
     # texture location mapping in temp
     # normalized and lowercased -> temppath
-    norm_to_temp = tex_location_map = collect_textures(tmpdir)
-
+    ftn_to_texs = mi.textureFiles(selection = False, key=op.exists, returnAsDict=True)
     # if no reachable texture exists no need to go return dict
-    if not norm_to_temp:
+    if not ftn_to_texs:
         return dict()
 
+    norm_to_temp = tex_location_map = collect_textures(tmpdir, ftn_to_texs)
 
     # present -> normalized
-    present_to_norm = {}
-    for tex in set(mi.textureFiles(selection = False, key = op.exists)):
-        present_to_norm[tex] = op.normpath(iutil.lower(tex))
+    ftn_to_normFtn = {ftn: op.normpath(iutil.lower(ftn)) for ftn in ftn_to_texs}
 
     # set the project
     util.set_project(search_key = search_key)
@@ -385,8 +383,6 @@ def checkin_texture(search_key, context):
 
     ftn_to_central = {}
     texture_snap = server.create_snapshot(texture_child['__search_key__'],
-                                          context, is_current=False)
-    latest_dummy_snapshot = server.create_snapshot(texture_child['__search_key__'],
                                           context)
 
     files_to_upload = [op.join(tmpdir, name).replace('\\', '/')
@@ -406,15 +402,11 @@ def checkin_texture(search_key, context):
                                              file_type = 'image')
                             ['client_lib_paths'][0])
 
-    # util.pretty_print(server.get_paths(texture_child, context,
-    #                          versionless = True,
-    #                          file_type = 'image'))
-
-    for ftn in set(mi.textureFiles(selection = False, key = op.exists)):
+    for ftn in ftn_to_texs:
 
         ftn_to_central[ftn] = op.normpath(op.join(client_dir,
                                                   op.basename(norm_to_temp[
-                                                      present_to_norm[ftn]])))
+                                                      ftn_to_normFtn[ftn]])))
 
     return ftn_to_central
 
@@ -423,37 +415,49 @@ def map_textures(mapping):
     reverse = {}
 
     for fileNode in mi.getFileNodes():
-        if op.exists(fileNode.ftn.get()):
+        #if op.exists(fileNode.ftn.get()):
 
-            path = pc.getAttr(fileNode + '.ftn')
+        path = pc.getAttr(fileNode + '.ftn')
+        if mapping.has_key(path):
             pc.setAttr(fileNode +'.ftn',
-                       mapping[path])
+                        mapping[path])
 
             reverse[pc.getAttr(fileNode + '.ftn')] = path
 
     return reverse
 
-def collect_textures(dest):
+def collect_textures(dest, scene_textures=None):
     '''
     @return: {ftn: tmp}
     '''
 
     # normalized -> temp
     mapping = {}
+    if not op.exists(dest):
+        return mapping
 
-    scene_textures = mi.textureFiles(selection = False, key = op.exists)
+    if not scene_textures:
+        scene_textures = mi.textureFiles(selection = False, key = op.exists,
+                returnAsDict=True)
 
     # current to lowercase and norm paths. for uniqueness
     present_mod = {}
-    for tex in set(scene_textures):
-        present_mod[tex] = op.normpath(iutil.lower(tex))
+    for ftn, texs in scene_textures.items():
+        normFtn = op.normpath(iutil.lower(ftn))
+        if not present_mod.has_key(normFtn):
+            present_mod[normFtn] = set()
+        present_mod[normFtn].update([op.normpath(iutil.lower(tex)) for tex in
+            texs])
 
-    for fl in set(present_mod.values()):
-        root, ext = op.splitext(fl)
-        filename = iutil.lCUFN(dest, op.basename(root.strip() + ext).replace(' ', '_'))
-        copy_to = op.join(dest, filename)
-        shutil.copy(fl, copy_to)
-        mapping[fl] = copy_to
+    for myftn in present_mod:
+        if mapping.has_key(myftn):
+            continue
+        ftns, texs = iutil.find_related_ftns(myftn, present_mod.copy())
+        newmappings=iutil.lCUFTN(dest, ftns, texs)
+        for fl, copy_to in newmappings.items():
+            if op.exists(fl):
+                shutil.copy(fl, copy_to)
+        mapping.update(newmappings)
 
     return mapping
 
@@ -584,6 +588,3 @@ def context_path(search_key, context):
 
     return op.dirname(util.get_filename_from_snap(snap, mode = 'client_repo'))
 
-
-
-# server.get_paths(server.get_all_children(u'vfx/asset?project=vfx&code=prop002', 'vfx/texture')[0]['__search_key__'])
