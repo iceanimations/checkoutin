@@ -49,7 +49,9 @@ class Explorer(cui.Explorer):
             self.referenceButton.setEnabled(False)
 
         self.itemsBox = self.createScroller("%ss" %self.item_name.capitalize())
+        self.itemsBox.versionsButton.hide()
         self.contextsBox = self.createScroller(self.scroller_arg)
+        self.contextsBox.versionsButton.hide()
 
         self.addFilesBox()
 
