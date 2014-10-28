@@ -200,8 +200,15 @@ class Explorer(cui.Explorer):
         
         for context in self.pre_defined_contexts:
             if context not in contexts:
-                contexts[context] = set()
+                contexts[context] = set([context])
         return contexts
+    
+    def contextsLen(self, contexts):
+        length = 0
+        for contx in contexts:
+            for val in contexts[contx]:
+                length += 1
+        return length
 
     def _update_highlight(self, item):
         # highlight the selected widget

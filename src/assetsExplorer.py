@@ -66,29 +66,6 @@ class AssetsExplorer(Explorer):
                                                self.showContexts),
             self.itemsBox.items())
 
-    # def contextsProcesses(self):
-
-    #     contexts = {}
-    #     self.snapshots = util.get_snapshot_from_sobject(str(
-    #         self.currentItem.objectName()))
-
-    #     for snap in self.snapshots:
-    #         if contexts.has_key(snap['process']):
-    #             contexts[snap['process']].add(snap['context'])
-    #         else:
-    #             contexts[snap['process']] = set([snap['context']])
-
-    #     if 'model' not in contexts:
-    #         contexts['model'] = set()
-
-    #     if 'rig' not in contexts:
-    #         contexts['rig'] = set()
-
-    #     if 'shaded' not in contexts:
-    #         contexts['shaded'] = set()
-
-    #     return contexts
-
     def clearWindow(self):
         self.itemsBox.clearItems()
         self.currentItem = None
@@ -131,15 +108,15 @@ class AssetsExplorer(Explorer):
         if assetsLen1 != assetsLen2:
             self.updateItemsBox(assetsLen1, assetsLen2, newItems)
         if self.currentItem and self.contextsBox:
-            if (len(self.contextsBox.items()) !=
-                self.updateContextsBox()):
-                if self.currentContext and self.filesBox:
-                    if len(self.filesBox.items()) != len(
-                            [snap
-                             for snap in self.snapshots
-                             if snap['process'] ==
-                             self.currentContext.title().split('/')[0]]):
-                        self.showFiles(self.currentContext, self.snapshots)
+            if len(self.contextsBox.items()) != self.contextsLen(self.contextsProcesses()):
+                self.updateContextsBox()
+        if self.currentContext and self.filesBox:
+            if len(self.filesBox.items()) != len(
+                    [snap
+                     for snap in self.snapshots
+                     if snap['process'] ==
+                     self.currentContext.title().split('/')[0]]):
+                self.showFiles(self.currentContext, self.snapshots)
 
 
     def updateContextsBox(self):
