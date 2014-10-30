@@ -145,13 +145,10 @@ class Explorer(cui.Explorer):
         if mi.is_modified():
             b = cui.showMessage(self, title=self.title,
                                 msg='Your scene contains unsaved changes',
-                                ques='Choose what you want to do',
                                 icon=QMessageBox.Warning,
-                                btns=QMessageBox.Save|QMessageBox.Discard|QMessageBox.Cancel)
+                                btns=QMessageBox.Save|QMessageBox.Cancel)
             if b == QMessageBox.Save:
                 mi.save_scene('.ma')
-            elif b == QMessageBox.Discard:
-                pass
             else:
                 return
         if self.currentContext:
