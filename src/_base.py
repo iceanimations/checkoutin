@@ -25,6 +25,9 @@ try:
     parent = qtfy.getMayaWindow()
 except:
     pass
+import auth.security as security
+reload(security)
+import checkinput
 import appUsageApp
 reload(appUsageApp)
 
@@ -137,6 +140,38 @@ class Explorer(cui.Explorer):
     def checkout(self, r = False):
         if self.currentFile:
             backend.checkout(str(self.currentFile.objectName()), r = r)
+            
+    def showCheckinputDialog(self):
+        if mi.is_modified():
+            b = cui.showMessage(self, title=self.title,
+                                msg='Your scene contains unsaved changes',
+                                ques='Choose what you want to do',
+                                icon=QMessageBox.Warning,
+                                btns=QMessageBox.Save|QMessageBox.Discard|QMessageBox.Cancel)
+            if b == QMessageBox.Save:
+                mi.save_scene('.ma')
+            elif b == QMessageBox.Discard:
+                pass
+            else:
+                return
+        if self.currentContext:
+            if security.checkinability(
+                    str(self.currentItem.objectName()),
+                    self.currentContext.title().split('/')[0]):
+                self.checkinputDialog = checkinput.Dialog(self)
+                self.checkinputDialog.setMainName(self.currentItem.title())
+                self.checkinputDialog.setContext(self.currentContext.title())
+                self.checkinputDialog.show()
+            else:
+                cui.showMessage(self, title='Assets Explorer',
+                                msg='Access denied. You don\'t have '+
+                                'permissions to make changes to the '+
+                                'selected Process',
+                                icon=QMessageBox.Critical)
+        else:
+            cui.showMessage(self, title='Assets Explorer',
+                            msg='No Process/Context selected',
+                            icon=QMessageBox.Warning)
 
     def checkin(self, context, detail, filePath = None):
         if self.currentItem:

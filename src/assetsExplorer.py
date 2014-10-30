@@ -11,10 +11,7 @@ import os.path as osp
 import sys
 from PyQt4.QtGui import QMessageBox, qApp
 import app.util as util
-import checkinput
 reload(util)
-import auth.security as security
-reload(security)
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
@@ -70,27 +67,6 @@ class AssetsExplorer(Explorer):
         self.itemsBox.clearItems()
         self.currentItem = None
         self.clearContextsProcesses()
-
-    def showCheckinputDialog(self):
-        if self.currentContext:
-            if security.checkinability(
-                    str(self.currentItem.objectName()),
-                    self.currentContext.title().split('/')[0]):
-                self.checkinputDialog = checkinput.Dialog(self)
-                self.checkinputDialog.setMainName(self.currentItem.title())
-                self.checkinputDialog.setContext(self.currentContext.title())
-                self.checkinputDialog.show()
-            else:
-                cui.showMessage(self, title='Assets Explorer',
-                                msg='Access denied. You don\'t have '+
-                                'permissions to make changes to the '+
-                                'selected Process',
-                                icon=QMessageBox.Critical)
-        else:
-            cui.showMessage(self, title='Assets Explorer',
-                            msg='No Process/Context selected',
-                            icon=QMessageBox.Warning)
-
 
     def updateWindow(self):
 
