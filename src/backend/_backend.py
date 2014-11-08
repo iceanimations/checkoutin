@@ -385,6 +385,8 @@ def checkin_texture(search_key, context):
 
     ftn_to_central = {}
     texture_snap = server.create_snapshot(texture_child['__search_key__'],
+                                          context, is_current=False)
+    latest_dummy_snapshot = server.create_snapshot(texture_child['__search_key__'],
                                           context)
 
     files_to_upload = [op.join(tmpdir, name).replace('\\', '/')
@@ -392,25 +394,12 @@ def checkin_texture(search_key, context):
 
     snapshot_code = util.get_search_key_code(texture_snap['__search_key__'])
 
-    while files_to_upload:
-        try:
-            server.add_file(snapshot_code, files_to_upload,
-                    file_type=['image']*len(files_to_upload), mode = 'copy',
-                    create_icon = False)
-            break
-        except ProtocolError as pe:
-            files_uploaded = server.query('sthpw/file',
-                    filters=[('snapshot_code', snapshot_code)])
-            ftu_names = set([ op.basename(f) for f in files_to_upload ])
-            fu_names = set([ f['file_name'] for f in files_uploaded ])
-            # names of files that could not be uploaded
-            fnu_names = ftu_names.difference_update(fu_names)
-            if not fnu_names:
-                break
-            elif len(fnu_names) == len(ftu_names):
-                raise pe, "No Progress with ProtocolError"
-            files_to_upload= [op.join(tmpdir, n) for n in fnu_names]
-            util.pretty_print("Trying again")
+    server.add_file(snapshot_code, files_to_upload,
+            file_type=['image']*len(files_to_upload), mode = 'copy',
+            create_icon = False)
+
+    server.set_current_snapshot(snapshot_code)
+    server.delete_sobject(latest_dummy_snapshot['__search_key__'])
 
     client_dir = op.dirname(server.get_paths(texture_child, context,
                                              versionless = True,
