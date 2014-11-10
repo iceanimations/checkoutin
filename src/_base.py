@@ -4,6 +4,7 @@ Base class for explorer function. To avoid customui packages dependence
 on backend. Crudely thought out idea might need clean-up in future.
 '''
 from customui import ui as cui
+import app.util as util
 reload(cui)
 import site
 import imaya as mi
@@ -24,6 +25,9 @@ try:
     parent = qtfy.getMayaWindow()
 except:
     pass
+import auth.security as security
+reload(security)
+import checkinput
 import appUsageApp
 reload(appUsageApp)
 
@@ -48,7 +52,9 @@ class Explorer(cui.Explorer):
             self.referenceButton.setEnabled(False)
 
         self.itemsBox = self.createScroller("%ss" %self.item_name.capitalize())
+        self.itemsBox.versionsButton.hide()
         self.contextsBox = self.createScroller(self.scroller_arg)
+        self.contextsBox.versionsButton.hide()
 
         self.addFilesBox()
 
@@ -106,8 +112,15 @@ class Explorer(cui.Explorer):
                 cur_orig = self.currentFile
                 if latest:
                     self.currentFile = latest
-                    self.call_checkout()
-                    self.currentFile = cur_orig
+                    try:
+                        self.call_checkout()
+                    finally:
+                        self.currentFile = cur_orig
+                else:
+                    name_comps = str(self.currentContext.objectName()).split('>')
+                    
+                    backend.create_first_snapshot(name_comps[0], name_comps[1], check_out=True)
+                    # self.call_checkout()
         else:
             cui.showMessage(self, title='Warning',
                             msg='No Process/Context selected')
@@ -127,6 +140,35 @@ class Explorer(cui.Explorer):
     def checkout(self, r = False):
         if self.currentFile:
             backend.checkout(str(self.currentFile.objectName()), r = r)
+            
+    def showCheckinputDialog(self):
+        if mi.is_modified():
+            b = cui.showMessage(self, title=self.title,
+                                msg='Your scene contains unsaved changes',
+                                icon=QMessageBox.Warning,
+                                btns=QMessageBox.Save|QMessageBox.Cancel)
+            if b == QMessageBox.Save:
+                mi.save_scene('.ma')
+            else:
+                return
+        if self.currentContext:
+            if security.checkinability(
+                    str(self.currentItem.objectName()),
+                    self.currentContext.title().split('/')[0]):
+                self.checkinputDialog = checkinput.Dialog(self)
+                self.checkinputDialog.setMainName(self.currentItem.title())
+                self.checkinputDialog.setContext(self.currentContext.title())
+                self.checkinputDialog.show()
+            else:
+                cui.showMessage(self, title='Assets Explorer',
+                                msg='Access denied. You don\'t have '+
+                                'permissions to make changes to the '+
+                                'selected Process',
+                                icon=QMessageBox.Critical)
+        else:
+            cui.showMessage(self, title='Assets Explorer',
+                            msg='No Process/Context selected',
+                            icon=QMessageBox.Warning)
 
     def checkin(self, context, detail, filePath = None):
         if self.currentItem:
@@ -149,6 +191,7 @@ class Explorer(cui.Explorer):
                             icon=QMessageBox.Warning)
 
     def updateItemsBox(self, l1, l2, assets):
+        # TODO: Add documentation
         if l1 > l2:
             newItems = []
             objNames = [str(obj.objectName()) for obj in self.itemsBox.items()]
@@ -173,6 +216,78 @@ class Explorer(cui.Explorer):
                 if self.checkinputDialog:
                     self.checkinputDialog.setMainName()
                     self.checkinputDialog.setContext()
+        
+    
+    def contextsProcesses(self):
+        # TODO: Add the details of what this function returns
+        contexts = {}
+        self.snapshots = util.get_snapshot_from_sobject(str(
+            self.currentItem.objectName()))
+
+        for snap in self.snapshots:
+            if contexts.has_key(snap['process']):
+                contexts[snap['process']].add(snap['context'])
+            else:
+                contexts[snap['process']] = set([snap['context']])
+        
+        for context in self.pre_defined_contexts:
+            if context not in contexts:
+                contexts[context] = set([context])
+        return contexts
+    
+    def contextsLen(self, contexts):
+        length = 0
+        for contx in contexts:
+            for val in contexts[contx]:
+                length += 1
+        return length
+
+    def _update_highlight(self, item):
+        # highlight the selected widget
+        if self.currentItem:
+            self.currentItem.setStyleSheet("background-color: None")
+        self.currentItem = item
+        self.currentItem.setStyleSheet("background-color: #666666")        
+
+    def _update_child_window(self):
+        # handle child windows
+        if self.checkinputDialog:
+            self.checkinputDialog.setMainName(self.currentItem.title())
+            self.checkinputDialog.setContext()
+
+    def addContext(self, title, objName, description = ''):
+        item = self.createItem(title,
+                               '', '', '')
+        item.setObjectName(objName)
+        self.contextsBox.addItem(item)
+        return True
+
+    def showContexts(self, asset):
+
+        self._update_highlight(asset)
+
+        self.clearContextsProcesses()
+
+        contexts = self.contextsProcesses()
+
+        for pro in contexts:
+            for contx in contexts[pro]:
+
+                title = contx
+                if title.lower() == pro.lower():
+                    continue
+                self.addContext(title, asset.objectName()+'>'+pro+'>'+contx)
+
+            self.addContext(pro, str(self.currentItem.objectName())+'>'+pro)
+
+        map(lambda widget: self.bindClickEventForFiles(widget, self.showFiles,
+                                                       self.snapshots),
+            self.contextsBox.items())
+
+        
+        # if there is only one context, show the files
+        if len(contexts) == 1:
+            self.showFiles(self.contextsBox.items()[0])
 
     def get_latest_snapshot(snapshots):
         '''
@@ -189,4 +304,4 @@ class Thread(QThread):
     def run(self):
         while 1:
             self.parentWin.testButton.released.emit()
-            time.sleep(1)
+            time.sleep(2)

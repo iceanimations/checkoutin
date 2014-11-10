@@ -1,0 +1,66 @@
+Description:
+=========
+When a user pulls a task in a given context within an Asset or shot. My tasks interface should give *him* a starter file in the sandbox. This file should be empty if there is no versions in the context else it should preferably be the latest version in the context.
+
+Scenarios:
+========
+    Feature: Task File Creation
+    In the "My Tasks" interface in Maya
+    Create a starter file in sandbox when a user (assignee) pulls in a task
+
+        Scenario: File Creation
+            Given I am a user who has been assigned atleast one task
+            And I have selected one of my tasks using My Tasks in Maya
+            And the selected task context has atleast one version of type maya file associated with it
+            And no version is selected
+            When I press the button to start executing the selected task
+            Then The latest maya file version in the task context should be reproduced in the context folder in the sandbox
+            And this Maya File should be loaded in the current Scene
+
+        Scenario: File Creation (version selected)
+            Given I am a user who has been assigned atleast one task
+            And I have selected one of my tasks using My Tasks in Maya
+            And the selected task context has atleast one version of type maya file associated with it
+            When I select one of versions in the context
+            And I press the button to start executing the selected task
+            Then The maya file from the selected version in the task context should be reproduced in the context folder in the sandbox
+            And this Maya File should be loaded in the current Scene
+
+        Scenario: First File Creation
+            Given I am a user who has been assigned atleast one task
+            And I have selected one of my tasks using My Tasks in Maya
+            And the selected task context has no versions of type maya files associated with it
+            When I press the button to start executing the selected task
+            Then A Maya file should be created in the sand box in the context folder
+            And this Maya File should be loaded in the current Scene
+
+        Scenario: First File Creation (start animation task from upstream)
+            Given I am an animator who has been assigned a task in the context <downstream_context> within a Shot
+            But there is no maya file version in the <downstream_context>
+            And there is atleast one maya file version in the context <upstream_context> within the same Shot 
+            When I press the button to start executing the selected task
+            Then The latest maya file version from the task context <upstream_context> should be reproduced in the <downstream_context> folder in the sandbox
+            And this Maya File should be loaded in the current Scene
+
+        Scenario Outline: Switch Context ( start animation task with no upstream )
+            Given I am an animator who has been assigned a task in the context <downstream_context> within a Shot
+            But there is no maya file version in the <downstream_context>
+            And there is no maya file version in the context <upstream_context> within the same Shot 
+            And I have also been assigned a task in the <upstream_context> within the same shot
+            When I press the button to start executing the selected task
+            Then the selection of task should switch to one of my tasks in the <upstream_context>
+
+        Scenario Outline: Deny ( start animation task with no upstream )
+            Given I am an animator who has been assigned a task in the context <downstream_context> within a Shot
+            But there is no maya file version in the <downstream_context>
+            And there is no maya file version in the context <upstream_context> within the same Shot 
+            And I have not been assigned any task in the <upstream_context> within the same shot
+            When I press the button to start executing the selected task
+            Then I should be notified that a task in <upstream_context> is pending
+            And the Current Scene should not change.
+
+        Examples:
+            | downstream_context    | upstream_context |
+            | animation/bplus       | layout           |
+            | animation/polished    | animation/bplus  |
+    

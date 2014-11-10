@@ -11,10 +11,7 @@ import os.path as osp
 import sys
 from PyQt4.QtGui import QMessageBox, qApp
 import app.util as util
-import checkinput
 reload(util)
-import auth.security as security
-reload(security)
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
@@ -25,7 +22,7 @@ class AssetsExplorer(Explorer):
     item_name = 'asset'
     title = 'Assets Explorer'
     scroller_arg = 'Process/Context'
-
+    pre_defined_contexts = ['model', 'rig', 'shaded']
 
     def __init__(self, shot=None, standalone=False):
 
@@ -66,98 +63,10 @@ class AssetsExplorer(Explorer):
                                                self.showContexts),
             self.itemsBox.items())
 
-    def showContexts(self, asset):
-
-        # highlight the selected widget
-        if self.currentItem:
-            self.currentItem.setStyleSheet("background-color: None")
-        self.currentItem = asset
-        self.currentItem.setStyleSheet("background-color: #666666")
-
-        self.clearContextsProcesses()
-
-        contexts = self.contextsProcesses()
-
-        for pro in contexts:
-            for contx in contexts[pro]:
-
-                title = contx
-                if title.lower() == pro.lower():
-                    continue
-                item = self.createItem(title,
-                                       '', '', '')
-                item.setObjectName(asset.objectName()+'>'+pro+'>'+contx)
-                self.contextsBox.addItem(item)
-
-            item = self.createItem(pro,
-                                   '', '', '')
-            item.setObjectName(str(self.currentItem.objectName())+'>'+pro)
-            self.contextsBox.addItem(item)
-
-        map(lambda widget: self.bindClickEventForFiles(widget, self.showFiles,
-                                                       self.snapshots),
-            self.contextsBox.items())
-
-        # handle child windows
-        if self.checkinputDialog:
-            self.checkinputDialog.setMainName(self.currentItem.title())
-            self.checkinputDialog.setContext()
-
-    def contextsProcesses(self):
-
-        contexts = {}
-        self.snapshots = util.get_snapshot_from_sobject(str(
-            self.currentItem.objectName()))
-
-        for snap in self.snapshots:
-            if contexts.has_key(snap['process']):
-                contexts[snap['process']].add(snap['context'])
-            else:
-                contexts[snap['process']] = set([snap['context']])
-
-        if 'model' not in contexts:
-            contexts['model'] = set()
-
-        if 'rig' not in contexts:
-            contexts['rig'] = set()
-
-        if 'shaded' not in contexts:
-            contexts['shaded'] = set()
-
-        return contexts
-
     def clearWindow(self):
         self.itemsBox.clearItems()
         self.currentItem = None
         self.clearContextsProcesses()
-
-    def showCheckinputDialog(self):
-        if self.currentContext:
-            if security.checkinability(
-                    str(self.currentItem.objectName()),
-                    self.currentContext.title().split('/')[0]):
-                self.checkinputDialog = checkinput.Dialog(self)
-                self.checkinputDialog.setMainName(self.currentItem.title())
-                self.checkinputDialog.setContext(self.currentContext.title())
-                self.checkinputDialog.show()
-            else:
-                cui.showMessage(self, title='Assets Explorer',
-                                msg='Access denied. You don\'t have '+
-                                'permissions to make changes to the '+
-                                'selected Process',
-                                icon=QMessageBox.Critical)
-        else:
-            cui.showMessage(self, title='Assets Explorer',
-                            msg='No Process/Context selected',
-                            icon=QMessageBox.Warning)
-
-
-    def contextsLen(self, contexts):
-        length = 0
-        for contx in contexts:
-            for val in contexts[contx]:
-                length += 1
-        return length
 
     def updateWindow(self):
 
@@ -175,15 +84,15 @@ class AssetsExplorer(Explorer):
         if assetsLen1 != assetsLen2:
             self.updateItemsBox(assetsLen1, assetsLen2, newItems)
         if self.currentItem and self.contextsBox:
-            if (len(self.contextsBox.items()) !=
-                self.updateContextsBox()):
-                if self.currentContext and self.filesBox:
-                    if len(self.filesBox.items()) != len(
-                            [snap
-                             for snap in self.snapshots
-                             if snap['process'] ==
-                             self.currentContext.title().split('/')[0]]):
-                        self.showFiles(self.currentContext, self.snapshots)
+            if len(self.contextsBox.items()) != self.contextsLen(self.contextsProcesses()):
+                self.updateContextsBox()
+        if self.currentContext and self.filesBox:
+            if len(self.filesBox.items()) != len(
+                    [snap
+                     for snap in self.snapshots
+                     if snap['process'] ==
+                     self.currentContext.title().split('/')[0]]):
+                self.showFiles(self.currentContext, self.snapshots)
 
 
     def updateContextsBox(self):
