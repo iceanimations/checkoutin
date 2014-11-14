@@ -73,6 +73,7 @@ class Explorer(cui.Explorer):
     def closeEvent(self, event):
         self.thread.terminate()
         self.deleteLater()
+        del self
 
     def setProject(self):
         pass
