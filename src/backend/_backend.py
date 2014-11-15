@@ -1,19 +1,14 @@
 from auth import user
 import app.util as util
-import tempfile
 import pymel.core as pc
-import maya.cmds as cmds
 import imaya as mi
 import iutil
 import tactic_client_lib.application.maya as maya
 import datetime
 import os
 import os.path as op
-import json
 import shutil
 import auth.security as security
-import re
-from xmlrpclib import ProtocolError
 
 dt = datetime.datetime
 m = maya.Maya()
@@ -77,7 +72,6 @@ def checkout(snapshot, r = False, with_texture = True):
             util.set_tactic_file_info(tactic)
             # checkout texture
             tex = server.get_all_children(sobj['__search_key__'], TEXTURE_TYPE)
-            print tex
             if tex and with_texture:
                 context_comp = snap['context'].split('/')
 
@@ -85,12 +79,10 @@ def checkout(snapshot, r = False, with_texture = True):
                 req_context = context_comp[1:] if len(context_comp) > 1 else []
                 snaps = util.get_snapshot_from_sobject(
                     tex[0]['__search_key__'])
-                snaps = [snap for snap in snaps
-                        if (snap['context'] == '/'.join(['texture']
+                snaps = [sn for sn in snaps
+                        if (sn['context'] == '/'.join(['texture']
                                                         + req_context)
-                            and snap['version'] == -1)]
-
-                # util.pretty_print(snaps)
+                            and sn['version'] == -1)]
 
                 if snaps:
                     snap = snaps[0]
@@ -102,19 +94,23 @@ def checkout(snapshot, r = False, with_texture = True):
                                            to_sandbox_dir = True,
                                            mode = 'copy',
                                            file_type = '*')
-                # util.pretty_print(tex_path)
                 tex_mapping = {}
                 tex_path_base = map(op.basename, tex_path)
-                for ftn in mi.textureFiles(False, key = op.exists):
-
+                for path, files in mi.textureFiles(False, key = op.exists,
+                        returnAsDict = True).iteritems():
                     try:
                         # this is proven to raise error in certain situations
                         # therfore skip it the given iteration
-                        tex_mapping[ftn] = tex_path[
-                            tex_path_base.index(op.basename(ftn))]
+                        file_base = map(op.basename, files)
+                        common = set(file_base).intersection(set(tex_path_base))
+                        if common:
+                            dirname = op.dirname(
+                                    tex_path[tex_path_base.index(common.pop())])
+                            basename = op.basename(path)
+                            tex_mapping[path] = op.join(dirname, basename)
                     except Exception as e:
                         print e
-                        print ftn
+                        print path
 
                 map_textures(tex_mapping)
                 pc.mel.eval('file -save')
@@ -126,8 +122,6 @@ def checkout(snapshot, r = False, with_texture = True):
 
 # check the set and obj check cache checkin simultaneously
 def _reference(snapshot):
-    print util.pretty_print(snapshot)
-    server = user.get_server()
     filename = util.filename_from_snap(snapshot, mode = 'client_repo')
     try:
         mi.addReference(paths = [filename], dup = True)
@@ -151,37 +145,6 @@ def _reference(snapshot):
             # should be able to reference multiple times
             # return True
 
-    # {"is_synced": true,
-    #  "code": "SNAPSHOT",
-    #  "process": "model",
-    #  "s_status": null,
-    #  "id": 1123,
-    #  "column_name": "snapshot",
-    #  "label": null,
-    #  "project_code": "_3",
-    #  "is_latest": true,
-    #  "level_id": null,
-    #  "lock_login": null,
-    #  "lock_date": null,
-    #  "version": 1,
-    #  "__search_key__": "sthpw/snapshot?code=SNAPSHOT",
-    #  "level_type": null,
-    #  "search_id": 13,
-    #  "metadata": null,
-    #  "status": null,
-    #  "description": "No description",
-    #  "timestamp": "2041-30-29 21:50:14.459963",
-    #  "repo": null,
-    #  "is_current": true,
-    #  "search_code": "r_dd",
-    #  "snapshot_type": "file",
-    #  "server": null,
-    #  "search_type": "vfx/asset?project=_3",
-    #  "snapshot": "<snapshot timestamp=\"asdfs\" context=\"model\" search_key=\"vfx/asset?project=_3&amp;code=_d\" login=\"foo.bar\" checkin_type=\"strict\">\n  <file file_code=\"FILE\" name=\"_d_model_v001.ma\" type=\"main\"/>\n</snapshot>\n",
-    #  "context": "model",
-    #  "login": "foo.bar",
-    #  "revision": 0
-    # }
     map(snapshot.pop, ['is_synced', 's_status',
                        'server', 'login'])
 
@@ -218,10 +181,7 @@ def checkin(sobject, context, process = None,
         context = '/'.join([process, context])
 
     shaded = context.startswith('shaded')
-    print context
-    print shaded
     if shaded and not file:
-        print context
         ftn_to_central = checkin_texture(sobject, context)
         central_to_ftn = map_textures(ftn_to_central)
 
@@ -238,14 +198,11 @@ def checkin(sobject, context, process = None,
                         else "mayaAscii")
                  if not file else file)
 
-    print tmpfile if not file else file
-    print sobject, context
     snap_code = snapshot.get('code')
     server.add_file(snap_code, save_path, file_type = 'maya',
                       mode = 'copy', create_icon = False)
     if shaded and not file:
 
-        # map(util.pretty_print, [central_to_ftn, ftn_to_central])
         map_textures(central_to_ftn)
 
     search_key = snapshot['__search_key__']
@@ -261,17 +218,16 @@ def checkin(sobject, context, process = None,
         pc.openFile(orig_path, f = True)
     except:
         pass
-    
+
     return snapshot['__search_key__']
 
 def asset_textures(search_key):
-
     '''
     @search_key: sobject's (vfx/asset) unique search_key
     @return: list of all files that the texture associated with `search_key'
     cotains
     '''
-
+    server = util.get_server()
     directory = server.get_paths(server.get_all_children(search_key,
                                                          'vfx/texture')[0]
                                  ['__search_key__'])['client_lib_paths']
@@ -297,12 +253,7 @@ def checkin_preview(search_key, path, file_type = None):
                 for stype in stypes]):
         return None
 
-    context = snapshot['context']
-
-    version = snapshot['version']
-
-    sobject_code = util.get_search_key_code(
-        util.get_sobject_from_snap(snapshot))
+    util.get_search_key_code(util.get_sobject_from_snap(snapshot))
 
     # use the function add_file to added the preview file to the
     # snapshot whose search_key is passed in
@@ -331,22 +282,18 @@ def checkin_preview(search_key, path, file_type = None):
     return snap
 
 def make_temp_dir():
-
     return op.normpath(iutil.getTemp(prefix = dt.now().
                                        strftime("%Y-%M-%d %H-%M-%S"),
                                        mkd = True
                                    )).replace("\\", "/")
 
 def checkin_texture(search_key, context):
-
     if not security.checkinability(search_key):
 
         raise Exception('Permission denied. You do not have permission to'+
                         ' save here.')
 
-    print context
     context = '/'.join(['texture'] + context.split('/')[1:])
-    print context
     server = util.get_server()
     sobject = search_key
     tmpdir = make_temp_dir()
@@ -358,16 +305,12 @@ def checkin_texture(search_key, context):
     if not ftn_to_texs:
         return dict()
 
-    norm_to_temp = tex_location_map = collect_textures(tmpdir, ftn_to_texs)
-
-    # present -> normalized
-    ftn_to_normFtn = {ftn: op.normpath(iutil.lower(ftn)) for ftn in ftn_to_texs}
+    cur_to_temp = collect_textures(tmpdir, ftn_to_texs)
 
     # set the project
     util.set_project(search_key = search_key)
 
     texture_children = server.get_all_children(sobject, TEXTURE_TYPE)
-    # util.pretty_print(texture_children)
 
 
     if texture_children:
@@ -381,8 +324,9 @@ def checkin_texture(search_key, context):
         texture_child = server.insert(TEXTURE_TYPE, data, parent_key = sobject)
 
 
-    ftn_to_central = {}
     texture_snap = server.create_snapshot(texture_child['__search_key__'],
+                                          context, is_current=False)
+    latest_dummy_snapshot = server.create_snapshot(texture_child['__search_key__'],
                                           context)
 
     files_to_upload = [op.join(tmpdir, name).replace('\\', '/')
@@ -402,32 +346,25 @@ def checkin_texture(search_key, context):
                                              file_type = 'image')
                             ['client_lib_paths'][0])
 
-    for ftn in ftn_to_texs:
-
-        ftn_to_central[ftn] = op.normpath(op.join(client_dir,
-                                                  op.basename(norm_to_temp[
-                                                      ftn_to_normFtn[ftn]])))
+    ftn_to_central = {ftn: op.join(client_dir, op.basename(cur_to_temp[ftn]))
+            for ftn in ftn_to_texs}
 
     return ftn_to_central
 
 def map_textures(mapping):
-
     reverse = {}
 
     for fileNode in mi.getFileNodes():
-        #if op.exists(fileNode.ftn.get()):
-
-        path = pc.getAttr(fileNode + '.ftn')
-        if mapping.has_key(path):
-            pc.setAttr(fileNode +'.ftn',
-                        mapping[path])
-
-            reverse[pc.getAttr(fileNode + '.ftn')] = path
+        for k, v in mi.remapFileNode(fileNode, mapping):
+            reverse[k]=v
 
     return reverse
 
 def collect_textures(dest, scene_textures=None):
     '''
+    Collect all scene texturefiles to a flat hierarchy in a single directory while resolving
+    nameclashes
+
     @return: {ftn: tmp}
     '''
 
@@ -440,19 +377,10 @@ def collect_textures(dest, scene_textures=None):
         scene_textures = mi.textureFiles(selection = False, key = op.exists,
                 returnAsDict=True)
 
-    # current to lowercase and norm paths. for uniqueness
-    present_mod = {}
-    for ftn, texs in scene_textures.items():
-        normFtn = op.normpath(iutil.lower(ftn))
-        if not present_mod.has_key(normFtn):
-            present_mod[normFtn] = set()
-        present_mod[normFtn].update([op.normpath(iutil.lower(tex)) for tex in
-            texs])
-
-    for myftn in present_mod:
+    for myftn in scene_textures:
         if mapping.has_key(myftn):
             continue
-        ftns, texs = iutil.find_related_ftns(myftn, present_mod.copy())
+        ftns, texs = iutil.find_related_ftns(myftn, scene_textures.copy())
         newmappings=iutil.lCUFTN(dest, ftns, texs)
         for fl, copy_to in newmappings.items():
             if op.exists(fl):
@@ -462,7 +390,6 @@ def collect_textures(dest, scene_textures=None):
     return mapping
 
 def checkin_cache(shot, objs, camera = None):
-
     '''
     :shot: shot search key
     :objs: objects or sets whose cache is to be generated
@@ -511,7 +438,6 @@ def checkin_cache(shot, objs, camera = None):
         path_snap[op.normpath(util.get_filename_from_snap(snap, 'client_repo')).
                   lower()] = snap
 
-    util.pretty_print(path_snap)
     for obj in objs:
         obj_ref[obj] = pc.PyNode(obj).referenceFile()
         if not (util.cacheable(obj) and
@@ -521,7 +447,7 @@ def checkin_cache(shot, objs, camera = None):
                      path_snap[op.normpath(obj_ref[obj].path).
                                lower()].get('search_code'))])):
 
-            raise Exception('The object wasn\'t referenced via TACTIC')
+            raise Exception('The object wasnt referenced via TACTIC')
 
         obj = path_snap[op.normpath(obj_ref[obj].path).
                         lower()].get('search_code')
@@ -573,7 +499,6 @@ def checkin_cache(shot, objs, camera = None):
                               type = 'input_ref')
 
 def context_path(search_key, context):
-
     snaps = util.get_snapshot_from_sobject(search_key)
     checked_in = False
     for snap in snaps:
@@ -583,7 +508,6 @@ def context_path(search_key, context):
 
     if not checked_in:
         path = iutil.getTemp()
-        print path
         snap = user.get_server().simple_checkin(search_key, 'cache',  path, mode = 'copy')
 
     return op.dirname(util.get_filename_from_snap(snap, mode = 'client_repo'))
