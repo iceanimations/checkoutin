@@ -98,7 +98,7 @@ class Explorer(cui.Explorer):
                             path =  QFileDialog.getSaveFileName(self,
                                                                 'Save', '',
                                                                 'MayaBinary(*.mb);; MayaAscii(*.ma)')
-                            if mi.maya_version() > 2013:
+                            if mi.maya_version() == 2014:
                                 path = path[0]
                             mi.rename_scene(path)
                         mi.save_scene(osp.splitext(path)[-1])
