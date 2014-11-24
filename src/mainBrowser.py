@@ -12,6 +12,8 @@ import sys
 from PyQt4.QtGui import QMessageBox, qApp
 import app.util as util
 reload(util)
+import backend
+reload(backend)
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
@@ -42,6 +44,7 @@ class MainBrowser(Explorer):
         if projectName == '--Select Project--':
             self.clearWindow()
             return
+        backend.set_project(projectName)
         assets = util.all_assets(self.projects[projectName])
         # clear the window
         self.clearWindow()

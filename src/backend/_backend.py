@@ -13,6 +13,15 @@ import auth.security as security
 dt = datetime.datetime
 m = maya.Maya()
 TEXTURE_TYPE = 'vfx/texture'
+CURRENT_PROJECT_KEY = 'current_project_key'
+
+def set_project(name):
+    pc.optionVar(sv=(CURRENT_PROJECT_KEY, name))
+    
+def get_project():
+    return pc.optionVar(q=CURRENT_PROJECT_KEY)
+    
+
 
 
 def create_first_snapshot(item, context, check_out=True):
