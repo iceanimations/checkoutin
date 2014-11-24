@@ -38,7 +38,7 @@ class Explorer(cui.Explorer):
         self.setWindowTitle(self.title)
         self.no_item_selected = 'No %s selected' %self.item_name.capitalize()
         self.projectsBox.show()
-        self.projectsBox.activated.connect(self.setProject)
+        self.projectsBox.currentIndexChanged.connect(self.setProject)
         self.openButton.clicked.connect(self.call_checkout)
         self.saveButton.clicked.connect(self.showCheckinputDialog)
         self.currentItem = None
