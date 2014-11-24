@@ -123,7 +123,7 @@ class Dialog(Form, Base):
         context = None
         if self.parent.currentContext:
             if self.newContextButton.isChecked():
-                context = str('/'.join(self.contextLabel.text().split('/')[1:]))
+                context = str('/'.join(str(self.contextLabel.text()).split('/')[1:]))
             else:
                 split = self.parent.currentContext.title().split('/')
                 context = split[0] if len(split) == 1 else '/'.join(split[1:])
