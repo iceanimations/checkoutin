@@ -55,6 +55,8 @@ class Explorer(cui.Explorer):
         self.itemsBox.versionsButton.hide()
         self.contextsBox = self.createScroller(self.scroller_arg)
         self.contextsBox.versionsButton.hide()
+        
+        self.itemsBox.searchBox.setFocus()
 
         self.addFilesBox()
 
