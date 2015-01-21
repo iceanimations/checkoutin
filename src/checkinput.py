@@ -97,45 +97,48 @@ class Dialog(Form, Base):
             self.pathBox.setText(fileName)
         
     def ok(self):
-        self.okButton.setEnabled(False)
-        qApp.processEvents()
-        description = str(self.descriptionBox.toPlainText())
-        path = ''
-        if self.filePathButton.isChecked():
-            path = str(self.pathBox.text()).strip('"\' ')
-            if path:
-                if osp.exists(path):
-                    if not osp.isfile(path):
-                        cui.showMessage(self, title='Save', msg='Specified path is not a file',
+        try:
+            self.okButton.setEnabled(False)
+            qApp.processEvents()
+            description = str(self.descriptionBox.toPlainText())
+            path = ''
+            if self.filePathButton.isChecked():
+                path = str(self.pathBox.text()).strip('"\' ')
+                if path:
+                    if osp.exists(path):
+                        if not osp.isfile(path):
+                            cui.showMessage(self, title='Save', msg='Specified path is not a file',
+                                            icon=QMessageBox.Warning)
+                            self.okButton.setEnabled(True)
+                            return
+                    else:
+                        cui.showMessage(self, title='Save', msg='File path does not exist',
                                         icon=QMessageBox.Warning)
                         self.okButton.setEnabled(True)
                         return
                 else:
-                    cui.showMessage(self, title='Save', msg='File path does not exist',
+                    cui.showMessage(self, title='Save', msg='Path not specified',
                                     icon=QMessageBox.Warning)
                     self.okButton.setEnabled(True)
                     return
+            context = None
+            if self.parent.currentContext:
+                if self.newContextButton.isChecked():
+                    context = str('/'.join(self.contextLabel.text().split('/')[1:]))
+                else:
+                    split = self.parent.currentContext.title().split('/')
+                    context = split[0] if len(split) == 1 else '/'.join(split[1:])
+                if not context:
+                    context = self.parent.currentContext.title().split('/')[0]
+                self.parent.checkin(context, description, filePath = path)
+                self.close()
             else:
-                cui.showMessage(self, title='Save', msg='Path not specified',
+                cui.showMessage(self, title='Save', msg='No context selected',
                                 icon=QMessageBox.Warning)
-                self.okButton.setEnabled(True)
-                return
-        context = None
-        if self.parent.currentContext:
-            if self.newContextButton.isChecked():
-                context = str('/'.join(self.contextLabel.text().split('/')[1:]))
-            else:
-                split = self.parent.currentContext.title().split('/')
-                context = split[0] if len(split) == 1 else '/'.join(split[1:])
-            if not context:
-                context = self.parent.currentContext.title().split('/')[0]
-            self.parent.checkin(context, description, filePath = path)
-            self.close()
-        else:
-            cui.showMessage(self, title='Save', msg='No context selected',
-                            icon=QMessageBox.Warning)
-        self.okButton.setEnabled(True)
-        qApp.processEvents()
+        except Exception as ex:
+            self.okButton.setEnabled(True)
+            cui.showMessage(self, title='Error', msg=str(ex),
+                            icon=QMessageBox.Information)
                             
     
     def cancel(self):
