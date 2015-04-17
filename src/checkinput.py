@@ -145,7 +145,6 @@ class Dialog(Form, Base):
         self.close()
     
     def closeEvent(self, event):
-        print 'closeEvent called............'
         self.parent.saveButton.setEnabled(True)
         self.parent.checkinputDialog = None
         self.deleteLater()
