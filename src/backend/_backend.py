@@ -311,7 +311,8 @@ def checkin_texture(search_key, context):
     # normalized and lowercased -> temppath
     ftn_to_texs = mi.textureFiles(selection = False, key=op.exists, returnAsDict=True)
     # if no reachable texture exists no need to go return dict
-    if not ftn_to_texs:
+    alltexs = list(reduce(lambda a,b: a.union(b), ftn_to_texs.values(), set()))
+    if not alltexs:
         return dict()
 
     cur_to_temp = collect_textures(tmpdir, ftn_to_texs)
