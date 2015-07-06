@@ -1,5 +1,6 @@
 from auth import user
 import app.util as util
+reload(util)
 import pymel.core as pc
 import imaya as mi
 import iutil
@@ -29,7 +30,7 @@ def create_first_snapshot(item, context, check_out=True):
     To be used only if there is no snapshot associated with the given
     context of the item. Item could be task, shot or asset.
     Caution: Clears the scene.
-    :item: search_key of item
+    :item: search_key of 
     :context: context of the item
     :check_out: specify whether to create the newly created snapshot
     :return: search_key of newly created snapshot
@@ -521,4 +522,34 @@ def context_path(search_key, context):
         snap = user.get_server().simple_checkin(search_key, 'cache',  path, mode = 'copy')
 
     return op.dirname(util.get_filename_from_snap(snap, mode = 'client_repo'))
+
+
+def get_published_snapshots(project, episode, asset, context):
+    pub_obj = util.get_episode_asset(project, episode, asset)
+    snapshots = []
+    if pub_obj:
+        snapshots = util.get_snapshot_from_sobject(pub_obj['__search_key__'])
+    snapshots = [ss for ss in snapshots if ss['context'] == context]
+    return snapshots
+
+
+def publish_asset_to_episode(project, episode, asset, snapshot, context,
+        set_current=True):
+    server = user.get_server()
+    pub_obj = util.get_episode_asset(project, episode, asset, True)
+
+    files = []
+    types = []
+    for ftype in ['maya']:
+        files.extend(server.get_all_paths_from_snapshot(snapshot['code'],
+            file_types=[ftype]))
+        types.extend([ftype]*len(files))
+
+    newss = server.create_snapshot(pub_obj, context=context,
+            is_current=set_current)
+    server.add_file(newss['code'], files, file_type=types, mode='copy', create_icon=False)
+    server.add_dependency_by_code(newss['code'], snapshot['code'],
+            type='input_ref', tag='publish')
+
+    return newss
 

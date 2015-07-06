@@ -32,11 +32,11 @@ class ShotExplorer(Explorer):
                            'cache',
                            'animation',
                            'preview',
-                           'lighting'] 
+                           'lighting']
 
     def __init__(self, standalone=False):
         super(ShotExplorer, self).__init__(standalone=standalone)
-        
+
         self.episodeBox.show()
         self.sequenceBox.show()
         self.referenceButton.hide()
@@ -112,25 +112,25 @@ class ShotExplorer(Explorer):
         for shot in util.get_shots(projectCode, episode=ep, sequence=self.sequences[str(seq)]):
             item = self.createItem(shot['code'],
                                    'Start: '+ (str(shot['tc_frame_start']) +'\n'
-                                               if shot['tc_frame_start'] 
+                                               if shot['tc_frame_start']
                                                else '\n') +
                                    'End: ' + (str(shot['tc_frame_end'])
                                               if shot['tc_frame_end'] else ''),
                                    shot['timestamp'].split('.')[0],
                                    shot['description'] if shot['description']
                                    else '')
-            
+
             item.setObjectName(shot['__search_key__'])
             self.itemsBox.addItem(item)
             item.contextMenuEvent = self.shotContextMenu
-            
+
         map(lambda widget: self.bindClickEvent(widget, self.showContexts),
             self.itemsBox.items())
 
     def showContexts(self, shot):
-        
+
         super(ShotExplorer, self).showContexts(shot)
-        
+
         for item in self.contextsBox.items():
             if item.get_title().lower() in ['cache', 'preview']:
                 item.mouseDoubleClickEvent = self.cacheDoubleClick
@@ -140,7 +140,7 @@ class ShotExplorer(Explorer):
                                     self.currentContext.title())
         path = path.replace('/', '\\')
         subprocess.call('explorer '+path, shell=True)
-        
+
 
     # def contexts(self):
 
@@ -181,7 +181,7 @@ class ShotExplorer(Explorer):
                 self.checkinputDialog.show()
             else:
                 cui.showMessage(self, title='Shot Explorer',
-                                msg='Access denied. You don\'t have permission'+
+                                msg="Access denied. You don\'t have permission"+
                                 ' to make changes to the selected Shot/Context',
                                 icon=QMessageBox.Critical)
         else:
@@ -202,7 +202,7 @@ class ShotExplorer(Explorer):
         assetsLen2 = len(self.itemsBox.items())
         if assetsLen1 != assetsLen2:
             self.updateItemsBox(assetsLen1, assetsLen2, newItems)
-        
+
         # This is surely a dead block of code
         if self.currentItem and self.contextsBox:
             if (len(self.contextsBox.items()) !=

@@ -9,11 +9,15 @@ Explorer = base.Explorer
 from customui import ui as cui
 import os.path as osp
 import sys
-from PyQt4.QtGui import QMessageBox, qApp
+from PyQt4.QtGui import QMessageBox, qApp, QMenu, QCursor
 import app.util as util
 reload(util)
 import backend
 reload(backend)
+import auth.security as sec
+reload(sec)
+from . import publish
+reload(publish)
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
@@ -53,6 +57,21 @@ class MainBrowser(Explorer):
             self.checkinputDialog.setMainName()
             self.checkinputDialog.setContext()
 
+    def showContextMenu(self, event):
+        rootCtx = self.currentContext.title().split('/')[0]
+        if rootCtx not in ('rig', 'shaded') or not sec.checkinability(
+                self.currentItem.objectName(), rootCtx):
+            return
+        menu = QMenu(self)
+        action = menu.addAction('Publish    ')
+        menu.popup(QCursor.pos())
+        action.triggered.connect(self.publish)
+
+    def publish(self):
+        self.publishDialog = publish.PublishDialog(
+                self.currentFile.objectName(), self )
+        self.publishDialog.exec_()
+
     def showAssets(self, assets):
         for asset in assets:
             item = self.createItem('%s'%asset['code'],
@@ -65,6 +84,11 @@ class MainBrowser(Explorer):
         map(lambda widget: self.bindClickEvent(widget,
                                                self.showContexts),
             self.itemsBox.items())
+
+    def showFiles(self, context, files=None):
+        super(MainBrowser, self).showFiles(context, files)
+        for item in self.filesBox.items():
+            item.contextMenuEvent = self.showContextMenu
 
     def clearWindow(self):
         self.itemsBox.clearItems()
@@ -100,3 +124,5 @@ class MainBrowser(Explorer):
 
     def updateContextsBox(self):
         self.showContexts(self.currentItem)
+
+

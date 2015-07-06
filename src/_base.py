@@ -45,7 +45,7 @@ class Explorer(cui.Explorer):
         self.standalone = standalone
         self.testButton.hide()
         self.testButton.released.connect(self.updateThumb)
-        
+
 
         if standalone:
             self.openButton.setEnabled(False)
@@ -55,7 +55,7 @@ class Explorer(cui.Explorer):
         self.itemsBox.versionsButton.hide()
         self.contextsBox = self.createScroller(self.scroller_arg)
         self.contextsBox.versionsButton.hide()
-        
+
         self.itemsBox.searchBox.setFocus()
 
         self.addFilesBox()
@@ -71,7 +71,7 @@ class Explorer(cui.Explorer):
         self.itemsBox.scrolled(None)
         self.contextsBox.scrolled(None)
         self.filesBox.scrolled(None)
-        
+
     def closeEvent(self, event):
         self.thread.terminate()
         self.deleteLater()
@@ -82,7 +82,7 @@ class Explorer(cui.Explorer):
 
     def addReference(self):
         self.checkout(r = True)
-        
+
     def call_checkout(self):
         if self.currentContext:
             if self.currentFile:
@@ -121,7 +121,7 @@ class Explorer(cui.Explorer):
                         self.currentFile = cur_orig
                 else:
                     name_comps = str(self.currentContext.objectName()).split('>')
-                    
+
                     backend.create_first_snapshot(name_comps[0], name_comps[1], check_out=True)
                     # self.call_checkout()
         else:
@@ -143,7 +143,7 @@ class Explorer(cui.Explorer):
     def checkout(self, r = False):
         if self.currentFile:
             backend.checkout(str(self.currentFile.objectName()), r = r)
-            
+
     def showCheckinputDialog(self):
         if mi.is_modified():
             b = cui.showMessage(self, title=self.title,
@@ -164,7 +164,7 @@ class Explorer(cui.Explorer):
                 self.checkinputDialog.show()
             else:
                 cui.showMessage(self, title='Assets Explorer',
-                                msg='Access denied. You don\'t have '+
+                                msg="Access denied. You don't have "+
                                 'permissions to make changes to the '+
                                 'selected Process',
                                 icon=QMessageBox.Critical)
@@ -219,8 +219,8 @@ class Explorer(cui.Explorer):
                 if self.checkinputDialog:
                     self.checkinputDialog.setMainName()
                     self.checkinputDialog.setContext()
-        
-    
+
+
     def contextsProcesses(self):
         # TODO: Add the details of what this function returns
         contexts = {}
@@ -232,12 +232,12 @@ class Explorer(cui.Explorer):
                 contexts[snap['process']].add(snap['context'])
             else:
                 contexts[snap['process']] = set([snap['context']])
-        
+
         for context in self.pre_defined_contexts:
             if context not in contexts:
                 contexts[context] = set([context])
         return contexts
-    
+
     def contextsLen(self, contexts):
         length = 0
         for contx in contexts:
@@ -250,7 +250,7 @@ class Explorer(cui.Explorer):
         if self.currentItem:
             self.currentItem.setStyleSheet("background-color: None")
         self.currentItem = item
-        self.currentItem.setStyleSheet("background-color: #666666")        
+        self.currentItem.setStyleSheet("background-color: #666666")
 
     def _update_child_window(self):
         # handle child windows
@@ -287,7 +287,7 @@ class Explorer(cui.Explorer):
                                                        self.snapshots),
             self.contextsBox.items())
 
-        
+
         # if there is only one context, show the files
         if len(contexts) == 1:
             self.showFiles(self.contextsBox.items()[0])
@@ -297,13 +297,14 @@ class Explorer(cui.Explorer):
         Given a set I snapshots return the latest one
         @snapshots: list of dictionaries containing snapshot info
         '''
-        
+
         timestamps = []
+
 class Thread(QThread):
     def __init__(self, parent=None):
         super(Thread, self).__init__(parent)
         self.parentWin = parent
-         
+
     def run(self):
         while 1:
             self.parentWin.testButton.released.emit()
