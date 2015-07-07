@@ -59,12 +59,13 @@ class MainBrowser(Explorer):
 
     def showContextMenu(self, event):
         rootCtx = self.currentContext.title().split('/')[0]
+        pos = QCursor.pos()
         if rootCtx not in ('rig', 'shaded') or not sec.checkinability(
                 self.currentItem.objectName(), rootCtx):
             return
         menu = QMenu(self)
         action = menu.addAction('Publish    ')
-        menu.popup(QCursor.pos())
+        menu.popup(pos)
         action.triggered.connect(self.publish)
 
     def publish(self):

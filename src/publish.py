@@ -3,8 +3,8 @@ try:
 except:
     from PyQt4 import uic
 
-from PyQt4.QtGui import QMessageBox
-#from PyQt4.QtCore import *
+from PyQt4.QtGui import QMessageBox, QRegExpValidator
+from PyQt4.QtCore import QRegExp, Qt
 import os.path as osp
 import re
 
@@ -36,18 +36,43 @@ class PublishDialog(Form, Base):
         self.assetCategoryLabel.setText(self.ss['asset']['asset_category'])
         self.assetContextLabel.setText(self.ss['context'])
         self.assetVersionLabel.setText('v%03d'%self.ss['version'])
+
         self.populateEpisodeBox()
         self.episodeBox.currentIndexChanged.connect(self.episodeSelected)
         if self.episodes:
             self.episodeBox.setCurrentIndex(0)
-            self.episodeSelected(self)
+            self.updatePublish()
+
+        self.validator = QRegExpValidator(QRegExp('[a-z0-9/_]+'))
+        self.subContextEdit.setValidator(self.validator)
+        self.subContextEdit.setEnabled(False)
+        #self.subContextEdit.editingFinished.connect(self.subContextEditingFinished)
+        self.subContextEditButton.clicked.connect(self.subContextEditButtonClicked)
+
         self.mainButtonBox.accepted.connect(self.accepted)
+
+    def subContextEditButtonClicked(self, *args):
+        if self.subContextEdit.isEnabled():
+            self.subContextEditingFinished()
+        else:
+            self.subContextEditButton.setText('S')
+            self.subContextEdit.setEnabled(True)
+            self.subContextEdit.setMaxLength(20)
+            self.subContextEdit.setFocus()
+
+    def subContextEditingFinished(self, *args):
+        self.subContextEdit.setEnabled(False)
+        self.subContextEditButton.setText('E')
+        self.updatePublish()
 
     def populateEpisodeBox(self):
         self.episodes = util.get_episodes(self.project)
         map(lambda x: self.episodeBox.addItem(x['code']), self.episodes)
 
     def episodeSelected(self, event):
+        self.updatePublish()
+
+    def updatePublish(self):
         self.episode = self.episodes[self.episodeBox.currentIndex()]
         self.publishAssetCodeLabel.setText(self.assetCodeLabel.text())
 
@@ -62,6 +87,10 @@ class PublishDialog(Form, Base):
         if match:
             ctx = match.group(1)
         self.publishContextLabel.setText(ctx)
+
+        subCtx = self.subContextEdit.text()
+        subCtx = subCtx.strip('/')
+        ctx += '/' if subCtx else '' + subCtx
 
         snapshots = be.get_published_snapshots(self.project, self.episode,
                 self.ss['asset'], ctx)
@@ -91,5 +120,12 @@ class PublishDialog(Form, Base):
                             msg="Publish Failed " + str(e),
                             icon=QMessageBox.Critical)
             traceback.print_exc()
+
+    def keyPressEvent(self, event):
+        if event.key() in (Qt.Key_Enter, Qt.Key_Return):
+            if not self.subContextEdit.isEnabled():
+                self.box.accepted.emit()
+            else:
+                self.subContextEditingFinished()
 
 
