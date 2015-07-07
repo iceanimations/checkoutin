@@ -47,14 +47,15 @@ class PublishDialog(Form, Base):
         self.subContextEdit.setValidator(self.validator)
         self.subContextEdit.setEnabled(False)
         #self.subContextEdit.editingFinished.connect(self.subContextEditingFinished)
-        self.subContextEditButton.clicked.connect(self.subContextEditButtonClicked)
+        self.subContextEditButton.clicked.connect(self.subContextEditStart)
 
         self.mainButtonBox.accepted.connect(self.accepted)
 
-    def subContextEditButtonClicked(self, *args):
+    def subContextEditStart(self, *args):
         if self.subContextEdit.isEnabled():
             self.subContextEditingFinished()
         else:
+            self.publishSubContext = self.subContextEdit.text()
             self.subContextEditButton.setText('S')
             self.subContextEdit.setEnabled(True)
             self.subContextEdit.setMaxLength(20)
@@ -64,6 +65,11 @@ class PublishDialog(Form, Base):
         self.subContextEdit.setEnabled(False)
         self.subContextEditButton.setText('E')
         self.updatePublish()
+
+    def subContextEditingCancelled(self, *args):
+        self.subContextEdit.setEnabled(False)
+        self.subContextEdit.setText(self.publishSubContext)
+        self.subContextEditButton.setText('E')
 
     def populateEpisodeBox(self):
         self.episodes = util.get_episodes(self.project)
@@ -124,8 +130,12 @@ class PublishDialog(Form, Base):
     def keyPressEvent(self, event):
         if event.key() in (Qt.Key_Enter, Qt.Key_Return):
             if not self.subContextEdit.isEnabled():
-                self.box.accepted.emit()
+                self.mainButtonBox.accepted.emit()
             else:
                 self.subContextEditingFinished()
-
+        elif event.key() == Qt.Key_Escape:
+            if not self.subContextEdit.isEnabled():
+                self.mainButtonBox.rejected.emit()
+            else:
+                self.subContextEditingCancelled()
 
