@@ -138,4 +138,7 @@ class PublishDialog(Form, Base):
                 self.mainButtonBox.rejected.emit()
             else:
                 self.subContextEditingCancelled()
+        else:
+            super(PublishDialog, self).keyPressEvent(event)
+
 

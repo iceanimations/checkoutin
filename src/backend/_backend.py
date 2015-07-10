@@ -538,18 +538,16 @@ def publish_asset_to_episode(project, episode, asset, snapshot, context,
     server = user.get_server()
     pub_obj = util.get_episode_asset(project, episode, asset, True)
 
-    files = []
-    types = []
-    for ftype in ['maya']:
-        files.extend(server.get_all_paths_from_snapshot(snapshot['code'],
-            file_types=[ftype]))
-        types.extend([ftype]*len(files))
 
     newss = server.create_snapshot(pub_obj, context=context,
-            is_current=set_current)
-    server.add_file(newss['code'], files, file_type=types, mode='copy', create_icon=False)
+            is_current=set_current, snapshot_type=snapshot['snapshot_type'])
+
+    util.copy_snapshot(snapshot, newss)
+
     server.add_dependency_by_code(newss['code'], snapshot['code'],
-            type='input_ref', tag='publish')
+            type='ref', tag='publish_source')
+    server.add_dependency_by_code(snapshot['code'], newss['code'],
+            type='ref', tag='publish_target')
 
     return newss
 
