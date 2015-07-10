@@ -524,8 +524,8 @@ def context_path(search_key, context):
     return op.dirname(util.get_filename_from_snap(snap, mode = 'client_repo'))
 
 
-def get_published_snapshots(project, episode, asset, context):
-    pub_obj = util.get_episode_asset(project, episode, asset)
+def get_published_snapshots(project_sk, episode, asset, context):
+    pub_obj = util.get_episode_asset(project_sk, episode, asset)
     snapshots = []
     if pub_obj:
         snapshots = util.get_snapshot_from_sobject(pub_obj['__search_key__'])
@@ -533,11 +533,37 @@ def get_published_snapshots(project, episode, asset, context):
     return snapshots
 
 
-def publish_asset_to_episode(project, episode, asset, snapshot, context,
+def get_targets_in_published(snapshot, published):
+    ''' your company doesnt pay you a fortune '''
+
+    published_codes = [ss['code'] for ss in published]
+    targets = get_publish_targets(snapshot)
+    context_targets = []
+    latest = None
+    current = None
+
+    for target in targets:
+        if target['code'] in published_codes:
+            context_targets.append(target)
+            if latest is None:
+                latest = target
+            elif target['version'] > latest['version']:
+                latest = target
+            if target['is_current']:
+                current = target
+
+    return context_targets, latest, current
+
+
+def get_publish_targets(snapshot):
+    server = user.get_server()
+    return server.get_dependencies(snapshot, tag='publish_target')
+
+
+def publish_asset_to_episode(project_sk, episode, asset, snapshot, context,
         set_current=True):
     server = user.get_server()
-    pub_obj = util.get_episode_asset(project, episode, asset, True)
-
+    pub_obj = util.get_episode_asset(project_sk, episode, asset, True)
 
     newss = server.create_snapshot(pub_obj, context=context,
             is_current=set_current, snapshot_type=snapshot['snapshot_type'])
@@ -550,4 +576,9 @@ def publish_asset_to_episode(project, episode, asset, snapshot, context,
             type='ref', tag='publish_target')
 
     return newss
+
+def set_snapshot_as_current(snapshot):
+    server = user.get_server()
+    server.set_current_snapshot(snapshot)
+
 
