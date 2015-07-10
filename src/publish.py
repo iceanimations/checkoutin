@@ -104,8 +104,6 @@ class PublishDialog(Form, Base):
         already_published, latest, current=be.get_targets_in_published(
                 self.ss, snapshots )
 
-        print bool(latest), bool(current)
-
         if current:
             self.target = current
             self.setDefaultAction()
@@ -135,7 +133,6 @@ class PublishDialog(Form, Base):
     def setDefaultAction(self, action='doNothing'):
         btn = self.mainButtonBox.button(QDialogButtonBox.Ok)
         if action == 'setCurrent':
-            print 'make current'
             btn.setText('Set Current')
             self.defaultAction = self.setCurrent
         elif action == 'publish':
