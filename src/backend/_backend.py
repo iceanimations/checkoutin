@@ -559,23 +559,7 @@ def get_publish_targets(snapshot):
     server = user.get_server()
     return server.get_dependencies(snapshot, tag='publish_target')
 
-
-def publish_asset_to_episode(project_sk, episode, asset, snapshot, context,
-        set_current=True):
-    server = user.get_server()
-    pub_obj = util.get_episode_asset(project_sk, episode, asset, True)
-
-    newss = server.create_snapshot(pub_obj, context=context,
-            is_current=set_current, snapshot_type=snapshot['snapshot_type'])
-
-    util.copy_snapshot(snapshot, newss)
-
-    server.add_dependency_by_code(newss['code'], snapshot['code'],
-            type='ref', tag='publish_source')
-    server.add_dependency_by_code(snapshot['code'], newss['code'],
-            type='ref', tag='publish_target')
-
-    return newss
+publish_asset_to_episode = util.publish_asset_to_episode
 
 def set_snapshot_as_current(snapshot):
     server = user.get_server()
