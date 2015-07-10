@@ -6,8 +6,8 @@ Created on Dec 20, 2013
 
 import os.path as osp
 import sys
-from PyQt4.QtGui import QMessageBox
 from customui import ui as cui
+from PyQt4.QtGui import QMessageBox
 import app.util as util
 import checkinput
 
@@ -90,7 +90,7 @@ class MyTasks(Explorer):
                 cui.showMessage(self,
                                 title='My Tasks',
                                 msg='Access denied. '+
-                                'You don\'t have permissions to make changes '+
+                                "You don\'t have permissions to make changes "+
                                 'to the selected Process',
                                 icon=QMessageBox.Critical)
         else:
