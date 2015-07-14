@@ -6,10 +6,8 @@ copyright (c) at Ice Animations (Pvt) Ltd
 '''
 from . import _base as base
 Explorer = base.Explorer
-from customui import ui as cui
 import os.path as osp
-import sys
-from PyQt4.QtGui import QMessageBox, qApp, QMenu, QCursor
+from PyQt4.QtGui import QMenu, QCursor
 import app.util as util
 reload(util)
 import backend
@@ -18,6 +16,8 @@ import auth.security as sec
 reload(sec)
 from . import publish
 reload(publish)
+from . import link_rig_shaded
+reload(link_rig_shaded)
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
@@ -60,18 +60,42 @@ class MainBrowser(Explorer):
     def showContextMenu(self, event):
         rootCtx = self.currentContext.title().split('/')[0]
         pos = QCursor.pos()
-        if rootCtx not in ('rig', 'shaded') or not sec.checkinability(
-                self.currentItem.objectName(), rootCtx):
-            return
+        checkinable = sec.checkinability(self.currentItem.objectName(),
+                rootCtx)
         menu = QMenu(self)
-        action = menu.addAction('Publish    ')
+
+        publishAction = menu.addAction('Publish    ')
+        publishAction.setEnabled(False)
+        publishAction.triggered.connect(self.publish)
+        if checkinable and rootCtx in ('rig', 'shaded'):
+            publishAction.setEnabled(True)
+
+        linkShadedToRigAction = menu.addAction('link To Rig')
+        linkShadedToRigAction.setEnabled(False)
+        linkShadedToRigAction.triggered.connect(self.linkShadedToRig)
+        if checkinable and rootCtx == 'shaded':
+            linkShadedToRigAction.setEnabled(True)
+
+        linkRigToShadedAction = menu.addAction('link To LD')
+        linkRigToShadedAction.setEnabled(False)
+        linkRigToShadedAction.triggered.connect(self.linkRigToShaded)
+        if checkinable and rootCtx == 'rig':
+            linkRigToShadedAction.setEnabled(True)
+
         menu.popup(pos)
-        action.triggered.connect(self.publish)
 
     def publish(self):
         self.publishDialog = publish.PublishDialog(
                 self.currentFile.objectName(), self )
         self.publishDialog.exec_()
+
+    def linkShadedToRig(self):
+        self.linkDialog = link_rig_shaded.LinkShadedRig(
+                self.currentFile.objectName(), self )
+        self.linkDialog.exec_()
+
+    def linkRigToShaded(self):
+        self.linkShadedToRig()
 
     def showAssets(self, assets):
         for asset in assets:
@@ -82,9 +106,8 @@ class MainBrowser(Explorer):
                                    if asset['description'] else '')
             item.setObjectName(asset['__search_key__'])
             self.itemsBox.addItem(item)
-        map(lambda widget: self.bindClickEvent(widget,
-                                               self.showContexts),
-            self.itemsBox.items())
+        map(lambda widget: self.bindClickEvent(widget, self.showContexts),
+                self.itemsBox.items())
 
     def showFiles(self, context, files=None):
         super(MainBrowser, self).showFiles(context, files)
@@ -122,8 +145,6 @@ class MainBrowser(Explorer):
                      self.currentContext.title().split('/')[0]]):
                 self.showFiles(self.currentContext, self.snapshots)
 
-
     def updateContextsBox(self):
         self.showContexts(self.currentItem)
-
 

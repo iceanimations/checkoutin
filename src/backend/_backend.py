@@ -555,4 +555,3 @@ def set_snapshot_as_current(snapshot):
     server = user.get_server()
     server.set_current_snapshot(snapshot)
 
-

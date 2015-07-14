@@ -129,7 +129,6 @@ class PublishDialog(Form, Base):
             self.setDefaultAction('publish')
             self.publishVersionLabel.setText('v%03d'%(maxVersion+1))
 
-
     def setDefaultAction(self, action='doNothing'):
         btn = self.mainButtonBox.button(QDialogButtonBox.Ok)
         if action == 'setCurrent':
@@ -141,7 +140,6 @@ class PublishDialog(Form, Base):
         else:
             self.defaultAction = self.doNothing
             btn.setText('Close')
-
 
     def accepted(self):
         self.defaultAction()
@@ -183,5 +181,4 @@ class PublishDialog(Form, Base):
                 self.subContextEditingCancelled()
         else:
             super(PublishDialog, self).keyPressEvent(event)
-
 
