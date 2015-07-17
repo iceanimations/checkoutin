@@ -3,13 +3,15 @@ Author: Hussain Parsaiyan (hussain.parsaiyan@iceanimations.com)
 Base class for explorer function. To avoid customui packages dependence
 on backend. Crudely thought out idea might need clean-up in future.
 '''
+
 from customui import ui as cui
 import app.util as util
 reload(cui)
-import site
 import imaya as mi
 reload(mi)
 import os.path as osp
+
+
 from PyQt4.QtGui import QMessageBox, QFileDialog
 from PyQt4.QtCore import QThread
 import time
@@ -18,6 +20,7 @@ try:
     reload(backend)
 except:
     pass
+
 
 parent = None
 try:
@@ -31,8 +34,8 @@ import checkinput
 import appUsageApp
 reload(appUsageApp)
 
-class Explorer(cui.Explorer):
 
+class Explorer(cui.Explorer):
     def __init__(self, parent=parent, standalone=False):
         super(Explorer, self).__init__(parent, standalone)
         self.setWindowTitle(self.title)
@@ -292,13 +295,6 @@ class Explorer(cui.Explorer):
         if len(contexts) == 1:
             self.showFiles(self.contextsBox.items()[0])
 
-    def get_latest_snapshot(snapshots):
-        '''
-        Given a set I snapshots return the latest one
-        @snapshots: list of dictionaries containing snapshot info
-        '''
-
-        timestamps = []
 
 class Thread(QThread):
     def __init__(self, parent=None):
@@ -309,3 +305,4 @@ class Thread(QThread):
         while 1:
             self.parentWin.testButton.released.emit()
             time.sleep(2)
+
