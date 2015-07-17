@@ -15,7 +15,7 @@ reload(base)
 import backend
 from customui import ui as cui
 import app.util as util
-import assetsExplorer
+import mainBrowser
 import auth.security as security
 import checkinput
 Explorer = base.Explorer
@@ -95,7 +95,7 @@ class ShotExplorer(Explorer):
         act.triggered.connect(self.showAssetsExplorer)
 
     def showAssetsExplorer(self):
-        assetsExplorer.AssetsExplorer(self, shot=
+        mainBrowser.AssetsExplorer(self, shot=
                                       self.projects[str(
                                           self.projectsBox.currentText())]+'>'
                                       +str(self.currentItem.objectName())).show()
