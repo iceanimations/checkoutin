@@ -10,70 +10,15 @@ reload(cui)
 import app.util as util
 reload(util)
 
+from . import backend
+reload(backend)
+
 import imaya as mi
 reload(mi)
 
 import PyQt4.QtGui as gui
-
-import pymel.core as pc
 import os.path as osp
-import re
 
-
-def createReference(path, stripVersionInNamespace=True):
-    if not path or not osp.exists(path):
-        return None
-    before = pc.listReferences()
-    namespace = osp.basename(path)
-    namespace = osp.splitext(namespace)[0]
-    if stripVersionInNamespace:
-        # version part of the string is recognized as .v001
-        match = re.match('(.*)([-._]v\d+)(.*)', namespace)
-        if match:
-            namespace = match.group(1) + match.group(3)
-    pc.createReference(path, namespace=namespace, mnc=False)
-    after = pc.listReferences()
-    new = [ref for ref in after if ref not in before and not
-            ref.refNode.isReferenced()]
-    return new[0]
-
-def removeReference(ref):
-    ''':type ref: pymel.core.system.FileReference()'''
-    if ref:
-        ref.removeReferenceEdits()
-        ref.remove()
-
-def find_geo_set_in_ref(ref, key=lambda node: 'geo_set' in node.name().lower()):
-    for node in ref.nodes():
-        if pc.nodeType(node) == 'objectSet':
-            if key(node):
-                return node
-
-def verify_cache_compatibility(shaded, rig, newFile=False):
-    if newFile:
-        pc.newFile(f=True)
-    shaded_path = util.filename_from_snap(shaded, mode='client_repo')
-    shaded_ref = createReference(shaded_path)
-    if not shaded_ref:
-        raise Exception, 'file not found: %s'%shaded_path
-    shaded_geo_set = find_geo_set_in_ref(shaded_ref)
-    if shaded_geo_set is None:
-        removeReference(shaded_ref)
-        raise Exception, 'geo_set not found in %s'%shaded_path
-    rig_path = util.filename_from_snap(rig, mode='client_repo')
-    rig_ref = createReference(rig_path)
-    if not rig_ref:
-        removeReference(shaded_ref)
-        raise Exception, 'file not found: %s'%rig_path
-    rig_geo_set = find_geo_set_in_ref(rig_ref)
-    if rig_geo_set is None:
-        removeReference(shaded_ref)
-        removeReference(rig_ref)
-        raise Exception, 'geo_set not found in %s'%rig_path
-    result = mi.setsCompatible(shaded_geo_set, rig_geo_set)
-    removeReference(shaded_ref)
-    removeReference(rig_ref)
-    return result
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
@@ -127,7 +72,7 @@ class LinkShadedRig(Form, Base):
         verified = False
         reason = 'Given sets are not cache compatible'
         try:
-            verified = verify_cache_compatibility(shaded, rig)
+            verified = backend.verify_cache_compatibility(shaded, rig)
         except Exception as e:
             import traceback
             verified = False
