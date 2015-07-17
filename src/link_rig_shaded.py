@@ -200,8 +200,6 @@ class LinkShadedRig(Form, Base):
 if __name__ == '__main__':
     import qtify_maya_window as qtfy
     parent = qtfy.getMayaWindow()
-    import tactic_client_lib
-    stub = tactic_client_lib.TacticServerStub(setup=False)
     win = LinkShadedRig(
             'sthpw/snapshot?code=SNAPSHOT00017302',
             parent)

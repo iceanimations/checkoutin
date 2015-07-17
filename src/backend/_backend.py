@@ -558,11 +558,11 @@ def set_snapshot_as_current(snapshot):
     server.set_current_snapshot(snapshot)
 
 def createReference(path, stripVersionInNamespace=True):
-    if not path or not osp.exists(path):
+    if not path or not op.exists(path):
         return None
     before = pc.listReferences()
-    namespace = osp.basename(path)
-    namespace = osp.splitext(namespace)[0]
+    namespace = op.basename(path)
+    namespace = op.splitext(namespace)[0]
     if stripVersionInNamespace:
         # version part of the string is recognized as .v001
         match = re.match('(.*)([-._]v\d+)(.*)', namespace)

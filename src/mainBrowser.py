@@ -67,8 +67,12 @@ class MainBrowser(Explorer):
         publishAction = menu.addAction('Publish    ')
         publishAction.setEnabled(False)
         publishAction.triggered.connect(self.publish)
-        if checkinable and rootCtx in ('rig', 'shaded'):
-            publishAction.setEnabled(True)
+        if checkinable:
+            if rootCtx == 'rig':
+                publishAction.setEnabled(True)
+            elif (rootCtx == 'shaded' and self.currentItem.labelStatus &
+                    self.currentItem.kLabel.kPAIR):
+                publishAction.setEnabled(True)
 
         linkShadedToRigAction = menu.addAction('link To Rig')
         linkShadedToRigAction.setEnabled(False)
@@ -113,6 +117,14 @@ class MainBrowser(Explorer):
         super(MainBrowser, self).showFiles(context, files)
         for item in self.filesBox.items():
             item.contextMenuEvent = self.showContextMenu
+            snapshot = util.get_snapshot_info(item.objectName())
+            if util.get_all_publish_targets(snapshot):
+                item.labelStatus |= item.kLabel.kPUB
+                item.labelDisplay |= item.kLabel.kPUB
+            compatibles = util.get_cache_compatible_objects(snapshot)
+            if compatibles:
+                item.labelStatus |= item.kLabel.kPAIR
+            item.labelDisplay |= item.kLabel.kPAIR
 
     def clearWindow(self):
         self.itemsBox.clearItems()
