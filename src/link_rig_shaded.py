@@ -130,6 +130,9 @@ class LinkShadedRig(Form, Base):
                 if self.snapshot_linked(snap):
                     item.labelStatus = item.kLabel.kPAIR
                     item.labelDisplay = item.kLabel.kPAIR
+                if util.get_all_publish_targets(snap):
+                    item.labelStatus  |= item.kLabel.kPUB
+                    item.labelDisplay |= item.kLabel.kPUB
                 self.bindClickEvent(item, self.itemClicked)
                 self.scroller.addItem(item)
 
