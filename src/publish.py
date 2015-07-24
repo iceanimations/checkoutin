@@ -20,7 +20,7 @@ uiPath = osp.join(rootPath, 'ui')
 
 Form, Base = uic.loadUiType(osp.join(uiPath, 'publish.ui'))
 class PublishDialog(Form, Base):
-    mainCatPattern = re.compile('^([^/]*).*')
+    ''' Have fun '''
 
     def __init__(self, search_key, parent=None):
         super(PublishDialog, self).__init__(parent)
@@ -284,4 +284,12 @@ class PublishDialog(Form, Base):
                 self.subContextEditingCancelled()
         else:
             super(PublishDialog, self).keyPressEvent(event)
+
+def main():
+    snapshot_key = 'sthpw/snapshot?code=SNAPSHOT00018558'
+    dialog = PublishDialog(snapshot_key)
+    dialog.show()
+
+if __name__ == '__main__':
+    main()
 

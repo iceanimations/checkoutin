@@ -607,6 +607,7 @@ def verify_cache_compatibility(shaded, rig, newFile=False):
     removeReference(rig_ref)
     return result
 
+
 publish_asset_to_episode = util.publish_asset_to_episode
 get_publish_targets = util.get_all_publish_targets
 get_publish_source = util.get_publish_source
@@ -615,4 +616,6 @@ get_snapshot_info = util.get_snapshot_info
 get_icon = util.get_icon
 get_episodes = util.get_episodes
 get_episode_asset = util.get_episode_asset
+get_linked = util.get_cache_compatible_objects
+
 
