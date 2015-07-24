@@ -525,15 +525,10 @@ def context_path(search_key, context):
 
     return op.dirname(util.get_filename_from_snap(snap, mode = 'client_repo'))
 
-
-publish_asset_to_episode = util.publish_asset_to_episode
-get_publish_targets = util.get_all_publish_targets
-get_published_snapshots = util.get_published_snapshots_in_episode
-
-
-def get_targets_in_published(snapshot, published):
+def get_targets_in_published(snapshot, published, ctx=None):
     ''' your company doesnt pay you a fortune '''
-
+    if ctx is not None:
+        published = [ss for ss in published if ctx == ss['context']]
     published_codes = [ss['code'] for ss in published]
     targets = get_publish_targets(snapshot)
     context_targets = []
@@ -611,4 +606,13 @@ def verify_cache_compatibility(shaded, rig, newFile=False):
     removeReference(shaded_ref)
     removeReference(rig_ref)
     return result
+
+publish_asset_to_episode = util.publish_asset_to_episode
+get_publish_targets = util.get_all_publish_targets
+get_publish_source = util.get_publish_source
+get_published_snapshots = util.get_published_snapshots_in_episode
+get_snapshot_info = util.get_snapshot_info
+get_icon = util.get_icon
+get_episodes = util.get_episodes
+get_episode_asset = util.get_episode_asset
 

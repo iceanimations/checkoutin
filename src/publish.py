@@ -3,14 +3,13 @@ try:
 except:
     from PyQt4 import uic
 
-from PyQt4.QtGui import QMessageBox, QRegExpValidator, QDialogButtonBox
+from PyQt4.QtGui import ( QMessageBox, QRegExpValidator, QDialogButtonBox,
+        QPixmap, QLabel)
 from PyQt4.QtCore import QRegExp, Qt
 import os.path as osp
 import re
 
 from customui import ui as cui
-import app.util as util
-reload(util)
 from .backend import _backend as be
 reload(be)
 
@@ -27,83 +26,146 @@ class PublishDialog(Form, Base):
         super(PublishDialog, self).__init__(parent)
         self.setupUi(self)
         self.parent = parent
-        projectName = self.parent.projectsBox.currentText()
-        self.project = self.parent.projects[projectName]
-        self.setWindowTitle(projectName + ' - ' + self.windowTitle())
+        self.search_key = search_key
 
-        self.ss = util.get_snapshot_info(search_key)
-        self.assetCodeLabel.setText(self.ss['search_code'])
-        self.assetCategoryLabel.setText(self.ss['asset']['asset_category'])
-        self.assetContextLabel.setText(self.ss['context'])
-        self.assetVersionLabel.setText('v%03d'%self.ss['version'])
+        self.updateSourceModel()
+        self.updateTargetModel()
+
+        self.setWindowTitle(self.projectName + ' - ' + self.windowTitle())
 
         self.populateEpisodeBox()
-        self.episodeBox.currentIndexChanged.connect(self.episodeSelected)
-        self.target=None
+        self.episodeBox.currentIndexChanged.connect( self.episodeSelected )
         self.setDefaultAction()
         if self.episodes:
             self.episodeBox.setCurrentIndex(0)
-            self.updatePublish()
+            self.updateSourceView()
+            self.updateTargetView()
 
         self.validator = QRegExpValidator(QRegExp('[a-z0-9/_]+'))
         self.subContextEdit.setValidator(self.validator)
         self.subContextEdit.setEnabled(False)
         self.subContextEditButton.clicked.connect(self.subContextEditStart)
 
+        self.linkButton.clicked.connect(self.link)
         self.mainButtonBox.accepted.connect(self.accepted)
 
-    def subContextEditStart(self, *args):
-        if self.subContextEdit.isEnabled():
-            self.subContextEditingFinished()
-        else:
-            self.publishSubContext = self.subContextEdit.text()
-            self.subContextEditButton.setText('S')
-            self.subContextEdit.setEnabled(True)
-            self.subContextEdit.setMaxLength(20)
-            self.subContextEdit.setFocus()
+    def updateSourceModel(self):
+        self.snapshot = be.get_snapshot_info(self.search_key)
+        self.projectName = self.snapshot['project_code']
+        self.project = 'sthpw/project?code=%s'%self.projectName
+        self.filename = be.filename_from_snap(self.snapshot)
+        self.version = self.snapshot['version']
+        self.iconpath = be.get_icon(self.snapshot)
+        self.episodes = be.get_episodes(self.project)
+        self.category = self.snapshot['asset']['asset_category'].split('/')[0]
+        self.context = self.snapshot['context']
 
-    def subContextEditingFinished(self, *args):
-        self.subContextEdit.setEnabled(False)
-        self.subContextEditButton.setText('E')
-        self.updatePublish()
+    def updateSourceView(self):
+        self.assetCodeLabel.setText(self.snapshot['search_code'])
+        self.assetCategoryLabel.setText(self.category)
+        self.assetContextLabel.setText(self.context)
+        self.assetVersionLabel.setText('v%03d'%self.version)
+        self.assetFilenameLabel.setText(self.filename)
+        if not self.iconpath:
+            self.iconpath = osp.join(cui.iconsPath, 'no_preview.png')
+        self.pixmap = QPixmap(self.iconpath).scaled(150, 150,
+                Qt.KeepAspectRatioByExpanding)
+        self.iconLabel.setPixmap(self.pixmap)
 
-    def subContextEditingCancelled(self, *args):
-        self.subContextEdit.setEnabled(False)
-        self.subContextEdit.setText(self.publishSubContext)
-        self.subContextEditButton.setText('E')
+    def updateSource(self):
+        self.updateSourceModel()
+        self.updateSourceView()
 
-    def populateEpisodeBox(self):
-        self.episodes = util.get_episodes(self.project)
-        map(lambda x: self.episodeBox.addItem(x['code']), self.episodes)
-
-    def episodeSelected(self, event):
-        self.updatePublish()
-
-    def updatePublish(self):
+    def updateTargetModel(self):
         self.episode = self.episodes[self.episodeBox.currentIndex()]
-        self.publishAssetCodeLabel.setText(self.assetCodeLabel.text())
+        self.publishedSnapshots = be.get_published_snapshots(self.project,
+                self.episode, self.snapshot['asset'])
 
-        cat = ''
-        match = self.mainCatPattern.match(self.assetCategoryLabel.text())
-        if match:
-            cat = match.group(1)
-        self.publishCategoryLabel.setText(cat)
+        self.targetCategory = self.category.split('/')[0]
+        self.targetContext = self.context.split('/')[0]
+        self.pairContext = 'rig'
+        if self.targetContext == 'rig':
+            self.pairContext = 'rig'
+        self.targetSubContext = self.subContextEdit.text()
+        self.targetSubContext.strip('/')
+        targetContext = self.targetContext('/' if self.targetSubContext else ''
+                + self.targetSubContext)
+        ( self.targetSnapshots, self.targetLatest,
+                self.targetCurrent ) = be.get_targets_in_published(
+                        self.project, self.episode, self.snapshot['asset'],
+                        targetContext)
+        self.target = None
+        if self.targetCurrent:
+            self.published = True
+            self.current = True
+            self.target = self.targetCurrent
+        elif self.targetLatest:
+            self.published = True
+            self.current = False
+            self.target = self.targetLatest
+        else:
+            self.published = False
+            self.current = False
+        self.targetVersion = self.target['version'] if self.target else 1
+        self.updatePairModel()
 
-        ctx = 'rig'
-        match = self.mainCatPattern.match(self.assetContextLabel.text())
-        if match:
-            ctx = match.group(1)
-        self.publishContextLabel.setText(ctx)
+    def updatePairModel(self):
+        self.pair = None
+        self.pairSubContext = self.targetSubContext
+        pairContext = self.pairContext + ( '/' if self.targetSubContext else ''
+                + self.targetSubContext )
+        ( self.pairSnapshots, self.pairLatest,
+                self.pairCurrent ) = be.get_targets_in_published(
+                        self.project, self.episode, self.snapshot['asset'],
+                        pairContext)
+        self.pairSourceLinked = False
+        if self.pairCurrent:
+            self.pair = self.pairCurrent
+        self.pairVersion = self.pair['version'] if self.pair else 0
 
-        subCtx = self.subContextEdit.text()
-        subCtx = subCtx.strip('/')
-        ctx += '/' if subCtx else '' + subCtx
+        self.pairSource = be.get_publish_source(self.pair)
+        self.pairSourceContext = (self.pairSource['context'] if self.pairSource
+                else '')
+        self.pairSourceVersion = (self.pairSource['context'] if self.pairSource
+                else 0)
 
-        snapshots = be.get_published_snapshots(self.project, self.episode,
-                self.ss['asset'], ctx)
-        already_published, latest, current=be.get_targets_in_published(
-                self.ss, snapshots )
+        if self.pair and self.pairSource:
+            self.pairSourceLinked = bool( [snap for snap in
+                be.get_linked(self.pairSource) if snap['code'] ==
+                self.snapshot['code']] )
 
+    def updateTargetView(self):
+        self.publishAssetCodeLabel.setText(self.snapshot['search_code'])
+        self.publishCategoryLabel.setText(self.category)
+        self.publishContextLabel.setText(self.context)
+        self.publishVersionLabel.setText('v%03d'%(self.targetVersion))
+        if self.current or not self.published:
+            self.setCurrentCheckBox.setChecked(self.current)
+            self.setCurrentCheckBox.setChecked(True)
+        self.updatePairView(self)
+
+    __pairTrue = QPixmap(cui._Label.getPath(cui._Label.kPAIR, True)).scaled(15,
+            15, Qt.KeepAspectRatioByExpanding)
+    __pairFalse = QPixmap(cui._Label.getPath(cui._Label.kPAIR, True)).scaled(15,
+            15, Qt.KeepAspectRatioByExpanding)
+    def getPairLabel(self, state=True):
+        if state:
+            return self.__pairTrue
+        return self.__pairFalse
+
+    def updatePairView(self):
+        self.pairContextLabel.setText(self.pairContext)
+        self.pairSubContextLabel.setText(self.pairSubContext)
+        self.pairVersionLabel.setText('v%03d'%self.pairVersion)
+        self.pairSourceContextLabel.setText(self.pairSourceContext)
+        self.pairSourceVersionLabel.setText(self.pairSourceVersion)
+        self.pairSourceLinkedLabelLayout.clear()
+        label = QLabel(self)
+        label.setPixmap(self.getPairLabel(self.pairSourceLinked))
+        self.pairSourceLinkedLabelLayout.addWidget(label)
+
+
+    '''
         if current:
             self.target = current
             self.setDefaultAction()
@@ -128,6 +190,47 @@ class PublishDialog(Form, Base):
                 maxVersion = 0
             self.setDefaultAction('publish')
             self.publishVersionLabel.setText('v%03d'%(maxVersion+1))
+    '''
+
+    def updateTarget(self):
+        self.updateTargetModel()
+        self.updateTargetView()
+
+    def updatePair(self):
+        self.updatePairModel()
+        self.updatePairView()
+
+    def updateControllers(self):
+        pass
+
+    def link(self):
+        pass
+
+    def subContextEditStart(self, *args):
+        if self.subContextEdit.isEnabled():
+            self.subContextEditingFinished()
+        else:
+            self.publishSubContext = self.subContextEdit.text()
+            self.subContextEditButton.setText('S')
+            self.subContextEdit.setEnabled(True)
+            self.subContextEdit.setMaxLength(20)
+            self.subContextEdit.setFocus()
+
+    def subContextEditingFinished(self, *args):
+        self.subContextEdit.setEnabled(False)
+        self.subContextEditButton.setText('E')
+        self.updatePublish()
+
+    def subContextEditingCancelled(self, *args):
+        self.subContextEdit.setEnabled(False)
+        self.subContextEdit.setText(self.publishSubContext)
+        self.subContextEditButton.setText('E')
+
+    def populateEpisodeBox(self):
+        map(lambda x: self.episodeBox.addItem(x['code']), self.episodes)
+
+    def episodeSelected(self, event):
+        self.updatePublish()
 
     def setDefaultAction(self, action='doNothing'):
         btn = self.mainButtonBox.button(QDialogButtonBox.Ok)
@@ -154,7 +257,7 @@ class PublishDialog(Form, Base):
         print 'publishing ....'
         try:
             newss = be.publish_asset_to_episode(self.project, self.episode,
-                    self.ss['asset'], self.ss,
+                    self.snapshot['asset'], self.snapshot,
                     self.publishContextLabel.text(),
                     self.setCurrentCheckBox.isChecked() )
             cui.showMessage(self, title='Assets Explorer',
