@@ -617,5 +617,6 @@ get_icon = util.get_icon
 get_episodes = util.get_episodes
 get_episode_asset = util.get_episode_asset
 get_linked = util.get_cache_compatible_objects
+filename_from_snap = util.get_filename_from_snap
 
 

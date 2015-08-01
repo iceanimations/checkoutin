@@ -53,11 +53,11 @@ class PublishDialog(Form, Base):
         self.snapshot = be.get_snapshot_info(self.search_key)
         self.projectName = self.snapshot['project_code']
         self.project = 'sthpw/project?code=%s'%self.projectName
-        self.filename = be.filename_from_snap(self.snapshot)
+        self.filename = osp.basename(be.filename_from_snap(self.snapshot))
         self.version = self.snapshot['version']
         self.iconpath = be.get_icon(self.snapshot)
-        self.episodes = be.get_episodes(self.project)
-        self.category = self.snapshot['asset']['asset_category'].split('/')[0]
+        self.episodes = be.get_episodes(self.projectName)
+        self.category = self.snapshot['asset']['asset_category']
         self.context = self.snapshot['context']
 
     def updateSourceView(self):
@@ -67,10 +67,10 @@ class PublishDialog(Form, Base):
         self.assetVersionLabel.setText('v%03d'%self.version)
         self.assetFilenameLabel.setText(self.filename)
         if not self.iconpath:
-            self.iconpath = osp.join(cui.iconsPath, 'no_preview.png')
+            self.iconpath = osp.join(cui.iconPath, 'no_preview.png')
         self.pixmap = QPixmap(self.iconpath).scaled(150, 150,
                 Qt.KeepAspectRatioByExpanding)
-        self.iconLabel.setPixmap(self.pixmap)
+        self.assetIconLabel.setPixmap(self.pixmap)
 
     def updateSource(self):
         self.updateSourceModel()
@@ -78,7 +78,7 @@ class PublishDialog(Form, Base):
 
     def updateTargetModel(self):
         self.episode = self.episodes[self.episodeBox.currentIndex()]
-        self.publishedSnapshots = be.get_published_snapshots(self.project,
+        self.publishedSnapshots = be.get_published_snapshots(self.projectName,
                 self.episode, self.snapshot['asset'])
 
         self.targetCategory = self.category.split('/')[0]
@@ -88,11 +88,11 @@ class PublishDialog(Form, Base):
             self.pairContext = 'rig'
         self.targetSubContext = self.subContextEdit.text()
         self.targetSubContext.strip('/')
-        targetContext = self.targetContext('/' if self.targetSubContext else ''
+        targetContext = self.targetContext + ('/' if self.targetSubContext else ''
                 + self.targetSubContext)
         ( self.targetSnapshots, self.targetLatest,
                 self.targetCurrent ) = be.get_targets_in_published(
-                        self.project, self.episode, self.snapshot['asset'],
+                        self.snapshot, self.publishedSnapshots,
                         targetContext)
         self.target = None
         if self.targetCurrent:
@@ -116,21 +116,25 @@ class PublishDialog(Form, Base):
                 + self.targetSubContext )
         ( self.pairSnapshots, self.pairLatest,
                 self.pairCurrent ) = be.get_targets_in_published(
-                        self.project, self.episode, self.snapshot['asset'],
+                        self.snapshot, self.publishedSnapshots,
                         pairContext)
+
         self.pairSourceLinked = False
         if self.pairCurrent:
             self.pair = self.pairCurrent
         self.pairVersion = self.pair['version'] if self.pair else 0
 
-        self.pairSource = be.get_publish_source(self.pair)
+        self.pairSource = None
+
+        if self.pair:
+            self.pairSource = be.get_publish_source(self.pair)
         self.pairSourceContext = (self.pairSource['context'] if self.pairSource
                 else '')
         self.pairSourceVersion = (self.pairSource['context'] if self.pairSource
                 else 0)
 
         if self.pair and self.pairSource:
-            self.pairSourceLinked = bool( [snap for snap in
+            self.pairSourceLinked = any( [snap for snap in
                 be.get_linked(self.pairSource) if snap['code'] ==
                 self.snapshot['code']] )
 
@@ -142,11 +146,11 @@ class PublishDialog(Form, Base):
         if self.current or not self.published:
             self.setCurrentCheckBox.setChecked(self.current)
             self.setCurrentCheckBox.setChecked(True)
-        self.updatePairView(self)
+        self.updatePairView()
 
-    __pairTrue = QPixmap(cui._Label.getPath(cui._Label.kPAIR, True)).scaled(15,
+    __pairTrue = QPixmap(cui._Label.get_path(cui._Label.kPAIR, True)).scaled(15,
             15, Qt.KeepAspectRatioByExpanding)
-    __pairFalse = QPixmap(cui._Label.getPath(cui._Label.kPAIR, True)).scaled(15,
+    __pairFalse = QPixmap(cui._Label.get_path(cui._Label.kPAIR, True)).scaled(15,
             15, Qt.KeepAspectRatioByExpanding)
     def getPairLabel(self, state=True):
         if state:
@@ -158,12 +162,13 @@ class PublishDialog(Form, Base):
         self.pairSubContextLabel.setText(self.pairSubContext)
         self.pairVersionLabel.setText('v%03d'%self.pairVersion)
         self.pairSourceContextLabel.setText(self.pairSourceContext)
-        self.pairSourceVersionLabel.setText(self.pairSourceVersion)
-        self.pairSourceLinkedLabelLayout.clear()
-        label = QLabel(self)
-        label.setPixmap(self.getPairLabel(self.pairSourceLinked))
-        self.pairSourceLinkedLabelLayout.addWidget(label)
-
+        self.pairSourceVersionLabel.setText('v%03d'%self.pairSourceVersion)
+        if self.pairSourceLinkedLabel:
+            self.pairSourceLinkedLabel.deleteLater()
+            self.pairSourceLinkedLabel = None
+        self.pairSourceLinkedLabel = QLabel(self)
+        self.pairSourceLinkedLabel.setPixmap(self.getPairLabel(self.pairSourceLinked))
+        self.pairSourceLinkedLabelLayout.addWidget(self.pairSourceLinkedLabel)
 
     '''
         if current:
