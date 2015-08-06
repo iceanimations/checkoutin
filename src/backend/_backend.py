@@ -547,6 +547,10 @@ def get_targets_in_published(snapshot, published, ctx=None):
 
     return context_targets, latest, current
 
+def get_current_in_published(published, context):
+    for snap in published:
+        if snap['context'] == context and snap['is_current'] :
+            return snap
 
 def set_snapshot_as_current(snapshot):
     server = user.get_server()
@@ -618,5 +622,6 @@ get_episodes = util.get_episodes
 get_episode_asset = util.get_episode_asset
 get_linked = util.get_cache_compatible_objects
 filename_from_snap = util.get_filename_from_snap
+link_shaded_to_rig = util.link_shaded_to_rig
 
 

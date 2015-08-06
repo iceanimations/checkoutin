@@ -29,7 +29,6 @@ class PublishDialog(Form, Base):
         self.search_key = search_key
 
         self.updateSourceModel()
-        self.updateTargetModel()
 
         self.setWindowTitle(self.projectName + ' - ' + self.windowTitle())
 
@@ -38,8 +37,8 @@ class PublishDialog(Form, Base):
         self.setDefaultAction()
         if self.episodes:
             self.episodeBox.setCurrentIndex(0)
-            self.updateSourceView()
-            self.updateTargetView()
+            self.updateSource()
+            self.updateTarget()
 
         self.validator = QRegExpValidator(QRegExp('[a-z0-9/_]+'))
         self.subContextEdit.setValidator(self.validator)
@@ -85,7 +84,7 @@ class PublishDialog(Form, Base):
         self.targetContext = self.context.split('/')[0]
         self.pairContext = 'rig'
         if self.targetContext == 'rig':
-            self.pairContext = 'rig'
+            self.pairContext = 'shaded'
         self.targetSubContext = self.subContextEdit.text()
         self.targetSubContext.strip('/')
         targetContext = self.targetContext + ('/' if self.targetSubContext else ''
@@ -114,14 +113,9 @@ class PublishDialog(Form, Base):
         self.pairSubContext = self.targetSubContext
         pairContext = self.pairContext + ( '/' if self.targetSubContext else ''
                 + self.targetSubContext )
-        ( self.pairSnapshots, self.pairLatest,
-                self.pairCurrent ) = be.get_targets_in_published(
-                        self.snapshot, self.publishedSnapshots,
-                        pairContext)
 
+        self.pair = be.get_current_in_published(self.publishedSnapshots, pairContext)
         self.pairSourceLinked = False
-        if self.pairCurrent:
-            self.pair = self.pairCurrent
         self.pairVersion = self.pair['version'] if self.pair else 0
 
         self.pairSource = None
@@ -130,7 +124,7 @@ class PublishDialog(Form, Base):
             self.pairSource = be.get_publish_source(self.pair)
         self.pairSourceContext = (self.pairSource['context'] if self.pairSource
                 else '')
-        self.pairSourceVersion = (self.pairSource['context'] if self.pairSource
+        self.pairSourceVersion = (self.pairSource['version'] if self.pairSource
                 else 0)
 
         if self.pair and self.pairSource:
@@ -140,7 +134,7 @@ class PublishDialog(Form, Base):
 
     def updateTargetView(self):
         self.publishAssetCodeLabel.setText(self.snapshot['search_code'])
-        self.publishCategoryLabel.setText(self.category)
+        self.publishCategoryLabel.setText(self.targetCategory.split('/')[0])
         self.publishContextLabel.setText(self.context)
         self.publishVersionLabel.setText('v%03d'%(self.targetVersion))
         if self.current or not self.published:
@@ -150,7 +144,7 @@ class PublishDialog(Form, Base):
 
     __pairTrue = QPixmap(cui._Label.get_path(cui._Label.kPAIR, True)).scaled(15,
             15, Qt.KeepAspectRatioByExpanding)
-    __pairFalse = QPixmap(cui._Label.get_path(cui._Label.kPAIR, True)).scaled(15,
+    __pairFalse = QPixmap(cui._Label.get_path(cui._Label.kPAIR, False)).scaled(15,
             15, Qt.KeepAspectRatioByExpanding)
     def getPairLabel(self, state=True):
         if state:
@@ -170,46 +164,70 @@ class PublishDialog(Form, Base):
         self.pairSourceLinkedLabel.setPixmap(self.getPairLabel(self.pairSourceLinked))
         self.pairSourceLinkedLabelLayout.addWidget(self.pairSourceLinkedLabel)
 
-    '''
-        if current:
-            self.target = current
-            self.setDefaultAction()
-            self.publishVersionLabel.setText('v%03d'%(current['version']))
-            self.setCurrentCheckBox.setChecked(True)
-            self.setCurrentCheckBox.setEnabled(False)
-        elif latest:
-            self.target = latest
-            self.setDefaultAction('setCurrent')
-            self.publishVersionLabel.setText('v%03d'%(latest['version']))
-            self.setCurrentCheckBox.setChecked(False)
-            self.setCurrentCheckBox.setEnabled(False)
-        else:
-            maxVersion = 0
-            self.setCurrentCheckBox.setChecked(True)
-            self.setCurrentCheckBox.setEnabled(False)
-            if snapshots:
-                maxVersion = max(snapshots,
-                        key=lambda ss: ss['version'])['version']
-                self.setCurrentCheckBox.setEnabled(True)
-            if maxVersion < 0:
-                maxVersion = 0
-            self.setDefaultAction('publish')
-            self.publishVersionLabel.setText('v%03d'%(maxVersion+1))
-    '''
-
     def updateTarget(self):
         self.updateTargetModel()
         self.updateTargetView()
+        self.updateControllers()
 
     def updatePair(self):
         self.updatePairModel()
         self.updatePairView()
+        self.updateControllers()
 
     def updateControllers(self):
-        pass
+        if self.pairSourceLinked or not self.pair:
+            self.linkButton.setEnabled(False)
+        else:
+            self.linkButton.setEnabled(True)
+
+        if not self.published:
+            if self.context == 'rig' or self.pairSourceLinked:
+                self.setDefaultAction('publish')
+            else:
+                self.setDefaultAction()
+        else:
+            if not self.current:
+                self.setDefaultAction('setCurrent')
+            else:
+                self.setDefaultAction()
 
     def link(self):
-        pass
+        if self.context == 'rig':
+            shaded, rig = self.pairSource, self.snapshot
+        else:
+            shaded, rig = self.snapshot, self.pairSource
+
+        verified = False
+        reason = 'Given sets are not cache compatible'
+        try:
+            verified = be.verify_cache_compatibility(shaded, rig)
+        except Exception as e:
+            import traceback
+            reason = 'geo_set not found: ' + str(e)
+            reason += ''
+            traceback.print_exc()
+
+        if not verified:
+            cui.showMessage(self, title='',
+                            msg=reason,
+                            icon=QMessageBox.Critical)
+            return
+
+        try:
+            be.link_shaded_to_rig(shaded,rig)
+        except Exception as e:
+            import traceback
+            cui.showMessage(self, title='',
+                    msg='Cannot link due to Server Error: %s'%str(e),
+                            icon=QMessageBox.Critical)
+            traceback.print_exc
+            return
+
+        cui.showMessage(self, title='Link Shaded to Rig',
+                            msg="Linking Successful",
+                            icon=QMessageBox.Information)
+
+        self.updatePair()
 
     def subContextEditStart(self, *args):
         if self.subContextEdit.isEnabled():
@@ -224,7 +242,7 @@ class PublishDialog(Form, Base):
     def subContextEditingFinished(self, *args):
         self.subContextEdit.setEnabled(False)
         self.subContextEditButton.setText('E')
-        self.updatePublish()
+        self.updateTarget()
 
     def subContextEditingCancelled(self, *args):
         self.subContextEdit.setEnabled(False)
@@ -235,7 +253,7 @@ class PublishDialog(Form, Base):
         map(lambda x: self.episodeBox.addItem(x['code']), self.episodes)
 
     def episodeSelected(self, event):
-        self.updatePublish()
+        self.updateTarget()
 
     def setDefaultAction(self, action='doNothing'):
         btn = self.mainButtonBox.button(QDialogButtonBox.Ok)
@@ -261,10 +279,10 @@ class PublishDialog(Form, Base):
     def publish(self):
         print 'publishing ....'
         try:
-            newss = be.publish_asset_to_episode(self.project, self.episode,
+            publishContext = self.targetContext 
+            newss = be.publish_asset_to_episode(self.projectName, self.episode,
                     self.snapshot['asset'], self.snapshot,
-                    self.publishContextLabel.text(),
-                    self.setCurrentCheckBox.isChecked() )
+                    publishContext, self.setCurrentCheckBox.isChecked() )
             cui.showMessage(self, title='Assets Explorer',
                             msg="Publish Successful",
                             icon=QMessageBox.Information)
