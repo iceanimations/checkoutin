@@ -556,61 +556,70 @@ def set_snapshot_as_current(snapshot):
     server = user.get_server()
     server.set_current_snapshot(snapshot)
 
-def createReference(path, stripVersionInNamespace=True):
-    if not path or not op.exists(path):
-        return None
-    before = pc.listReferences()
-    namespace = op.basename(path)
-    namespace = op.splitext(namespace)[0]
-    if stripVersionInNamespace:
-        # version part of the string is recognized as .v001
-        match = re.match('(.*)([-._]v\d+)(.*)', namespace)
-        if match:
-            namespace = match.group(1) + match.group(3)
-    pc.createReference(path, namespace=namespace, mnc=False)
-    after = pc.listReferences()
-    new = [ref for ref in after if ref not in before and not
-            ref.refNode.isReferenced()]
-    return new[0]
-
-def removeReference(ref):
-    ''':type ref: pymel.core.system.FileReference()'''
-    if ref:
-        ref.removeReferenceEdits()
-        ref.remove()
-
-def find_geo_set_in_ref(ref, key=lambda node: 'geo_set' in node.name().lower()):
-    for node in ref.nodes():
-        if pc.nodeType(node) == 'objectSet':
-            if key(node):
-                return node
-
 def verify_cache_compatibility(shaded, rig, newFile=False):
     if newFile:
         pc.newFile(f=True)
+
     shaded_path = util.filename_from_snap(shaded, mode='client_repo')
-    shaded_ref = createReference(shaded_path)
+    shaded_ref = mi.createReference(shaded_path)
     if not shaded_ref:
         raise Exception, 'file not found: %s'%shaded_path
-    shaded_geo_set = find_geo_set_in_ref(shaded_ref)
-    if shaded_geo_set is None:
-        removeReference(shaded_ref)
-        raise Exception, 'geo_set not found in %s'%shaded_path
+
+    shaded_geo_set = mi.find_geo_set_in_ref(shaded_ref)
+    if shaded_geo_set is None or not mi.geo_set_valid(shaded_geo_set):
+        mi.removeReference(shaded_ref)
+        raise Exception, 'no valid geo_set found in shaded file %s'%shaded_path
+
     rig_path = util.filename_from_snap(rig, mode='client_repo')
-    rig_ref = createReference(rig_path)
+    rig_ref = mi.createReference(rig_path)
     if not rig_ref:
-        removeReference(shaded_ref)
+        mi.removeReference(shaded_ref)
         raise Exception, 'file not found: %s'%rig_path
-    rig_geo_set = find_geo_set_in_ref(rig_ref)
-    if rig_geo_set is None:
-        removeReference(shaded_ref)
-        removeReference(rig_ref)
-        raise Exception, 'geo_set not found in %s'%rig_path
-    result = mi.setsCompatible(shaded_geo_set, rig_geo_set)
-    removeReference(shaded_ref)
-    removeReference(rig_ref)
+
+    rig_geo_set = mi.find_geo_set_in_ref(rig_ref)
+    if rig_geo_set is None or not mi.geo_set_valid(rig_geo_set):
+        mi.removeReference(shaded_ref)
+        mi.removeReference(rig_ref)
+        raise Exception, 'no valid geo_set found in rig file %s'%rig_path
+
+    result = mi.geo_sets_compatible(shaded_geo_set, rig_geo_set)
+    mi.removeReference(shaded_ref)
+    mi.removeReference(rig_ref)
     return result
 
+def current_scene_compatible(other):
+    geo_set = mi.get_geo_sets()
+    if not geo_set or not mi.geo_set_valid(geo_set[0]):
+        raise Exception, 'no valid geo_set found in current scene'
+    else:
+        geo_set = geo_set[0]
+
+    other_path = util.filename_from_snap(other, mode='client_repo')
+    other_ref = mi.createReference(other_path)
+    if not other_ref:
+        raise Exception, 'other file not found %s' %other_path
+
+    other_geo_set = mi.find_geo_set_in_ref(other_ref)
+    if other_geo_set is None or not mi.geo_set_valid(other_geo_set[0]):
+        mi.removeReference(other_geo_set)
+        raise Exception, 'no valid geo_set found in other file %s'%other_path
+
+    result = mi.geo_sets_compatible(geo_set, other_geo_set)
+    mi.removeReference(other_geo_set)
+
+    return result
+
+def check_validity(other):
+    other_path = util.filename_from_snap(other, mode='client_repo')
+    other_ref = mi.createReference(other_path)
+
+    if not other_ref:
+        raise Exception, 'other file not found %s' %other_path
+
+    other_geo_set = mi.find_geo_set_in_ref(other_ref)
+    if other_geo_set is None or not mi.geo_set_valid(other_geo_set[0]):
+        return False
+    return True
 
 publish_asset_to_episode = util.publish_asset_to_episode
 get_publish_targets = util.get_all_publish_targets
@@ -623,5 +632,3 @@ get_episode_asset = util.get_episode_asset
 get_linked = util.get_cache_compatible_objects
 filename_from_snap = util.get_filename_from_snap
 link_shaded_to_rig = util.link_shaded_to_rig
-
-

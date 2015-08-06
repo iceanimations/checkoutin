@@ -290,7 +290,7 @@ class PublishDialog(Form, Base):
         except Exception as e:
             import traceback
             cui.showMessage(self, title='Assets Explorer',
-                            msg="Publish Failed " + str(e),
+                            msg='Publish Failed ' + str(e),
                             icon=QMessageBox.Critical)
             traceback.print_exc()
 
