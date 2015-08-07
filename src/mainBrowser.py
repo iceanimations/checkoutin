@@ -7,7 +7,7 @@ copyright (c) at Ice Animations (Pvt) Ltd
 from . import _base as base
 Explorer = base.Explorer
 import os.path as osp
-from PyQt4.QtGui import QMenu, QCursor
+from PyQt4.QtGui import QMenu, QCursor, QMessageBox
 import app.util as util
 reload(util)
 import backend
@@ -68,10 +68,7 @@ class MainBrowser(Explorer):
         publishAction.setEnabled(False)
         publishAction.triggered.connect(self.publish)
         if checkinable:
-            if rootCtx == 'rig':
-                publishAction.setEnabled(True)
-            elif (rootCtx == 'shaded' and self.currentItem.labelStatus &
-                    self.currentItem.kLabel.kPAIR):
+            if rootCtx in ('shaded', 'rig'):
                 publishAction.setEnabled(True)
 
         linkShadedToRigAction = menu.addAction('link To Rig')
@@ -86,7 +83,69 @@ class MainBrowser(Explorer):
         if checkinable and rootCtx == 'rig':
             linkRigToShadedAction.setEnabled(True)
 
+        checkValidityAction = menu.addAction('Check Cache Validity')
+        checkValidityAction.setEnabled(True)
+        checkValidityAction.triggered.connect(self.checkValidity)
+
+        checkCompatibilityAction = menu.addAction('Check Cache Compatibility')
+        checkCompatibilityAction.setEnabled(False)
+        checkCompatibilityAction.triggered.connect(self.checkCompatibility)
+        if backend.current_scene_valid():
+            checkCompatibilityAction.setEnabled(True)
+
         menu.popup(pos)
+
+    def checkValidity(self):
+        snapkey = self.currentFile.objectName()
+        validity = False
+        title = 'Cache Validity Check'
+        snapshot = backend.get_snapshot_info(snapkey)
+        filename = backend.filename_from_snap(snapshot, mode='client_repo')
+        reason = '%s is not valid for geometry caching' %osp.basename(filename)
+        try:
+            validity = backend.check_validity(snapshot)
+        except Exception as e:
+            import traceback
+            reason += '\nreason: ' + str(e)
+            reason += ''
+            traceback.print_exc()
+
+        if validity == False:
+            base.cui.showMessage(self, title=title, msg=reason,
+                    icon=QMessageBox.Warning)
+        else:
+
+            base.cui.showMessage(self, title=title,
+                msg="%s is valid for geometry caching"%osp.basename(filename),
+                icon=QMessageBox.Information)
+
+        return validity
+
+    def checkCompatibility(self):
+        snapkey = self.currentFile.objectName()
+        snapshot = backend.get_snapshot_info(snapkey)
+        compatibility = False
+        title = 'Cache Compatibility Check'
+        filename = backend.filename_from_snap(snapshot, mode='client_repo')
+        reason = 'Current scene is not cache compatible with %s' %osp.basename(filename)
+
+        try:
+            compatibility = backend.check_validity(snapshot)
+        except Exception as e:
+            import traceback
+            reason += '\nreason: ' + str(e)
+            reason += ''
+            traceback.print_exc()
+
+        if compatibility == False:
+            base.cui.showMessage(self, title=title, msg=reason,
+                    icon=QMessageBox.Warning)
+        else:
+            base.cui.showMessage(self, title=title,
+                msg="%s is cache compatible with the current scene"%osp.basename( filename ),
+                    icon=QMessageBox.Information)
+
+        return compatibility
 
     def publish(self):
         self.publishDialog = publish.PublishDialog(

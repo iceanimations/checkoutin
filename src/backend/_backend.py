@@ -600,7 +600,7 @@ def current_scene_compatible(other):
         raise Exception, 'other file not found %s' %other_path
 
     other_geo_set = mi.find_geo_set_in_ref(other_ref)
-    if other_geo_set is None or not mi.geo_set_valid(other_geo_set[0]):
+    if other_geo_set is None or not mi.geo_set_valid(other_geo_set):
         mi.removeReference(other_geo_set)
         raise Exception, 'no valid geo_set found in other file %s'%other_path
 
@@ -617,7 +617,24 @@ def check_validity(other):
         raise Exception, 'other file not found %s' %other_path
 
     other_geo_set = mi.find_geo_set_in_ref(other_ref)
-    if other_geo_set is None or not mi.geo_set_valid(other_geo_set[0]):
+    validity = False
+
+    try:
+        if other_geo_set is None or not mi.geo_set_valid(other_geo_set):
+            validity = False
+        else:
+            validity = True
+    except Exception as e:
+        mi.removeReference(other_ref)
+        raise e
+        return False
+
+    mi.removeReference(other_ref)
+    return validity
+
+def current_scene_valid():
+    geo_set = mi.get_geo_sets(True)
+    if not geo_set or not mi.geo_set_valid(geo_set[0]):
         return False
     return True
 
