@@ -112,6 +112,7 @@ class LinkShadedRig(Form, Base):
 
     def populateItems(self, *args):
         self.scroller.clearItems()
+        self.currentItem = None
         targetContext = self.targetContextBox.currentText()
 
         for snap in self.snapshots:
