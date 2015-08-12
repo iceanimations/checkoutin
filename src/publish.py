@@ -175,7 +175,8 @@ class PublishDialog(Form, Base):
         self.updateControllers()
 
     def updateControllers(self):
-        if self.pairSourceLinked or not self.pair:
+        if self.pairSourceLinked or not self.pair and self.context in ('rig',
+                'shaded'):
             self.linkButton.setEnabled(False)
         else:
             self.linkButton.setEnabled(True)
