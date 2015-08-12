@@ -68,7 +68,7 @@ class MainBrowser(Explorer):
         publishAction.setEnabled(False)
         publishAction.triggered.connect(self.publish)
         if checkinable:
-            if rootCtx in ('shaded', 'rig'):
+            if rootCtx in ('shaded', 'rig', 'model'):
                 publishAction.setEnabled(True)
 
         linkShadedToRigAction = menu.addAction('link To Rig')

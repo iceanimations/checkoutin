@@ -181,7 +181,8 @@ class PublishDialog(Form, Base):
             self.linkButton.setEnabled(True)
 
         if not self.published:
-            if self.context == 'rig' or self.pairSourceLinked:
+            if (self.context == 'rig' or self.context == 'model' or
+                    self.pairSourceLinked):
                 self.setDefaultAction('publish')
             else:
                 self.setDefaultAction()
