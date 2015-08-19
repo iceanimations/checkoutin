@@ -7,7 +7,6 @@ from PyQt4.QtGui import ( QMessageBox, QRegExpValidator, QDialogButtonBox,
         QPixmap, QLabel)
 from PyQt4.QtCore import QRegExp, Qt
 import os.path as osp
-import re
 
 from customui import ui as cui
 from .backend import _backend as be
