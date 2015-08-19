@@ -183,7 +183,7 @@ class PublishDialog(Form, Base):
 
         if not self.published:
             if (self.context == 'rig' or self.context == 'model' or
-                    self.pairSourceLinked):
+                    self.pairSourceLinked or self.category.beginswith('env')):
                 self.setDefaultAction('publish')
             else:
                 self.setDefaultAction()
@@ -259,15 +259,19 @@ class PublishDialog(Form, Base):
 
     def setDefaultAction(self, action='doNothing'):
         btn = self.mainButtonBox.button(QDialogButtonBox.Ok)
+        check = self.setCurrentCheckBox
         if action == 'setCurrent':
             btn.setText('Set Current')
             self.defaultAction = self.setCurrent
+            check.setEnabled(False)
         elif action == 'publish':
             btn.setText('Publish')
             self.defaultAction = self.publish
+            check.setEnabled(True)
         else:
             self.defaultAction = self.doNothing
             btn.setText('Close')
+            check.setEnabled(False)
 
     def accepted(self):
         self.defaultAction()
