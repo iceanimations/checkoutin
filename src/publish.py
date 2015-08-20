@@ -45,7 +45,8 @@ class PublishDialog(Form, Base):
         self.subContextEditButton.clicked.connect(self.subContextEditStart)
 
         self.linkButton.clicked.connect(self.link)
-        self.mainButtonBox.accepted.connect(self.accepted)
+        self.doButton.clicked.connect(self.defaultAction)
+        self.cancelButton.clicked.connect(self.rejected)
 
     def updateSourceModel(self):
         self.snapshot = be.get_snapshot_info(self.search_key)
@@ -182,7 +183,7 @@ class PublishDialog(Form, Base):
 
         if not self.published:
             if (self.context == 'rig' or self.context == 'model' or
-                    self.pairSourceLinked or self.category.beginswith('env')):
+                    self.pairSourceLinked or self.category.startswith('env')):
                 self.setDefaultAction('publish')
             else:
                 self.setDefaultAction()
@@ -257,7 +258,7 @@ class PublishDialog(Form, Base):
         self.updateTarget()
 
     def setDefaultAction(self, action='doNothing'):
-        btn = self.mainButtonBox.button(QDialogButtonBox.Ok)
+        btn = self.doButton
         check = self.setCurrentCheckBox
         if action == 'setCurrent':
             btn.setText('Set Current')
