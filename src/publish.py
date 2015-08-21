@@ -182,7 +182,7 @@ class PublishDialog(Form, Base):
 
         if not self.published:
             if (self.context == 'rig' or self.context == 'model' or
-                    self.pairSourceLinked or self.category.beginswith('env')):
+                    self.pairSourceLinked or self.category.startswith('env')):
                 self.setDefaultAction('publish')
             else:
                 self.setDefaultAction()
