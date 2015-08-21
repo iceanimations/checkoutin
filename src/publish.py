@@ -27,17 +27,29 @@ class PublishDialog(Form, Base):
         self.parent = parent
         self.search_key = search_key
 
-        self.updateSourceModel()
+        self.episodes = []
+        self.episode = None
+        self.sequences = [None]
+        self.sequence = None
+        self.shots = [None]
+        self.shot = None
 
         self.setWindowTitle(self.projectName + ' - ' + self.windowTitle())
-
+        self.updateSourceModel()
+        self.episodes = be.get_episodes(self.projectName)
+        self.sequences += be.get_sequences(self.projectName)
         self.populateEpisodeBox()
-        self.episodeBox.currentIndexChanged.connect( self.episodeSelected )
+        self.populateSequenceBox()
+        self.populateShotBox()
+
         self.setDefaultAction()
-        if self.episodes:
-            self.episodeBox.setCurrentIndex(0)
-            self.updateSource()
-            self.updateTarget()
+
+        self.updateSource()
+        self.updateTarget()
+
+        self.episodeBox.activated.connect( self.episodeSelected )
+        self.sequenceBox.activated.connect( self.sequenceSelected )
+        self.shotBox.activated.connect( self.shotSelected )
 
         self.validator = QRegExpValidator(QRegExp('[a-z0-9/_]+'))
         self.subContextEdit.setValidator(self.validator)
@@ -55,7 +67,6 @@ class PublishDialog(Form, Base):
         self.filename = osp.basename(be.filename_from_snap(self.snapshot))
         self.version = self.snapshot['version']
         self.iconpath = be.get_icon(self.snapshot)
-        self.episodes = be.get_episodes(self.projectName)
         self.category = self.snapshot['asset']['asset_category']
         self.context = self.snapshot['context']
 
@@ -77,6 +88,14 @@ class PublishDialog(Form, Base):
 
     def updateTargetModel(self):
         self.episode = self.episodes[self.episodeBox.currentIndex()]
+        if self.sequenceBox.currentIndex():
+            self.sequence = self.sequences[self.sequenceBox.currentIndex()]
+        else:
+            self.sequence = None
+        if self.shotBox.currentIndex():
+            self.shot= self.shots[self.sequenceBox.currentIndex()]
+        else:
+            self.shot = None
         self.publishedSnapshots = be.get_published_snapshots(self.projectName,
                 self.episode, self.snapshot['asset'])
 
@@ -150,6 +169,15 @@ class PublishDialog(Form, Base):
         if state:
             return self.__pairTrue
         return self.__pairFalse
+
+    __publishedTrue = QPixmap(cui._Label.get_path(cui._Label.kPUB, True)).scaled(15,
+            15, Qt.KeepAspectRatioByExpanding)
+    __publishedFalse = QPixmap(cui._Label.get_path(cui._Label.kPUB, False)).scaled(15,
+            15, Qt.KeepAspectRatioByExpanding)
+    def getPublishedLabel(self, state=True):
+        if state:
+            return self.__publishedTrue
+        return self.__publishedFalse
 
     def updatePairView(self):
         self.pairContextLabel.setText(self.pairContext)
@@ -252,9 +280,58 @@ class PublishDialog(Form, Base):
         self.subContextEditButton.setText('E')
 
     def populateEpisodeBox(self):
-        map(lambda x: self.episodeBox.addItem(x['code']), self.episodes)
+        if self.episodes:
+            map(lambda x: self.episodeBox.addItem(x['code']), filter(None,
+                self.episodes ))
+            self.episodeBox.setCurrentIndex(0)
+            self.episode = self.episodes[0]
+
+    def populateSequenceBox(self):
+        self.sequenceBox.clear()
+        self.sequenceBox.addItem('')
+        self.sequenceBox.setCurrentIndex(0)
+        self.sequence = None
+        if self.sequences:
+            map(lambda x: self.sequenceBox.addItem(x['code']), filter(None,
+                self.sequences))
+
+    def populateShotBox(self):
+        self.clear()
+        self.shotBox.addItem('')
+        self.shotBox.setCurrentIndex(0)
+        self.shot = None
+        if self.shots:
+            map(lambda x: self.shotBox.addItem(x['code']), filter(None, self.shots))
 
     def episodeSelected(self, event):
+        if not self.episodes:
+            return
+        newepisode = self.episodes[self.episodeBox.currentIndex()]
+        if self.episode == newepisode:
+            return
+        self.episode = newepisode
+        self.sequences = [None] + be.get_sequences(self.projectName,
+                episode=self.episode)
+        self.populateSequenceBox()
+        self.shots = [ None ]
+        self.populateShotBox()
+        self.updateTarget()
+
+    def sequenceSelected(self, event):
+        newsequence = self.sequence[self.sequenceBox.currentIndex()]
+        if self.sequence == newsequence:
+            return
+        self.shots = [None] + be.get_shots(self.projectName,
+                episode = self.episode,
+                sequence = self.sequences[self.sequenceBox.currentIndex()])
+        self.populateShotBox()
+        self.updateTarget()
+
+    def shotSelected(self, event):
+        newshot = self.shots[self.shotBox.currentIndex()]
+        if self.shot == newshot:
+            return
+        self.shot = newshot
         self.updateTarget()
 
     def setDefaultAction(self, action='doNothing'):
@@ -277,10 +354,13 @@ class PublishDialog(Form, Base):
         self.defaultAction()
 
     def doNothing(self):
-        return
+        self.accept.emit()
 
     def setCurrent(self):
         be.set_snapshot_as_current(self.target)
+
+    def log(self):
+        self.textEdit.append()
 
     def publish(self):
         print 'publishing ....'
@@ -303,16 +383,22 @@ class PublishDialog(Form, Base):
     def keyPressEvent(self, event):
         if event.key() in (Qt.Key_Enter, Qt.Key_Return):
             if not self.subContextEdit.isEnabled():
-                self.mainButtonBox.accepted.emit()
+                self.doButton.clicked.emit()
             else:
                 self.subContextEditingFinished()
         elif event.key() == Qt.Key_Escape:
             if not self.subContextEdit.isEnabled():
-                self.mainButtonBox.rejected.emit()
+                self.cancelButton.clicked.emit()
             else:
                 self.subContextEditingCancelled()
         else:
             super(PublishDialog, self).keyPressEvent(event)
+
+    def keyReleaseEvent(self, event):
+        if (event.text() == 'e'
+                and event.modifiers() & core.Qt.AltModifier
+                and self.subContextEditButton.clicked.isEnabled()):
+            self.subContextEditButton.clicked.emit()
 
 def main():
     snapshot_key = 'sthpw/snapshot?code=SNAPSHOT00018558'
