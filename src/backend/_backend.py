@@ -638,17 +638,25 @@ def current_scene_valid():
         return False
     return True
 
-def get_published_snapshots():
-    pass
+#get_published_snapshots = util.get_published_snapshots_in_episode
+def get_published_snapshots(project, episode, sequence, shot, asset):
+    if shot:
+        return util.get_published_snapshots_in_shot(project, shot, asset)
+    elif sequence:
+        return util.get_published_snapshots_in_sequence(project, sequence,
+                asset)
+    elif episode:
+        return util.get_published_snapshots_in_episode(project, episode, asset)
+    return []
 
 publish_asset_to_episode = util.publish_asset_to_episode
 get_publish_targets = util.get_all_publish_targets
 get_publish_source = util.get_publish_source
-get_published_snapshots = util.get_published_snapshots_in_episode
 get_snapshot_info = util.get_snapshot_info
 get_icon = util.get_icon
 get_episodes = util.get_episodes
 get_sequences = util.get_sequences
+get_shots = util.get_shots
 get_episode_asset = util.get_episode_asset
 get_linked = util.get_cache_compatible_objects
 filename_from_snap = util.get_filename_from_snap

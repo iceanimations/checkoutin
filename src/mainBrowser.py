@@ -19,6 +19,8 @@ reload(publish)
 from . import link_rig_shaded
 reload(link_rig_shaded)
 
+import qtify_maya_window as qtify
+
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
 iconPath = osp.join(rootPath, 'icons')
@@ -149,7 +151,7 @@ class MainBrowser(Explorer):
 
     def publish(self):
         self.publishDialog = publish.PublishDialog(
-                self.currentFile.objectName(), self )
+                self.currentFile.objectName(), qtify.getMayaWindow() )
         self.publishDialog.exec_()
 
     def linkShadedToRig(self):

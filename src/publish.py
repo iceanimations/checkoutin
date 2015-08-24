@@ -3,9 +3,8 @@ try:
 except:
     from PyQt4 import uic
 
-from PyQt4.QtGui import ( QMessageBox, QRegExpValidator, QDialogButtonBox,
-        QPixmap, QLabel)
-from PyQt4.QtCore import QRegExp, Qt
+from PyQt4.QtGui import (QMessageBox, QRegExpValidator, QPixmap)
+from PyQt4.QtCore import QRegExp, Qt, QRect, pyqtSignal, QSize
 import os.path as osp
 
 from customui import ui as cui
@@ -22,7 +21,7 @@ class PublishDialog(Form, Base):
     ''' Have fun '''
 
     def __init__(self, search_key, parent=None):
-        super(PublishDialog, self).__init__(parent)
+        super(PublishDialog, self).__init__(parent=parent)
         self.setupUi(self)
         self.parent = parent
         self.search_key = search_key
@@ -30,12 +29,12 @@ class PublishDialog(Form, Base):
         self.episodes = []
         self.episode = None
         self.sequences = [None]
-        self.sequence = None
+        self.sequence = self.sequences[0]
         self.shots = [None]
-        self.shot = None
+        self.shot = self.shots[0]
 
-        self.setWindowTitle(self.projectName + ' - ' + self.windowTitle())
         self.updateSourceModel()
+        self.setWindowTitle(self.projectName + ' - ' + self.windowTitle())
         self.episodes = be.get_episodes(self.projectName)
         self.sequences += be.get_sequences(self.projectName)
         self.populateEpisodeBox()
@@ -44,7 +43,7 @@ class PublishDialog(Form, Base):
 
         self.setDefaultAction()
 
-        self.updateSource()
+        self.updateSourceView()
         self.updateTarget()
 
         self.episodeBox.activated.connect( self.episodeSelected )
@@ -55,10 +54,11 @@ class PublishDialog(Form, Base):
         self.subContextEdit.setValidator(self.validator)
         self.subContextEdit.setEnabled(False)
         self.subContextEditButton.clicked.connect(self.subContextEditStart)
+        self.hideProgressBar()
 
         self.linkButton.clicked.connect(self.link)
-        self.doButton.clicked.connect(self.defaultAction)
-        self.cancelButton.clicked.connect(self.rejected)
+        self.doButton.clicked.connect(self.accept)
+        self.cancelButton.clicked.connect(self.reject)
 
     def updateSourceModel(self):
         self.snapshot = be.get_snapshot_info(self.search_key)
@@ -87,23 +87,17 @@ class PublishDialog(Form, Base):
         self.updateSourceView()
 
     def updateTargetModel(self):
-        self.episode = self.episodes[self.episodeBox.currentIndex()]
-        if self.sequenceBox.currentIndex():
-            self.sequence = self.sequences[self.sequenceBox.currentIndex()]
-        else:
-            self.sequence = None
-        if self.shotBox.currentIndex():
-            self.shot= self.shots[self.sequenceBox.currentIndex()]
-        else:
-            self.shot = None
         self.publishedSnapshots = be.get_published_snapshots(self.projectName,
-                self.episode, self.snapshot['asset'])
+                self.episode, self.sequence, self.shot, self.snapshot['asset'])
 
         self.targetCategory = self.category.split('/')[0]
         self.targetContext = self.context.split('/')[0]
-        self.pairContext = 'rig'
-        if self.targetContext == 'rig':
-            self.pairContext = 'shaded'
+        self.pairContext = ''
+        if not self.category.startswith('env'):
+            if self.targetContext == 'rig':
+                self.pairContext = 'shaded'
+            elif self.targetContext == 'shaded':
+                self.pairContext = 'rig'
         self.targetSubContext = self.subContextEdit.text()
         self.targetSubContext.strip('/')
         targetContext = self.targetContext + ('/' if self.targetSubContext else ''
@@ -112,6 +106,8 @@ class PublishDialog(Form, Base):
                 self.targetCurrent ) = be.get_targets_in_published(
                         self.snapshot, self.publishedSnapshots,
                         targetContext)
+        self.currentPublished = be.get_current_in_published(
+                self.publishedSnapshots, self.targetContext )
         self.target = None
         if self.targetCurrent:
             self.published = True
@@ -129,16 +125,16 @@ class PublishDialog(Form, Base):
 
     def updatePairModel(self):
         self.pair = None
-        self.pairSubContext = self.targetSubContext
-        pairContext = self.pairContext + ( '/' if self.targetSubContext else ''
-                + self.targetSubContext )
+        if self.pairContext:
+            self.pairSubContext = self.targetSubContext
+            pairContext = self.pairContext + ( '/' if self.targetSubContext else ''
+                    + self.targetSubContext )
 
-        self.pair = be.get_current_in_published(self.publishedSnapshots, pairContext)
-        self.pairSourceLinked = False
+            self.pair = be.get_current_in_published(self.publishedSnapshots,
+                    pairContext)
+
         self.pairVersion = self.pair['version'] if self.pair else 0
-
         self.pairSource = None
-
         if self.pair:
             self.pairSource = be.get_publish_source(self.pair)
         self.pairSourceContext = (self.pairSource['context'] if self.pairSource
@@ -146,10 +142,13 @@ class PublishDialog(Form, Base):
         self.pairSourceVersion = (self.pairSource['version'] if self.pairSource
                 else 0)
 
+        self.pairSourceLinked = self.publishedLinked = False
         if self.pair and self.pairSource:
-            self.pairSourceLinked = any( [snap for snap in
-                be.get_linked(self.pairSource) if snap['code'] ==
-                self.snapshot['code']] )
+            pairSourceLinks = be.get_linked(self.pairSource)
+            self.pairSourceLinked = any( [snap for snap in pairSourceLinks if
+                snap['code'] == self.snapshot['code']] )
+            self.publishedLinked = any( [snap for snap in
+                pairSourceLinks if snap['code'] == self.snapshot['code']] )
 
     def updateTargetView(self):
         self.publishAssetCodeLabel.setText(self.snapshot['search_code'])
@@ -157,8 +156,8 @@ class PublishDialog(Form, Base):
         self.publishContextLabel.setText(self.context)
         self.publishVersionLabel.setText('v%03d'%(self.targetVersion))
         if self.current or not self.published:
-            self.setCurrentCheckBox.setChecked(self.current)
             self.setCurrentCheckBox.setChecked(True)
+        self.publishedLabel.setPixmap(self.getPublishedLabel(self.published))
         self.updatePairView()
 
     __pairTrue = QPixmap(cui._Label.get_path(cui._Label.kPAIR, True)).scaled(15,
@@ -179,18 +178,30 @@ class PublishDialog(Form, Base):
             return self.__publishedTrue
         return self.__publishedFalse
 
+    def hideProgressBar(self):
+        if not self.progressBar.isHidden():
+            self.resize(self.width(), self.height() - 27)
+            self.progressBar.hide()
+
+    def showProgressBar(self):
+        if self.progressBar.isHidden():
+            self.resize(self.width(), self.height() + 27)
+            self.progressBar.show()
+
     def updatePairView(self):
-        self.pairContextLabel.setText(self.pairContext)
-        self.pairSubContextLabel.setText(self.pairSubContext)
-        self.pairVersionLabel.setText('v%03d'%self.pairVersion)
-        self.pairSourceContextLabel.setText(self.pairSourceContext)
-        self.pairSourceVersionLabel.setText('v%03d'%self.pairSourceVersion)
-        if self.pairSourceLinkedLabel:
-            self.pairSourceLinkedLabel.deleteLater()
-            self.pairSourceLinkedLabel = None
-        self.pairSourceLinkedLabel = QLabel(self)
-        self.pairSourceLinkedLabel.setPixmap(self.getPairLabel(self.pairSourceLinked))
-        self.pairSourceLinkedLabelLayout.addWidget(self.pairSourceLinkedLabel)
+        if not self.pairContext:
+            self.pairFrame.hide()
+            self.resize(self.width(), self.height() - 137)
+        else:
+            self.pairFrame.show()
+            self.pairContextLabel.setText(self.pairContext)
+            self.pairSubContextLabel.setText(self.pairSubContext)
+            self.pairVersionLabel.setText('v%03d'%self.pairVersion)
+            self.pairSourceContextLabel.setText(self.pairSourceContext)
+            self.pairSourceVersionLabel.setText('v%03d'%self.pairSourceVersion)
+            self.pairPublishedLabel.setPixmap(self.getPublishedLabel(bool(self.pair)))
+            self.publishedLinkedLabel.setPixmap(self.getPairLabel(self.publishedLinked))
+            self.pairSourceLinkedLabel.setPixmap(self.getPairLabel(self.pairSourceLinked))
 
     def updateTarget(self):
         self.updateTargetModel()
@@ -280,6 +291,7 @@ class PublishDialog(Form, Base):
         self.subContextEditButton.setText('E')
 
     def populateEpisodeBox(self):
+        self.episodeBox.clear()
         if self.episodes:
             map(lambda x: self.episodeBox.addItem(x['code']), filter(None,
                 self.episodes ))
@@ -296,7 +308,7 @@ class PublishDialog(Form, Base):
                 self.sequences))
 
     def populateShotBox(self):
-        self.clear()
+        self.shotBox.clear()
         self.shotBox.addItem('')
         self.shotBox.setCurrentIndex(0)
         self.shot = None
@@ -311,19 +323,21 @@ class PublishDialog(Form, Base):
             return
         self.episode = newepisode
         self.sequences = [None] + be.get_sequences(self.projectName,
-                episode=self.episode)
+                episode=self.episode['__search_key__'])
         self.populateSequenceBox()
         self.shots = [ None ]
         self.populateShotBox()
         self.updateTarget()
 
     def sequenceSelected(self, event):
-        newsequence = self.sequence[self.sequenceBox.currentIndex()]
+        newsequence = self.sequences[self.sequenceBox.currentIndex()]
         if self.sequence == newsequence:
             return
+        self.sequence = newsequence
         self.shots = [None] + be.get_shots(self.projectName,
-                episode = self.episode,
-                sequence = self.sequences[self.sequenceBox.currentIndex()])
+                episode = self.episode['__search_key__'],
+                sequence = (self.sequence['__search_key__'] if self.sequence
+                    else None))
         self.populateShotBox()
         self.updateTarget()
 
@@ -354,13 +368,14 @@ class PublishDialog(Form, Base):
         self.defaultAction()
 
     def doNothing(self):
-        self.accept.emit()
+        self.close()
 
     def setCurrent(self):
         be.set_snapshot_as_current(self.target)
 
-    def log(self):
-        self.textEdit.append()
+    def log(self, message):
+        self.textEdit.append(message)
+        self.textEdit.repaint()
 
     def publish(self):
         print 'publishing ....'
@@ -383,12 +398,12 @@ class PublishDialog(Form, Base):
     def keyPressEvent(self, event):
         if event.key() in (Qt.Key_Enter, Qt.Key_Return):
             if not self.subContextEdit.isEnabled():
-                self.doButton.clicked.emit()
+                self.doButton.clicked.emit(True)
             else:
                 self.subContextEditingFinished()
         elif event.key() == Qt.Key_Escape:
             if not self.subContextEdit.isEnabled():
-                self.cancelButton.clicked.emit()
+                self.cancelButton.clicked.emit(True)
             else:
                 self.subContextEditingCancelled()
         else:
@@ -396,7 +411,7 @@ class PublishDialog(Form, Base):
 
     def keyReleaseEvent(self, event):
         if (event.text() == 'e'
-                and event.modifiers() & core.Qt.AltModifier
+                and event.modifiers() & Qt.AltModifier
                 and self.subContextEditButton.clicked.isEnabled()):
             self.subContextEditButton.clicked.emit()
 
