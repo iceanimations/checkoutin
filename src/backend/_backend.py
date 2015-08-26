@@ -20,11 +20,9 @@ CURRENT_PROJECT_KEY = 'current_project_key'
 
 def set_project(name):
     pc.optionVar(sv=(CURRENT_PROJECT_KEY, name))
-    
+
 def get_project():
     return pc.optionVar(q=CURRENT_PROJECT_KEY)
-    
-
 
 
 def create_first_snapshot(item, context, check_out=True):
@@ -649,7 +647,21 @@ def get_published_snapshots(project, episode, sequence, shot, asset):
         return util.get_published_snapshots_in_episode(project, episode, asset)
     return []
 
+def publish_asset(project, episode, sequence, shot, asset, snapshot, context,
+        set_current=True):
+    if shot:
+        return util.publish_asset_to_shot(project, shot, asset, snapshot,
+                context, set_current)
+    elif sequence:
+        return util.publish_asset_to_sequence(project, sequence, asset,
+                snapshot, context, set_current)
+    elif episode:
+        return util.publish_asset_to_episode(project, episode, asset, snapshot,
+                context, set_current)
+
 publish_asset_to_episode = util.publish_asset_to_episode
+publish_asset_to_sequence = util.publish_asset_to_sequence
+publish_asset_to_shot = util.publish_asset_to_shot
 get_publish_targets = util.get_all_publish_targets
 get_publish_source = util.get_publish_source
 get_snapshot_info = util.get_snapshot_info

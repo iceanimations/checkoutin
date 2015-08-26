@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>655</width>
-    <height>624</height>
+    <height>643</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -29,10 +29,13 @@
    <item>
     <widget class="QFrame" name="publishFrame">
      <property name="frameShape">
-      <enum>QFrame::StyledPanel</enum>
+      <enum>QFrame::NoFrame</enum>
      </property>
      <property name="frameShadow">
-      <enum>QFrame::Raised</enum>
+      <enum>QFrame::Plain</enum>
+     </property>
+     <property name="lineWidth">
+      <number>0</number>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_6">
       <property name="margin">
@@ -332,6 +335,19 @@
              </property>
             </widget>
            </item>
+           <item>
+            <widget class="QCheckBox" name="checkBox_4">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
+             <property name="text">
+              <string>Re-Publish Textures</string>
+             </property>
+             <property name="checked">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
           </layout>
          </widget>
         </item>
@@ -574,10 +590,13 @@
    <item>
     <widget class="QFrame" name="pairFrame">
      <property name="frameShape">
-      <enum>QFrame::StyledPanel</enum>
+      <enum>QFrame::NoFrame</enum>
      </property>
      <property name="frameShadow">
-      <enum>QFrame::Raised</enum>
+      <enum>QFrame::Plain</enum>
+     </property>
+     <property name="lineWidth">
+      <number>0</number>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_3">
       <property name="margin">
@@ -863,8 +882,6 @@
        </layout>
       </item>
      </layout>
-     <zorder>publishFrame</zorder>
-     <zorder>layoutWidget</zorder>
     </widget>
    </item>
    <item>

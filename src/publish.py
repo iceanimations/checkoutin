@@ -11,6 +11,8 @@ from customui import ui as cui
 from .backend import _backend as be
 reload(be)
 
+import traceback
+
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
@@ -56,8 +58,8 @@ class PublishDialog(Form, Base):
         self.subContextEditButton.clicked.connect(self.subContextEditStart)
         self.hideProgressBar()
 
-        self.linkButton.clicked.connect(self.link)
-        self.doButton.clicked.connect(self.accept)
+        self.linkButton.clicked.connect(self.doLink)
+        self.doButton.clicked.connect(self.do)
         self.cancelButton.clicked.connect(self.reject)
 
     def updateSourceModel(self):
@@ -148,7 +150,7 @@ class PublishDialog(Form, Base):
             self.pairSourceLinked = any( [snap for snap in pairSourceLinks if
                 snap['code'] == self.snapshot['code']] )
             self.publishedLinked = any( [snap for snap in
-                pairSourceLinks if snap['code'] == self.snapshot['code']] )
+                pairSourceLinks if snap['code'] == self.pair['code']] )
 
     def updateTargetView(self):
         self.publishAssetCodeLabel.setText(self.snapshot['search_code'])
@@ -227,10 +229,34 @@ class PublishDialog(Form, Base):
             else:
                 self.setDefaultAction()
         else:
+            self.log('snapshot %s already published ...' %self.snapshot['code'])
             if not self.current:
                 self.setDefaultAction('setCurrent')
             else:
                 self.setDefaultAction()
+
+    def doLink(self):
+        success = True
+        actionName = 'Link'
+        successString = '%s Successful'%actionName
+        failureString = '%s Failed: '%actionName
+        title = 'Publish Assets'
+        try:
+            self.log('Doing %s'%actionName)
+            self.link()
+            cui.showMessage(self, title=title,
+                            msg=successString,
+                            icon=QMessageBox.Information)
+            self.log(successString)
+        except Exception as e:
+            traceback.print_exc()
+            cui.showMessage(self, title=title,
+                            msg = failureString + str(e),
+                            icon=QMessageBox.Critical)
+            self.log(failureString)
+            success = False
+        self.updatePair()
+        return success
 
     def link(self):
         if self.context == 'rig':
@@ -243,32 +269,19 @@ class PublishDialog(Form, Base):
         try:
             verified = be.verify_cache_compatibility(shaded, rig)
         except Exception as e:
-            import traceback
             reason = 'geo_set not found: ' + str(e)
             reason += ''
-            traceback.print_exc()
 
         if not verified:
-            cui.showMessage(self, title='',
-                            msg=reason,
-                            icon=QMessageBox.Critical)
+            raise Exception, reason
             return
 
         try:
             be.link_shaded_to_rig(shaded,rig)
         except Exception as e:
-            import traceback
-            cui.showMessage(self, title='',
-                    msg='Cannot link due to Server Error: %s'%str(e),
-                            icon=QMessageBox.Critical)
-            traceback.print_exc
+            msg='Cannot link due to Server Error: %s'%str(e)
+            raise Exception, msg
             return
-
-        cui.showMessage(self, title='Link Shaded to Rig',
-                            msg="Linking Successful",
-                            icon=QMessageBox.Information)
-
-        self.updatePair()
 
     def subContextEditStart(self, *args):
         if self.subContextEdit.isEnabled():
@@ -348,6 +361,30 @@ class PublishDialog(Form, Base):
         self.shot = newshot
         self.updateTarget()
 
+    def do(self):
+        success = True
+        actionName = self.doButton.text()
+        successString = '%s Successful'%actionName
+        failureString = '%s Failed: '%actionName
+        try:
+            self.log('Doing %s'%actionName)
+            self.defaultAction()
+            if actionName == 'Close':
+                return success
+            cui.showMessage(self, title='Assets Explorer',
+                            msg=successString,
+                            icon=QMessageBox.Information)
+            self.log(successString)
+        except Exception as e:
+            traceback.print_exc()
+            cui.showMessage(self, title='Asset Publish',
+                            msg = failureString + str(e),
+                            icon=QMessageBox.Critical)
+            self.log(failureString)
+            success = False
+        self.updateTarget()
+        return success
+
     def setDefaultAction(self, action='doNothing'):
         btn = self.doButton
         check = self.setCurrentCheckBox
@@ -364,11 +401,8 @@ class PublishDialog(Form, Base):
             btn.setText('Close')
             check.setEnabled(False)
 
-    def accepted(self):
-        self.defaultAction()
-
     def doNothing(self):
-        self.close()
+        self.accept()
 
     def setCurrent(self):
         be.set_snapshot_as_current(self.target)
@@ -378,22 +412,52 @@ class PublishDialog(Form, Base):
         self.textEdit.repaint()
 
     def publish(self):
-        print 'publishing ....'
+        publishContext = self.targetContext
+        self.log('start publishing ...')
+        newss = be.publish_asset(self.projectName, self.episode, self.sequence,
+                self.shot, self.snapshot['asset'], self.snapshot,
+                publishContext, self.setCurrentCheckBox.isChecked() )
+        return newss
+
+    def publish_with_textures(self):
+        #replicate textures
+        #checkout, open and remap textures
+        #save file
+        #create new snapshot and add
+        pass
+
+    def export_gpu_cache(self):
+        #checkout
+        #open
+        #export gpu cache
+        pass
+
+    def export_mesh(self):
+        #checkout
+        #open
+        #combine mesh
+        #delete history
+        #save
+        #create snapshot and add file
+        pass
+
+    def validate(self):
+        #check_validity
+        validity = False
         try:
-            publishContext = self.targetContext 
-            newss = be.publish_asset_to_episode(self.projectName, self.episode,
-                    self.snapshot['asset'], self.snapshot,
-                    publishContext, self.setCurrentCheckBox.isChecked() )
-            cui.showMessage(self, title='Assets Explorer',
-                            msg="Publish Successful",
-                            icon=QMessageBox.Information)
-            print 'publishing done ...', newss['code']
+            self.log('checking asset validity ...')
+            if be.check_validity(self.snapshot):
+                self.log('asset valid')
+            else:
+                raise Exception, 'Asset has no valid geosets'
         except Exception as e:
-            import traceback
-            cui.showMessage(self, title='Assets Explorer',
-                            msg='Publish Failed ' + str(e),
-                            icon=QMessageBox.Critical)
-            traceback.print_exc()
+            raise e
+
+    def create_combined_version(self):
+        #checked out version should be opened
+        #combine, save
+        #create snapshot and add file
+        pass
 
     def keyPressEvent(self, event):
         if event.key() in (Qt.Key_Enter, Qt.Key_Return):
