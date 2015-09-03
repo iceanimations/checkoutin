@@ -164,7 +164,8 @@ def _reference(snapshot):
 
 def checkin(sobject, context, process = None,
             version=-1, description = 'No description',
-            file = None, geos = [], camera = None, preview = None):
+            file = None, geos = [], camera = None, preview = None,
+            dotextures=True):
 
     '''
     :sobject: search_key of sobject to which the checkin belongs
@@ -191,8 +192,7 @@ def checkin(sobject, context, process = None,
         context = '/'.join([process, context])
 
     shaded = context.startswith('shaded')
-    if shaded and not file:
-        ftn_to_central = checkin_texture(sobject, context)
+    if dotextures and shaded and not file:
         central_to_ftn = map_textures(ftn_to_central)
 
 
@@ -658,6 +658,22 @@ def publish_asset(project, episode, sequence, shot, asset, snapshot, context,
     elif episode:
         return util.publish_asset_to_episode(project, episode, asset, snapshot,
                 context, set_current)
+
+def publish_asset_with_textures(project, episode, sequence, shot, asset,
+        snapshot, context, set_current=True):
+    texture_context = util.get_texture_context(snapshot)
+    texture_snap = util.get_versionless_texture(asset, snapshot)
+    pub_texture = publish_asset(project, episode, sequence, shot, asset,
+            texture_snap, texture_context, set_current)
+    path = checkout(pub_texture['__search_key__'])
+    oldloc = os.path.dirname(
+            util.get_filename_from_snap(texture_snap, mode='client_repo'))
+    newloc = os.path.dirname(
+            util.get_filename_from_snap(pub_texture, mode='client_repo'))
+    mi.openFile(path, f=True)
+    map_textures(mi.texture_mapping(oldloc, newloc))
+
+
 
 publish_asset_to_episode = util.publish_asset_to_episode
 publish_asset_to_sequence = util.publish_asset_to_sequence

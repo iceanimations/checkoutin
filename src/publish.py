@@ -413,10 +413,11 @@ class PublishDialog(Form, Base):
 
     def publish(self):
         publishContext = self.targetContext
-        self.log('start publishing ...')
+        self.log('publishing ...')
         newss = be.publish_asset(self.projectName, self.episode, self.sequence,
                 self.shot, self.snapshot['asset'], self.snapshot,
                 publishContext, self.setCurrentCheckBox.isChecked() )
+        self.log('publishing done!')
         return newss
 
     def publish_with_textures(self):
@@ -432,6 +433,12 @@ class PublishDialog(Form, Base):
         #export gpu cache
         pass
 
+    def create_combined_version(self):
+        #checked out version should be opened
+        #combine, clean, save
+        #create snapshot and add file
+        pass
+
     def export_mesh(self):
         #checkout
         #open
@@ -442,7 +449,6 @@ class PublishDialog(Form, Base):
         pass
 
     def validate(self):
-        #check_validity
         validity = False
         try:
             self.log('checking asset validity ...')
@@ -450,14 +456,10 @@ class PublishDialog(Form, Base):
                 self.log('asset valid')
             else:
                 raise Exception, 'Asset has no valid geosets'
+            self.log('asset valid!')
         except Exception as e:
+            self.log('asset invalid')
             raise e
-
-    def create_combined_version(self):
-        #checked out version should be opened
-        #combine, save
-        #create snapshot and add file
-        pass
 
     def keyPressEvent(self, event):
         if event.key() in (Qt.Key_Enter, Qt.Key_Return):
