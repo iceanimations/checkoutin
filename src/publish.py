@@ -4,7 +4,7 @@ except:
     from PyQt4 import uic
 
 from PyQt4.QtGui import (QMessageBox, QRegExpValidator, QPixmap)
-from PyQt4.QtCore import QRegExp, Qt, QRect, pyqtSignal, QSize
+from PyQt4.QtCore import QRegExp, Qt, pyqtSignal, QObject
 import os.path as osp
 
 from customui import ui as cui
@@ -13,9 +13,45 @@ reload(be)
 
 import traceback
 
-
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
+
+
+import logging
+class QTextLogHandler(logging.Handler, QObject):
+    appended = pyqtSignal(str)
+
+    def __init__(self, text):
+        QObject.__init__(self, parent=text)
+        logging.Handler.__init__(self)
+        self.text=text
+        self.text.setReadOnly(True)
+        self.appended.connect(self._appended)
+        self.loggers = []
+
+    def _appended(self, msg):
+        self.text.append(msg)
+
+    def emit(self, record):
+        self.appended.emit(self.format(record))
+
+    def addLogger(self, logger=None):
+        if logger is None:
+            logger = logging.getLogger()
+        if logger not in self.loggers:
+            self.loggers.append(logger)
+            logger.addHandler(self)
+
+    def removeLogger(self, logger):
+        if logger in self.loggers:
+            self.loggers.remove(logger)
+            logger.removeHandler(self)
+
+    def setLevel(self, level, setLoggerLevels=True):
+        super(QTextLogHandler, self).setLevel(level)
+        if setLoggerLevels:
+            for logger in self.loggers:
+                logger.setLevel(level)
 
 
 Form, Base = uic.loadUiType(osp.join(uiPath, 'publish.ui'))
@@ -42,6 +78,8 @@ class PublishDialog(Form, Base):
         self.populateEpisodeBox()
         self.populateSequenceBox()
         self.populateShotBox()
+        self.logHandler = QTextLogHandler(self.textEdit)
+        self.logHandler.addLogger(logging.getLogger(be.__name__))
 
         self.setDefaultAction()
 
@@ -226,6 +264,24 @@ class PublishDialog(Form, Base):
             if (self.context == 'rig' or self.context == 'model' or
                     self.pairSourceLinked or self.category.startswith('env')):
                 self.setDefaultAction('publish')
+
+                if self.context == 'shaded':
+                    self.texturesCheck.setChecked(True)
+                    self.combinedCheck.setChecked(True)
+                else:
+                    self.texturesCheck.setChecked(False)
+                    self.combinedCheck.setChecked(False)
+
+                if self.context == 'model':
+                    self.gpuCacheCheck.setChecked(True)
+                else:
+                    self.gpuCacheCheck.setChecked(False)
+
+                if self.context == 'rig':
+                    self.linkCheck.setChecked(True)
+                else:
+                    self.linkCheck.setChecked(False)
+
             else:
                 self.setDefaultAction()
         else:
@@ -412,20 +468,29 @@ class PublishDialog(Form, Base):
         self.textEdit.repaint()
 
     def publish(self):
-        publishContext = self.targetContext
         self.log('publishing ...')
-        newss = be.publish_asset(self.projectName, self.episode, self.sequence,
-                self.shot, self.snapshot['asset'], self.snapshot,
-                publishContext, self.setCurrentCheckBox.isChecked() )
+        newss = None
+        if self.textureCheck.isChecked():
+            newss = self.publish_with_textures()
+        else:
+            newss = self.simple_publish()
         self.log('publishing done!')
         return newss
 
+    def simple_publish(self):
+        publishContext = self.targetContext
+        newss = be.publish_asset(self.projectName, self.episode, self.sequence,
+                self.shot, self.snapshot['asset'], self.snapshot,
+                publishContext, self.setCurrentCheckBox.isChecked() )
+        return newss
+
     def publish_with_textures(self):
-        #replicate textures
-        #checkout, open and remap textures
-        #save file
-        #create new snapshot and add
-        pass
+        publishContext = self.targetContext
+        newss = be.publish_asset_with_textures(self.projectName, self.episode,
+                self.sequence, self.shot, self.snapshot['asset'],
+                self.snapshot, publishContext,
+                self.setCurrentCheckBox.isChecked())
+        return newss
 
     def export_gpu_cache(self):
         #checkout

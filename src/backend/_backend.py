@@ -11,7 +11,11 @@ import os.path as op
 import shutil
 import auth.security as security
 
-import re
+import sys
+
+import logging
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler(sys.stderr))
 
 dt = datetime.datetime
 m = maya.Maya()
@@ -119,8 +123,8 @@ def checkout(snapshot, r = False, with_texture = True):
                             basename = op.basename(path)
                             tex_mapping[path] = op.join(dirname, basename)
                     except Exception as e:
-                        print e
-                        print path
+                        logger.warning("%s"%str(e))
+                        logger.error('%s'%path)
 
                 map_textures(tex_mapping)
                 pc.mel.eval('file -save')
@@ -193,6 +197,7 @@ def checkin(sobject, context, process = None,
 
     shaded = context.startswith('shaded')
     if dotextures and shaded and not file:
+        ftn_to_central = checkin_texture(sobject, context)
         central_to_ftn = map_textures(ftn_to_central)
 
 
@@ -478,10 +483,10 @@ def checkin_cache(shot, objs, camera = None):
                 naming.append(name)
                 break
 
-    print '='*2**10
-    print set(obj_ref.values())
-    print objs
-    print '='*2**10
+    logger.debug('='*2**10)
+    logger.debug(str(set(obj_ref.values())))
+    logger.debug( str(objs) )
+    logger.debug( '='*2**10 )
 
     if not (# to avoid repeated objs
             len(objs) == len(obj_ref) and
@@ -662,9 +667,12 @@ def publish_asset(project, episode, sequence, shot, asset, snapshot, context,
 def publish_asset_with_textures(project, episode, sequence, shot, asset,
         snapshot, context, set_current=True):
     texture_context = util.get_texture_context(snapshot)
+    logger.info('getting source texture')
     texture_snap = util.get_versionless_texture(asset, snapshot)
+    logger.info('publishing textures')
     pub_texture = publish_asset(project, episode, sequence, shot, asset,
             texture_snap, texture_context, set_current)
+    logger.info('copying and opening file for texture remapping')
     path = checkout(pub_texture['__search_key__'])
     oldloc = os.path.dirname(
             util.get_filename_from_snap(texture_snap, mode='client_repo'))
@@ -672,7 +680,10 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
             util.get_filename_from_snap(pub_texture, mode='client_repo'))
     mi.openFile(path, f=True)
     map_textures(mi.texture_mapping(oldloc, newloc))
-
+    sobject = util.get_sobject_from_snap(pub_texture)
+    logger.info('checking in remapped file')
+    checkin(sobject, context, dotextures=False)
+    logger.info('done')
 
 
 publish_asset_to_episode = util.publish_asset_to_episode
