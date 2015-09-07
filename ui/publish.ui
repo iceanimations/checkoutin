@@ -297,7 +297,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="checkBox">
+            <widget class="QCheckBox" name="gpuCacheCheck">
              <property name="enabled">
               <bool>false</bool>
              </property>
@@ -310,7 +310,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="checkBox_2">
+            <widget class="QCheckBox" name="linkCheck">
              <property name="enabled">
               <bool>false</bool>
              </property>
@@ -323,7 +323,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="checkBox_3">
+            <widget class="QCheckBox" name="combinedCheck">
              <property name="enabled">
               <bool>false</bool>
              </property>
@@ -336,7 +336,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="checkBox_4">
+            <widget class="QCheckBox" name="texturesCheck">
              <property name="enabled">
               <bool>false</bool>
              </property>

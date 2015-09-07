@@ -216,7 +216,7 @@ def checkin(sobject, context, process = None,
     snap_code = snapshot.get('code')
     server.add_file(snap_code, save_path, file_type = 'maya',
                       mode = 'copy', create_icon = False)
-    if shaded and not file:
+    if dotextures and shaded and not file:
 
         map_textures(central_to_ftn)
 
@@ -234,7 +234,7 @@ def checkin(sobject, context, process = None,
     except:
         pass
 
-    return snapshot['__search_key__']
+    return snapshot
 
 def asset_textures(search_key):
     '''
@@ -664,26 +664,47 @@ def publish_asset(project, episode, sequence, shot, asset, snapshot, context,
         return util.publish_asset_to_episode(project, episode, asset, snapshot,
                 context, set_current)
 
+
+def publish_texture(project, episode, sequence, shot, asset, snapshot, context,
+        set_current=True):
+    prod_elem = shot or sequence or episode
+    prod_asset = util.get_production_asset(project, prod_elem, asset, True)
+
+    server = util._s
+    newss = server.create_snapshot(prod_asset, context=context,
+            is_current=set_current, snapshot_type=snapshot['snapshot_type'])
+
+    util.copy_snapshot(snapshot, newss)
+    server.add_dependency_by_code(newss['code'], snapshot['code'], type='ref',
+            tag='publish_source')
+    server.add_dependency_by_code(newss['code'], snapshot['code'], type='ref',
+            tag='publish_target')
+
+    return newss
+
 def publish_asset_with_textures(project, episode, sequence, shot, asset,
         snapshot, context, set_current=True):
     texture_context = util.get_texture_context(snapshot)
     logger.info('getting source texture')
-    texture_snap = util.get_versionless_texture(asset, snapshot)
+    texture_snap = util.get_texture_snapshot(asset, snapshot)
     logger.info('publishing textures')
-    pub_texture = publish_asset(project, episode, sequence, shot, asset,
+
+    pub_texture = publish_texture(project, episode, sequence, shot, asset,
             texture_snap, texture_context, set_current)
+
     logger.info('copying and opening file for texture remapping')
-    path = checkout(pub_texture['__search_key__'])
+    path = checkout(snapshot['__search_key__'])
+    mi.openFile(path, f=True)
     oldloc = os.path.dirname(
             util.get_filename_from_snap(texture_snap, mode='client_repo'))
     newloc = os.path.dirname(
             util.get_filename_from_snap(pub_texture, mode='client_repo'))
-    mi.openFile(path, f=True)
     map_textures(mi.texture_mapping(oldloc, newloc))
     sobject = util.get_sobject_from_snap(pub_texture)
     logger.info('checking in remapped file')
-    checkin(sobject, context, dotextures=False)
-    logger.info('done')
+    newss = checkin(sobject, context, dotextures=False)
+    logger.info('adding dependency')
+    util.add_publish_dependency(snapshot, newss)
 
 
 publish_asset_to_episode = util.publish_asset_to_episode
@@ -694,9 +715,6 @@ get_publish_source = util.get_publish_source
 get_snapshot_info = util.get_snapshot_info
 get_icon = util.get_icon
 get_episodes = util.get_episodes
-get_sequences = util.get_sequences
-get_shots = util.get_shots
-get_episode_asset = util.get_episode_asset
 get_linked = util.get_cache_compatible_objects
 filename_from_snap = util.get_filename_from_snap
 link_shaded_to_rig = util.link_shaded_to_rig

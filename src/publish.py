@@ -148,6 +148,11 @@ class PublishDialog(Form, Base):
                         targetContext)
         self.currentPublished = be.get_current_in_published(
                 self.publishedSnapshots, self.targetContext )
+        self.currentPublishedSource = {}
+        if self.currentPublished:
+            self.currentPublishedSource = be.get_publish_source(
+                    self.currentPublished)
+
         self.target = None
         if self.targetCurrent:
             self.published = True
@@ -187,8 +192,9 @@ class PublishDialog(Form, Base):
             pairSourceLinks = be.get_linked(self.pairSource)
             self.pairSourceLinked = any( [snap for snap in pairSourceLinks if
                 snap['code'] == self.snapshot['code']] )
-            self.publishedLinked = any( [snap for snap in
-                pairSourceLinks if snap['code'] == self.pair['code']] )
+            if self.currentPublishedSource:
+                self.publishedLinked = any( [snap for snap in pairSourceLinks
+                    if snap['code'] == self.currentPublishedSource['code']] )
 
     def updateTargetView(self):
         self.publishAssetCodeLabel.setText(self.snapshot['search_code'])
@@ -260,9 +266,11 @@ class PublishDialog(Form, Base):
         else:
             self.linkButton.setEnabled(True)
 
+        publishable = (self.context == 'rig' or self.context == 'model' or
+                    self.pairSourceLinked or self.category.startswith('env'))
+
         if not self.published:
-            if (self.context == 'rig' or self.context == 'model' or
-                    self.pairSourceLinked or self.category.startswith('env')):
+            if publishable:
                 self.setDefaultAction('publish')
 
                 if self.context == 'shaded':
@@ -282,11 +290,14 @@ class PublishDialog(Form, Base):
                 else:
                     self.linkCheck.setChecked(False)
 
+                if self.targetSnapshots:
+                    self.setCurrentCheck.setEnabled(False)
+
             else:
                 self.setDefaultAction()
         else:
-            self.log('snapshot %s already published ...' %self.snapshot['code'])
-            if not self.current:
+            self.log('snapshot %s published' %self.snapshot['code'])
+            if not self.current and publishable:
                 self.setDefaultAction('setCurrent')
             else:
                 self.setDefaultAction()
@@ -470,7 +481,7 @@ class PublishDialog(Form, Base):
     def publish(self):
         self.log('publishing ...')
         newss = None
-        if self.textureCheck.isChecked():
+        if self.texturesCheck.isChecked():
             newss = self.publish_with_textures()
         else:
             newss = self.simple_publish()
@@ -518,13 +529,14 @@ class PublishDialog(Form, Base):
         try:
             self.log('checking asset validity ...')
             if be.check_validity(self.snapshot):
-                self.log('asset valid')
+                validity = True
             else:
                 raise Exception, 'Asset has no valid geosets'
             self.log('asset valid!')
         except Exception as e:
             self.log('asset invalid')
             raise e
+        return validity
 
     def keyPressEvent(self, event):
         if event.key() in (Qt.Key_Enter, Qt.Key_Return):
