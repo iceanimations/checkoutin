@@ -29,8 +29,13 @@ class QTextLogHandler(logging.Handler, QObject):
         self.appended.connect(self._appended)
         self.loggers = []
 
+    def __del__(self):
+        for logger in self.loggers:
+            self.removeLogger(logger)
+
     def _appended(self, msg):
         self.text.append(msg)
+        self.text.repaint()
 
     def emit(self, record):
         self.appended.emit(self.format(record))

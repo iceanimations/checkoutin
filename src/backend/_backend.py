@@ -15,6 +15,9 @@ import sys
 
 import logging
 logger = logging.getLogger(__name__)
+for handler in logger.handlers:
+    if isinstance(handler, logging.StreamHandler):
+        logger.removeHandler(handler)
 logger.addHandler(logging.StreamHandler(sys.stderr))
 
 dt = datetime.datetime
@@ -164,7 +167,7 @@ def _reference(snapshot):
 
     assets.append(snapshot)
     util.set_tactic_file_info(tactic)
-    return True
+    return present
 
 def checkin(sobject, context, process = None,
             version=-1, description = 'No description',
@@ -555,10 +558,6 @@ def get_current_in_published(published, context):
         if snap['context'] == context and snap['is_current'] :
             return snap
 
-def set_snapshot_as_current(snapshot):
-    server = user.get_server()
-    server.set_current_snapshot(snapshot)
-
 def verify_cache_compatibility(shaded, rig, newFile=False):
     if newFile:
         pc.newFile(f=True)
@@ -641,80 +640,79 @@ def current_scene_valid():
         return False
     return True
 
-#get_published_snapshots = util.get_published_snapshots_in_episode
 def get_published_snapshots(project, episode, sequence, shot, asset):
-    if shot:
-        return util.get_published_snapshots_in_shot(project, shot, asset)
-    elif sequence:
-        return util.get_published_snapshots_in_sequence(project, sequence,
-                asset)
-    elif episode:
-        return util.get_published_snapshots_in_episode(project, episode, asset)
-    return []
+    prod_elem = shot or sequence or episode
+    return util.get_published_snapshots(project, prod_elem, asset)
 
 def publish_asset(project, episode, sequence, shot, asset, snapshot, context,
         set_current=True):
-    if shot:
-        return util.publish_asset_to_shot(project, shot, asset, snapshot,
-                context, set_current)
-    elif sequence:
-        return util.publish_asset_to_sequence(project, sequence, asset,
-                snapshot, context, set_current)
-    elif episode:
-        return util.publish_asset_to_episode(project, episode, asset, snapshot,
-                context, set_current)
-
-
-def publish_texture(project, episode, sequence, shot, asset, snapshot, context,
-        set_current=True):
     prod_elem = shot or sequence or episode
-    prod_asset = util.get_production_asset(project, prod_elem, asset, True)
-
-    server = util._s
-    newss = server.create_snapshot(prod_asset, context=context,
-            is_current=set_current, snapshot_type=snapshot['snapshot_type'])
-
-    util.copy_snapshot(snapshot, newss)
-    server.add_dependency_by_code(newss['code'], snapshot['code'], type='ref',
-            tag='publish_source')
-    server.add_dependency_by_code(newss['code'], snapshot['code'], type='ref',
-            tag='publish_target')
-
-    return newss
+    return util.publish_asset(project, prod_elem, asset, snapshot, context,
+            set_current=set_current)
 
 def publish_asset_with_textures(project, episode, sequence, shot, asset,
         snapshot, context, set_current=True):
-    texture_context = util.get_texture_context(snapshot)
-    logger.info('getting source texture')
-    texture_snap = util.get_texture_snapshot(asset, snapshot)
-    logger.info('publishing textures')
+    ''' convenience function for publishing shaded '''
 
-    pub_texture = publish_texture(project, episode, sequence, shot, asset,
-            texture_snap, texture_context, set_current)
+    prod_elem = shot or sequence or episode
+    logger.info('getting source texture')
+    texture = util.get_texture_snapshot(asset, snapshot)
+    vless_texture = util.get_texture_snapshot(asset, snapshot,
+            versionless=True)
+    try:
+        texture_file = util.get_filename_from_snap(vless_texture)
+    except:
+        texture_file = None
+
+    if not texture_file:
+        logger.info('no textures found ... publishing directly')
+        return util.publish_asset(project, prod_elem, asset, snapshot, context,
+                set_current=set_current)
 
     logger.info('copying and opening file for texture remapping')
     path = checkout(snapshot['__search_key__'])
     mi.openFile(path, f=True)
+
+    logger.info('publishing textures')
+    texture_context = util.get_texture_context(snapshot)
+    pub_texture = util.publish_asset(project, prod_elem, asset, texture,
+            texture_context, set_current)
+    prod_asset = util.get_production_asset(project, prod_elem, asset)
+    pub_texture_vless = util.get_published_texture_snapshot(prod_asset,
+            snapshot, versionless=True)
+
+    logger.info('remapping textures to published location')
     oldloc = os.path.dirname(
-            util.get_filename_from_snap(texture_snap, mode='client_repo'))
+            util.get_filename_from_snap(vless_texture, mode='client_repo'))
     newloc = os.path.dirname(
-            util.get_filename_from_snap(pub_texture, mode='client_repo'))
+            util.get_filename_from_snap(pub_texture_vless, mode='client_repo'))
     map_textures(mi.texture_mapping(oldloc, newloc))
-    sobject = util.get_sobject_from_snap(pub_texture)
+
     logger.info('checking in remapped file')
-    newss = checkin(sobject, context, dotextures=False)
+    newss = checkin(prod_asset, context, dotextures=False)
     logger.info('adding dependency')
     util.add_publish_dependency(snapshot, newss)
 
+    mi.newScene()
 
-publish_asset_to_episode = util.publish_asset_to_episode
-publish_asset_to_sequence = util.publish_asset_to_sequence
-publish_asset_to_shot = util.publish_asset_to_shot
+    return newss
+
+def set_snapshot_as_current(snapshot):
+    server = user.get_server()
+    logger.info('setting as current ...')
+    server.set_current_snapshot(snapshot)
+    texture = util.get_texture_by_dependency(snapshot)
+    if texture:
+        logger.info('setting dependent textures as current ...')
+        server.set_current_snapshot(texture)
+    return True
+
 get_publish_targets = util.get_all_publish_targets
 get_publish_source = util.get_publish_source
 get_snapshot_info = util.get_snapshot_info
 get_icon = util.get_icon
 get_episodes = util.get_episodes
+get_sequences = util.get_sequences
 get_linked = util.get_cache_compatible_objects
 filename_from_snap = util.get_filename_from_snap
 link_shaded_to_rig = util.link_shaded_to_rig
