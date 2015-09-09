@@ -199,12 +199,16 @@ def checkin(sobject, context, process = None,
         context = '/'.join([process, context])
 
     shaded = context.startswith('shaded')
+    ftn_to_central = central_to_ftn = {}
     if dotextures and shaded and not file:
         ftn_to_central = checkin_texture(sobject, context)
         central_to_ftn = map_textures(ftn_to_central)
 
-
     snapshot = server.create_snapshot(sobject, context)
+
+    if central_to_ftn:
+        texture_snap = util.get_texture_snapshot(sobject, snapshot)
+        util.add_texture_dependency(snapshot, texture_snap)
 
     if not file:
         tactic = util.get_tactic_file_info()
@@ -689,9 +693,13 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
     map_textures(mi.texture_mapping(oldloc, newloc))
 
     logger.info('checking in remapped file')
-    newss = checkin(prod_asset, context, dotextures=False)
-    logger.info('adding dependency')
+    pub = checkin(prod_asset, context, dotextures=False)
+
+    logger.info('adding dependencies ...')
+    logger.debug('adding publish dependency ...')
     util.add_publish_dependency(snapshot, newss)
+    logger.debug('adding texture dependency ...')
+    util.add_texture_dependency(pub, pub_texture)
 
     mi.newScene()
 
