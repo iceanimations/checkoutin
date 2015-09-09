@@ -15,10 +15,8 @@ import sys
 
 import logging
 logger = logging.getLogger(__name__)
-for handler in logger.handlers:
-    if isinstance(handler, logging.StreamHandler):
-        logger.removeHandler(handler)
-logger.addHandler(logging.StreamHandler(sys.stderr))
+if not logger.handlers:
+    logger.addHandler(logging.StreamHandler(sys.stderr))
 
 dt = datetime.datetime
 m = maya.Maya()
@@ -675,7 +673,7 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
 
     logger.info('copying and opening file for texture remapping')
     path = checkout(snapshot['__search_key__'])
-    mi.openFile(path, f=True)
+    mi.openFile(path)
 
     logger.info('publishing textures')
     texture_context = util.get_texture_context(snapshot)
@@ -697,13 +695,13 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
 
     logger.info('adding dependencies ...')
     logger.debug('adding publish dependency ...')
-    util.add_publish_dependency(snapshot, newss)
+    util.add_publish_dependency(snapshot, pub)
     logger.debug('adding texture dependency ...')
     util.add_texture_dependency(pub, pub_texture)
 
     mi.newScene()
 
-    return newss
+    return pub
 
 def set_snapshot_as_current(snapshot):
     server = user.get_server()
