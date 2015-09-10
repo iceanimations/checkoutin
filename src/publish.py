@@ -173,6 +173,8 @@ class PublishDialog(Form, Base):
         else:
             self.published = False
             self.current = False
+        if self.target:
+            self.combined = be.get_combined_version(self.target)
         self.targetVersion = self.target['version'] if self.target else 1
         self.updatePairModel()
 
@@ -307,6 +309,8 @@ class PublishDialog(Form, Base):
             logger.info('snapshot %s published' %self.snapshot['code'])
             if not self.current and publishable:
                 self.setDefaultAction('setCurrent')
+            elif not self.combined:
+                self.setDefaultAction('combine')
             else:
                 self.setDefaultAction()
 
@@ -530,7 +534,7 @@ class PublishDialog(Form, Base):
     def publish_combined_version(self, snapshot=None):
         if not snapshot:
             snapshot = self.target
-        return be.create_combined_verions(snapshot)
+        return be.create_combined_verion(snapshot)
 
     def export_mesh(self):
         #checkout
