@@ -59,6 +59,8 @@ class QTextLogHandler(logging.Handler, QObject):
                 logger.setLevel(level)
 
 
+logger = logging.getLogger(__name__)
+
 Form, Base = uic.loadUiType(osp.join(uiPath, 'publish.ui'))
 class PublishDialog(Form, Base):
     ''' Have fun '''
@@ -85,6 +87,7 @@ class PublishDialog(Form, Base):
         self.populateShotBox()
         self.logHandler = QTextLogHandler(self.textEdit)
         self.logHandler.addLogger(logging.getLogger(be.__name__))
+        self.logHanlder.addLogger(logger)
 
         self.setDefaultAction()
 
@@ -301,7 +304,7 @@ class PublishDialog(Form, Base):
             else:
                 self.setDefaultAction()
         else:
-            self.log('snapshot %s published' %self.snapshot['code'])
+            logger.info('snapshot %s published' %self.snapshot['code'])
             if not self.current and publishable:
                 self.setDefaultAction('setCurrent')
             else:
@@ -314,18 +317,18 @@ class PublishDialog(Form, Base):
         failureString = '%s Failed: '%actionName
         title = 'Publish Assets'
         try:
-            self.log('Doing %s'%actionName)
+            logger.info('Doing %s'%actionName)
             self.link()
             cui.showMessage(self, title=title,
                             msg=successString,
                             icon=QMessageBox.Information)
-            self.log(successString)
+            logger.info(successString)
         except Exception as e:
             traceback.print_exc()
             cui.showMessage(self, title=title,
                             msg = failureString + str(e),
                             icon=QMessageBox.Critical)
-            self.log(failureString)
+            logger.error(failureString)
             success = False
         self.updatePair()
         return success
@@ -439,20 +442,20 @@ class PublishDialog(Form, Base):
         successString = '%s Successful'%actionName
         failureString = '%s Failed: '%actionName
         try:
-            self.log('Doing %s'%actionName)
+            logger.info('Doing %s'%actionName)
             self.defaultAction()
             if actionName == 'Close':
                 return success
             cui.showMessage(self, title='Assets Explorer',
                             msg=successString,
                             icon=QMessageBox.Information)
-            self.log(successString)
+            logger.info(successString)
         except Exception as e:
             traceback.print_exc()
             cui.showMessage(self, title='Asset Publish',
                             msg = failureString + str(e),
                             icon=QMessageBox.Critical)
-            self.log(failureString)
+            logger.error(failureString)
             success = False
         self.updateTarget()
         return success
@@ -484,13 +487,13 @@ class PublishDialog(Form, Base):
         self.textEdit.repaint()
 
     def publish(self):
-        self.log('publishing ...')
+        logger.info('publishing ...')
         newss = None
         if self.texturesCheck.isChecked():
             newss = self.publish_with_textures()
         else:
             newss = self.simple_publish()
-        self.log('publishing done!')
+        logger.info('publishing done!')
         return newss
 
     def simple_publish(self):
@@ -508,7 +511,7 @@ class PublishDialog(Form, Base):
                 self.setCurrentCheckBox.isChecked())
         return newss
 
-    def export_gpu_cache(self):
+    def export_gpu_cache(self, snapshot):
         #checkout
         #open
         #export gpu cache
@@ -532,14 +535,14 @@ class PublishDialog(Form, Base):
     def validate(self):
         validity = False
         try:
-            self.log('checking asset validity ...')
+            logger.info('checking asset validity ...')
             if be.check_validity(self.snapshot):
                 validity = True
             else:
                 raise Exception, 'Asset has no valid geosets'
-            self.log('asset valid!')
+            logger.info('asset valid!')
         except Exception as e:
-            self.log('asset invalid')
+            logger.error('asset invalid')
             raise e
         return validity
 

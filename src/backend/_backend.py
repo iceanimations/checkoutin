@@ -703,6 +703,30 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
 
     return pub
 
+def publish_combined_version(snapshot, postfix='combined'):
+    context = snapshot['context']
+
+    logger.info('Checking out snapshot for combining ...')
+    path = checkout(snapshot)
+    mi.openFile(path)
+
+    logger.info('Combining geo sets ...')
+    geo_sets = mi.get_geo_sets( nonReferencedOnly=True, validOnly=True )
+    if not geo_sets:
+        raise Exception, 'No valid geo sets found'
+    geo_set = geo_sets[0]
+    mi.getCombinedMeshFromSet(geo_set)
+
+    logger.info('checking in file as combined')
+    combinedContext = '/'.join([context, postfix])
+    sobject = util.get_sobject_from_snap(snapshot)
+    pub = checkin(sobject, combinedContext, dotextures=False)
+    util.add_combined_dependency(snapshot, pub)
+    mi.newScene()
+
+    return False
+
+
 def set_snapshot_as_current(snapshot):
     server = user.get_server()
     logger.info('setting as current ...')
