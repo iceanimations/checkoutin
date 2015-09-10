@@ -170,7 +170,7 @@ def _reference(snapshot):
 def checkin(sobject, context, process = None,
             version=-1, description = 'No description',
             file = None, geos = [], camera = None, preview = None,
-            dotextures=True):
+            is_current=True, dotextures=True):
 
     '''
     :sobject: search_key of sobject to which the checkin belongs
@@ -199,10 +199,11 @@ def checkin(sobject, context, process = None,
     shaded = context.startswith('shaded')
     ftn_to_central = central_to_ftn = {}
     if dotextures and shaded and not file:
-        ftn_to_central = checkin_texture(sobject, context)
+        ftn_to_central = checkin_texture(sobject, context,
+                is_current=is_current)
         central_to_ftn = map_textures(ftn_to_central)
 
-    snapshot = server.create_snapshot(sobject, context)
+    snapshot = server.create_snapshot(sobject, context, is_current=is_current)
 
     if central_to_ftn:
         texture_snap = util.get_texture_snapshot(sobject, snapshot)
@@ -307,7 +308,7 @@ def make_temp_dir():
                                        mkd = True
                                    )).replace("\\", "/")
 
-def checkin_texture(search_key, context):
+def checkin_texture(search_key, context, is_current=False):
     if not security.checkinability(search_key):
 
         raise Exception('Permission denied. You do not have permission to'+
@@ -346,7 +347,7 @@ def checkin_texture(search_key, context):
 
 
     texture_snap = server.create_snapshot(texture_child['__search_key__'],
-                                          context, is_current=False)
+                                          context, is_current=is_current)
     latest_dummy_snapshot = server.create_snapshot(texture_child['__search_key__'],
                                           context)
 
@@ -691,7 +692,8 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
     map_textures(mi.texture_mapping(oldloc, newloc))
 
     logger.info('checking in remapped file')
-    pub = checkin(prod_asset, context, dotextures=False)
+    pub = checkin(prod_asset, context, dotextures=False,
+            is_current=set_current)
 
     logger.info('adding dependencies ...')
     logger.debug('adding publish dependency ...')
@@ -703,7 +705,7 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
 
     return pub
 
-def publish_combined_version(snapshot, postfix='combined'):
+def create_combined_version(snapshot, postfix='combined'):
     context = snapshot['context']
 
     logger.info('Checking out snapshot for combining ...')
@@ -713,6 +715,7 @@ def publish_combined_version(snapshot, postfix='combined'):
     logger.info('Combining geo sets ...')
     geo_sets = mi.get_geo_sets( nonReferencedOnly=True, validOnly=True )
     if not geo_sets:
+        mi.newScene()
         raise Exception, 'No valid geo sets found'
     geo_set = geo_sets[0]
     mi.getCombinedMeshFromSet(geo_set)
@@ -720,11 +723,12 @@ def publish_combined_version(snapshot, postfix='combined'):
     logger.info('checking in file as combined')
     combinedContext = '/'.join([context, postfix])
     sobject = util.get_sobject_from_snap(snapshot)
-    pub = checkin(sobject, combinedContext, dotextures=False)
-    util.add_combined_dependency(snapshot, pub)
+    combined = checkin(sobject, combinedContext, dotextures=False,
+            is_current=snapshot['is_current'])
+    util.add_combined_dependency(snapshot, combined)
     mi.newScene()
 
-    return False
+    return combined
 
 
 def set_snapshot_as_current(snapshot):
@@ -735,6 +739,13 @@ def set_snapshot_as_current(snapshot):
     if texture:
         logger.info('setting dependent textures as current ...')
         server.set_current_snapshot(texture)
+    combined = util.get_dependencies(snapshot, keyword='keyword', source=False)
+    if combined:
+        logger.info('setting combined version as current ...')
+        server.set_current_snapshot(texture)
+    else:
+        create_combined_version(snapshot, postfix='combined')
+
     return True
 
 get_publish_targets = util.get_all_publish_targets
@@ -746,3 +757,4 @@ get_sequences = util.get_sequences
 get_linked = util.get_cache_compatible_objects
 filename_from_snap = util.get_filename_from_snap
 link_shaded_to_rig = util.link_shaded_to_rig
+get_combined_version = util.get_combined_version

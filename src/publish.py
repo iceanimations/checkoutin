@@ -471,6 +471,10 @@ class PublishDialog(Form, Base):
             btn.setText('Publish')
             self.defaultAction = self.publish
             check.setEnabled(True)
+        elif action == 'combine':
+            btn.setText('Combine')
+            self.defaultAction = self.publish_combined_version
+            self.combinedCheckBox.setEnabled(False)
         else:
             self.defaultAction = self.doNothing
             btn.setText('Close')
@@ -493,6 +497,12 @@ class PublishDialog(Form, Base):
             newss = self.publish_with_textures()
         else:
             newss = self.simple_publish()
+        if newss and self.combinedCheck.isChecked():
+            try:
+                self.publish_combined_version(newss)
+            except Exception as e:
+                logging.error('Could not publish combined due to error: %r'
+                        %e)
         logger.info('publishing done!')
         return newss
 
@@ -517,11 +527,10 @@ class PublishDialog(Form, Base):
         #export gpu cache
         pass
 
-    def create_combined_version(self):
-        #checked out version should be opened
-        #combine, clean, save
-        #create snapshot and add file
-        pass
+    def publish_combined_version(self, snapshot=None):
+        if not snapshot:
+            snapshot = self.target
+        return be.create_combined_verions(snapshot)
 
     def export_mesh(self):
         #checkout
