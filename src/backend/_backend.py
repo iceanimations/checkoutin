@@ -705,12 +705,12 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
 
     return pub
 
-def create_combined_version(snapshot, postfix='combined'):
+def create_combined_version( snapshot, postfix='combined' ):
     context = snapshot['context']
 
-    logger.info('Checking out snapshot for combining ...')
-    path = checkout(snapshot)
-    mi.openFile(path)
+    logger.info( 'Checking out snapshot for combining ...' )
+    path = checkout( snapshot )
+    mi.openFile( path )
 
     logger.info('Combining geo sets ...')
     geo_sets = mi.get_geo_sets( nonReferencedOnly=True, validOnly=True )
@@ -718,14 +718,14 @@ def create_combined_version(snapshot, postfix='combined'):
         mi.newScene()
         raise Exception, 'No valid geo sets found'
     geo_set = geo_sets[0]
-    mi.getCombinedMeshFromSet(geo_set)
+    mi.getCombinedMeshFromSet( geo_set )
 
-    logger.info('checking in file as combined')
-    combinedContext = '/'.join([context, postfix])
+    logger.info( 'checking in file as combined' )
+    combinedContext = '/'.join( [context, postfix] )
     sobject = util.get_sobject_from_snap(snapshot)
-    combined = checkin(sobject, combinedContext, dotextures=False,
-            is_current=snapshot['is_current'])
-    util.add_combined_dependency(snapshot, combined)
+    combined = checkin( sobject, combinedContext, dotextures=False,
+            is_current=snapshot['is_current'] )
+    util.add_combined_dependency( snapshot, combined )
     mi.newScene()
 
     return combined
@@ -733,18 +733,18 @@ def create_combined_version(snapshot, postfix='combined'):
 
 def set_snapshot_as_current(snapshot):
     server = user.get_server()
-    logger.info('setting as current ...')
+    logger.info( 'setting as current ...' )
     server.set_current_snapshot(snapshot)
-    texture = util.get_texture_by_dependency(snapshot)
+    texture = util.get_texture_by_dependency( snapshot )
     if texture:
-        logger.info('setting dependent textures as current ...')
-        server.set_current_snapshot(texture)
+        logger.info( 'setting dependent textures as current' )
+        server.set_current_snapshot( texture )
     combined = util.get_dependencies(snapshot, keyword='keyword', source=False)
     if combined:
-        logger.info('setting combined version as current ...')
-        server.set_current_snapshot(texture)
+        logger.info( 'setting combined version as current' )
+        server.set_current_snapshot( texture )
     else:
-        create_combined_version(snapshot, postfix='combined')
+        create_combined_version( snapshot, postfix='combined' )
 
     return True
 
