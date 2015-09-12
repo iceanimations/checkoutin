@@ -18,12 +18,12 @@ uiPath = osp.join(rootPath, 'ui')
 
 
 import logging
-class QTextLogHandler(logging.Handler, QObject):
+class QTextLogHandler(QObject, logging.Handler):
     appended = pyqtSignal(str)
 
     def __init__(self, text):
-        QObject.__init__(self, parent=text)
         logging.Handler.__init__(self)
+        QObject.__init__(self, parent=text)
         self.text=text
         self.text.setReadOnly(True)
         self.appended.connect(self._appended)
@@ -38,7 +38,10 @@ class QTextLogHandler(logging.Handler, QObject):
         self.text.repaint()
 
     def emit(self, record):
-        self.appended.emit(self.format(record))
+        try:
+            self.appended.emit(self.format(record))
+        except:
+            pass
 
     def addLogger(self, logger=None):
         if logger is None:
@@ -69,6 +72,10 @@ class PublishDialog(Form, Base):
         super(PublishDialog, self).__init__(parent=parent)
         self.setupUi(self)
         self.parent = parent
+        self.logHandler = QTextLogHandler(self.textEdit)
+        self.logHandler.addLogger(logging.getLogger(be.__name__))
+        self.logHandler.addLogger(logger)
+
         self.search_key = search_key
 
         self.episodes = []
@@ -85,9 +92,6 @@ class PublishDialog(Form, Base):
         self.populateEpisodeBox()
         self.populateSequenceBox()
         self.populateShotBox()
-        self.logHandler = QTextLogHandler(self.textEdit)
-        self.logHandler.addLogger(logging.getLogger(be.__name__))
-        self.logHanlder.addLogger(logger)
 
         self.setDefaultAction()
 
@@ -306,7 +310,8 @@ class PublishDialog(Form, Base):
             else:
                 self.setDefaultAction()
         else:
-            logger.info('snapshot %s published' %self.snapshot['code'])
+            logger.info('Asset snapshot %s is published as %s' %(
+                self.snapshot['code'], self.target['code']))
             if not self.current and publishable:
                 self.setDefaultAction('setCurrent')
             elif not self.combined:
@@ -478,7 +483,7 @@ class PublishDialog(Form, Base):
         elif action == 'combine':
             btn.setText('Combine')
             self.defaultAction = self.publish_combined_version
-            self.combinedCheckBox.setEnabled(False)
+            self.combinedCheck.setEnabled(False)
         else:
             self.defaultAction = self.doNothing
             btn.setText('Close')
@@ -501,12 +506,13 @@ class PublishDialog(Form, Base):
             newss = self.publish_with_textures()
         else:
             newss = self.simple_publish()
+        print self.combinedCheck.isChecked(), newss
         if newss and self.combinedCheck.isChecked():
-            try:
-                self.publish_combined_version(newss)
-            except Exception as e:
-                logging.error('Could not publish combined due to error: %r'
-                        %e)
+            #try:
+            self.publish_combined_version(newss)
+            #except Exception as e:
+                #logging.error('Could not publish combined due to error: %r'
+                #%e)
         logger.info('publishing done!')
         return newss
 
@@ -534,7 +540,7 @@ class PublishDialog(Form, Base):
     def publish_combined_version(self, snapshot=None):
         if not snapshot:
             snapshot = self.target
-        return be.create_combined_verion(snapshot)
+        return be.create_combined_version(snapshot)
 
     def export_mesh(self):
         #checkout

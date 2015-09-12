@@ -86,8 +86,10 @@ def checkout(snapshot, r = False, with_texture = True):
             tactic['whoami'] = snapshot
             util.set_tactic_file_info(tactic)
             # checkout texture
-            tex = server.get_all_children(sobj['__search_key__'], TEXTURE_TYPE)
-            if tex and with_texture:
+            tex = []
+            if with_texture:
+                tex = server.get_all_children(sobj['__search_key__'], TEXTURE_TYPE)
+            if tex:
                 context_comp = snap['context'].split('/')
 
                 # the required context
@@ -673,7 +675,7 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
                 set_current=set_current)
 
     logger.info('copying and opening file for texture remapping')
-    path = checkout(snapshot['__search_key__'])
+    path = checkout(snapshot['__search_key__'], with_texture=False)
     mi.openFile(path)
 
     logger.info('publishing textures')
@@ -705,12 +707,12 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
 
     return pub
 
-def create_combined_version( snapshot, postfix='combined' ):
+def create_combined_version(snapshot, postfix='combined'):
     context = snapshot['context']
 
-    logger.info( 'Checking out snapshot for combining ...' )
-    path = checkout( snapshot )
-    mi.openFile( path )
+    logger.info('Checking out snapshot for combining ...')
+    path = checkout(snapshot, with_texture=False)
+    mi.openFile(path)
 
     logger.info('Combining geo sets ...')
     geo_sets = mi.get_geo_sets( nonReferencedOnly=True, validOnly=True )
@@ -718,33 +720,32 @@ def create_combined_version( snapshot, postfix='combined' ):
         mi.newScene()
         raise Exception, 'No valid geo sets found'
     geo_set = geo_sets[0]
-    mi.getCombinedMeshFromSet( geo_set )
+    mi.getCombinedMeshFromSet(geo_set)
 
-    logger.info( 'checking in file as combined' )
-    combinedContext = '/'.join( [context, postfix] )
+    logger.info('checking in file as combined')
+    combinedContext = '/'.join([context, postfix])
     sobject = util.get_sobject_from_snap(snapshot)
-    combined = checkin( sobject, combinedContext, dotextures=False,
-            is_current=snapshot['is_current'] )
-    util.add_combined_dependency( snapshot, combined )
+    combined = checkin(sobject, combinedContext, dotextures=False,
+            is_current=snapshot['is_current'])
+    util.add_combined_dependency(snapshot, combined)
     mi.newScene()
 
     return combined
 
-
 def set_snapshot_as_current(snapshot):
     server = user.get_server()
-    logger.info( 'setting as current ...' )
+    logger.info('setting as current ...')
     server.set_current_snapshot(snapshot)
-    texture = util.get_texture_by_dependency( snapshot )
+    texture = util.get_texture_by_dependency(snapshot)
     if texture:
-        logger.info( 'setting dependent textures as current' )
+        logger.info('setting dependent textures as current')
         server.set_current_snapshot( texture )
     combined = util.get_dependencies(snapshot, keyword='keyword', source=False)
     if combined:
-        logger.info( 'setting combined version as current' )
+        logger.info('setting combined version as current')
         server.set_current_snapshot( texture )
     else:
-        create_combined_version( snapshot, postfix='combined' )
+        create_combined_version(snapshot, postfix='combined')
 
     return True
 
@@ -754,6 +755,7 @@ get_snapshot_info = util.get_snapshot_info
 get_icon = util.get_icon
 get_episodes = util.get_episodes
 get_sequences = util.get_sequences
+get_shots = util.get_shots
 get_linked = util.get_cache_compatible_objects
 filename_from_snap = util.get_filename_from_snap
 link_shaded_to_rig = util.link_shaded_to_rig
