@@ -302,7 +302,7 @@
               <bool>false</bool>
              </property>
              <property name="text">
-              <string>Export GPU Cache</string>
+              <string>Export GPU Cache (Coming soon ...)</string>
              </property>
              <property name="checked">
               <bool>false</bool>
@@ -315,7 +315,7 @@
               <bool>false</bool>
              </property>
              <property name="text">
-              <string>Link to Shaded/ Export to Shaded</string>
+              <string>Link to Shaded/ Export to Shaded (Coming soon ...)</string>
              </property>
              <property name="checked">
               <bool>false</bool>

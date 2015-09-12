@@ -4,7 +4,7 @@ except:
     from PyQt4 import uic
 
 from PyQt4.QtGui import (QMessageBox, QRegExpValidator, QPixmap)
-from PyQt4.QtCore import QRegExp, Qt, pyqtSignal, QObject
+from PyQt4.QtCore import QRegExp, Qt, pyqtSignal, QObject, QFileDialog
 import os.path as osp
 
 from customui import ui as cui
@@ -12,6 +12,8 @@ from .backend import _backend as be
 reload(be)
 
 import traceback
+
+import imaya as mi
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
@@ -455,8 +457,38 @@ class PublishDialog(Form, Base):
         actionName = self.doButton.text()
         successString = '%s Successful'%actionName
         failureString = '%s Failed: '%actionName
+
         try:
             logger.info('Doing %s'%actionName)
+
+            goahead = True
+
+            if mi.is_modified() and actionName!= 'Close':
+                btn = cui.showMessage(
+                    self, title='Scene modified',
+                    msg='Current scene contains unsaved changes',
+                    ques='Do you want to save the changes?',
+                    btns=QMessageBox.Save | QMessageBox.Discard |
+                    QMessageBox.Cancel,
+                    icon=QMessageBox.Question)
+                if btn == QMessageBox.Save:
+                    path = mi.get_file_path()
+                    if path == 'unknown':
+                        path =  QFileDialog.getSaveFileName(self,
+                                                            'Save', '',
+                                                            'MayaBinary(*.mb);; MayaAscii(*.ma)')
+                        if mi.maya_version() == 2014:
+                            path = path[0]
+                        mi.rename_scene(path)
+                    mi.save_scene(osp.splitext(path)[-1])
+                elif btn == QMessageBox.Discard:
+                    pass
+                else:
+                    gohead=False
+
+            if not goahead:
+                return success
+
             self.defaultAction()
             if actionName == 'Close':
                 return success
