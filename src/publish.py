@@ -482,12 +482,12 @@ class PublishDialog(Form, Base):
                         mi.rename_scene(path)
                     mi.save_scene(osp.splitext(path)[-1])
                 elif btn == QMessageBox.Discard:
-                    pass
+                    goahead=True
                 else:
-                    gohead=False
+                    goahead=False
 
             if not goahead:
-                return success
+                return False
 
             self.defaultAction()
             if actionName == 'Close':
