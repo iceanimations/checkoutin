@@ -3,8 +3,8 @@ try:
 except:
     from PyQt4 import uic
 
-from PyQt4.QtGui import (QMessageBox, QRegExpValidator, QPixmap)
-from PyQt4.QtCore import QRegExp, Qt, pyqtSignal, QObject, QFileDialog
+from PyQt4.QtGui import (QMessageBox, QRegExpValidator, QPixmap, QFileDialog)
+from PyQt4.QtCore import QRegExp, Qt, pyqtSignal, QObject
 import os.path as osp
 
 from customui import ui as cui
