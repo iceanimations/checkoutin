@@ -282,9 +282,12 @@ class PublishDialog(Form, Base):
 
         publishable = (self.context == 'rig' or self.context == 'model' or
                     self.pairSourceLinked or self.category.startswith('env'))
+        prod_elem = self.shot or self.sequence or self.episode
 
         if not self.published:
             if publishable:
+                logger.info('Asset snapshot %s is publishable in %s'
+                        %(self.snapshot['code'], prod_elem['code']))
                 self.setDefaultAction('publish')
 
                 if self.context == 'shaded':
@@ -308,10 +311,12 @@ class PublishDialog(Form, Base):
                     self.setCurrentCheck.setEnabled(False)
 
             else:
+                logger.info('Asset snapshot %s is not publishable in %s'
+                        %(self.snapshot['code'], prod_elem['code']))
                 self.setDefaultAction()
         else:
-            logger.info('Asset snapshot %s is published as %s' %(
-                self.snapshot['code'], self.target['code']))
+            logger.info('Asset snapshot %s is published in %s as %s' %(
+                self.snapshot['code'], prod_elem['code'], self.target['code']))
             if not self.current and publishable:
                 self.setDefaultAction('setCurrent')
             elif not self.combined:
