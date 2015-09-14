@@ -137,6 +137,8 @@ class Dialog(Form, Base):
                                 icon=QMessageBox.Warning)
         except Exception as ex:
             self.okButton.setEnabled(True)
+            import traceback
+            traceback.print_exc()
             cui.showMessage(self, title='Error', msg=str(ex),
                             icon=QMessageBox.Information)
                             

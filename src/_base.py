@@ -31,6 +31,7 @@ except:
 import auth.security as security
 reload(security)
 import checkinput
+reload(checkinput)
 import appUsageApp
 reload(appUsageApp)
 
