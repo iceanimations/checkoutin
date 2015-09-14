@@ -167,6 +167,8 @@ class PublishDialog(Form, Base):
             self.currentPublishedSource = be.get_publish_source(
                     self.currentPublished)
 
+        self.published = False
+        self.combined = False
         self.target = None
         if self.targetCurrent:
             self.published = True
@@ -218,7 +220,7 @@ class PublishDialog(Form, Base):
         self.publishContextLabel.setText(self.context)
         self.publishVersionLabel.setText('v%03d'%(self.targetVersion))
         if self.current or not self.published:
-            self.setCurrentCheckBox.setChecked(True)
+            self.setCurrentCheck.setChecked(True)
         self.publishedLabel.setPixmap(self.getPublishedLabel(self.published))
         self.updatePairView()
 
@@ -254,7 +256,9 @@ class PublishDialog(Form, Base):
         if not self.pairContext:
             self.pairFrame.hide()
             self.resize(self.width(), self.height() - 137)
+            self.combinedCheck.setChecked(False)
         else:
+            self.combinedCheck.setChecked(bool(self.combined))
             self.pairFrame.show()
             self.pairContextLabel.setText(self.pairContext)
             self.pairSubContextLabel.setText(self.pairSubContext)
@@ -284,37 +288,31 @@ class PublishDialog(Form, Base):
 
         publishable = (self.context == 'rig' or self.context == 'model' or
                     self.pairSourceLinked or self.category.startswith('env'))
+        texture_publishable = self.context == 'shaded'
+        combineable = (self.context in ['rig', 'shaded'])
+        linkable = (self.context == 'rig' and not self.pairSourceLinked)
+        gpuCacheable = self.context == 'model'
+
         prod_elem = self.shot or self.sequence or self.episode
 
         if not self.published:
             if publishable:
                 logger.info('Asset snapshot %s is publishable in %s'
                         %(self.snapshot['code'], prod_elem['code']))
+
                 self.setDefaultAction('publish')
-
-                if self.context == 'shaded':
-                    self.texturesCheck.setChecked(True)
-                    self.combinedCheck.setChecked(True)
-                else:
-                    self.texturesCheck.setChecked(False)
-                    self.combinedCheck.setChecked(False)
-
-                if self.context == 'model':
-                    self.gpuCacheCheck.setChecked(True)
-                else:
-                    self.gpuCacheCheck.setChecked(False)
-
-                if self.context == 'rig':
-                    self.linkCheck.setChecked(True)
-                else:
-                    self.linkCheck.setChecked(False)
-
+                self.texturesCheck.setChecked(texture_publishable)
+                self.combinedCheck.setChecked(combineable)
+                self.linkCheck.setChecked(linkable)
+                self.gpuCacheCheck.setChecked(gpuCacheable)
+                self.setCurrentCheck.setChecked(True)
                 if self.targetSnapshots:
                     self.setCurrentCheck.setEnabled(False)
 
             else:
                 logger.info('Asset snapshot %s is not publishable in %s'
                         %(self.snapshot['code'], prod_elem['code']))
+
                 self.setDefaultAction()
         else:
             logger.info('Asset snapshot %s is published in %s as %s' %(
@@ -508,7 +506,7 @@ class PublishDialog(Form, Base):
 
     def setDefaultAction(self, action='doNothing'):
         btn = self.doButton
-        check = self.setCurrentCheckBox
+        check = self.setCurrentCheck
         if action == 'setCurrent':
             btn.setText('Set Current')
             self.defaultAction = self.setCurrent
@@ -518,7 +516,7 @@ class PublishDialog(Form, Base):
             self.defaultAction = self.publish
             check.setEnabled(True)
         elif action == 'combine':
-            btn.setText('Combine')
+            btn.setText('Publish Combined')
             self.defaultAction = self.publish_combined_version
             self.combinedCheck.setEnabled(False)
         else:
@@ -538,18 +536,24 @@ class PublishDialog(Form, Base):
 
     def publish(self):
         logger.info('publishing ...')
+        if self.linkCheck.isChecked():
+            try:
+                logger.info('Attempting link')
+                self.link()
+                logger.info('Linking successful!')
+            except Exception as e:
+                logger.error('Linking failed!: %s' % str(e))
         newss = None
         if self.texturesCheck.isChecked():
             newss = self.publish_with_textures()
         else:
             newss = self.simple_publish()
-        print self.combinedCheck.isChecked(), newss
         if newss and self.combinedCheck.isChecked():
-            #try:
-            self.publish_combined_version(newss)
-            #except Exception as e:
-                #logging.error('Could not publish combined due to error: %r'
-                #%e)
+            try:
+                self.publish_combined_version(newss)
+            except Exception as e:
+                logging.error('Could not publish combined due to error: %r'
+                %e)
         logger.info('publishing done!')
         return newss
 
@@ -557,7 +561,7 @@ class PublishDialog(Form, Base):
         publishContext = self.targetContext
         newss = be.publish_asset(self.projectName, self.episode, self.sequence,
                 self.shot, self.snapshot['asset'], self.snapshot,
-                publishContext, self.setCurrentCheckBox.isChecked() )
+                publishContext, self.setCurrentCheck.isChecked() )
         return newss
 
     def publish_with_textures(self):
@@ -565,7 +569,7 @@ class PublishDialog(Form, Base):
         newss = be.publish_asset_with_textures(self.projectName, self.episode,
                 self.sequence, self.shot, self.snapshot['asset'],
                 self.snapshot, publishContext,
-                self.setCurrentCheckBox.isChecked())
+                self.setCurrentCheck.isChecked())
         return newss
 
     def export_gpu_cache(self, snapshot):
