@@ -3,6 +3,7 @@ import app.util as util
 reload(util)
 import pymel.core as pc
 import imaya as mi
+reload(mi)
 import iutil
 import tactic_client_lib.application.maya as maya
 import datetime
@@ -691,7 +692,7 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
             util.get_filename_from_snap(vless_texture, mode='client_repo'))
     newloc = os.path.dirname(
             util.get_filename_from_snap(pub_texture_vless, mode='client_repo'))
-    map_textures(mi.texture_mapping(oldloc, newloc))
+    map_textures(mi.texture_mapping(newloc, oldloc))
 
     logger.info('checking in remapped file')
     pub = checkin(prod_asset, context, dotextures=False,
