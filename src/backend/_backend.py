@@ -726,7 +726,7 @@ def create_combined_version(snapshot, postfix='combined'):
     logger.info('checking in file as combined')
     combinedContext = '/'.join([context, postfix])
     sobject = util.get_sobject_from_snap(snapshot)
-    combined = checkin(sobject['__search_key__'], combinedContext, dotextures=False,
+    combined = checkin(sobject, combinedContext, dotextures=False,
             is_current=snapshot['is_current'])
     util.add_combined_dependency(snapshot, combined)
     mi.newScene()
