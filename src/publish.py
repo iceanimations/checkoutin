@@ -287,12 +287,15 @@ class PublishDialog(Form, Base):
         else:
             self.linkButton.setEnabled(True)
 
+        isenvironment = self.category.startswith('env')
         publishable = (self.context == 'rig' or self.context == 'model' or
                     self.pairSourceLinked or self.category.startswith('env'))
         texture_publishable = self.context == 'shaded'
-        combineable = (self.context in ['rig', 'shaded'])
+        combineable = (self.context in ['rig', 'shaded'] and not
+                self.category.startswith('env'))
         linkable = (self.context == 'rig' and not self.pairSourceLinked)
-        gpuCacheable = self.context == 'model'
+        gpuCacheable = (self.context == 'model' or (self.context=='shaded' and
+            isenvironment))
 
         prod_elem = self.shot or self.sequence or self.episode
 
