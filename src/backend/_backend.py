@@ -695,7 +695,7 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
     map_textures(mi.texture_mapping(newloc, oldloc))
 
     logger.info('checking in remapped file')
-    pub = checkin(prod_asset, context, dotextures=False,
+    pub = checkin(prod_asset['__search_key__'], context, dotextures=False,
             is_current=set_current)
 
     logger.info('adding dependencies ...')
@@ -726,7 +726,7 @@ def create_combined_version(snapshot, postfix='combined'):
     logger.info('checking in file as combined')
     combinedContext = '/'.join([context, postfix])
     sobject = util.get_sobject_from_snap(snapshot)
-    combined = checkin(sobject, combinedContext, dotextures=False,
+    combined = checkin(sobject['__search_key__'], combinedContext, dotextures=False,
             is_current=snapshot['is_current'])
     util.add_combined_dependency(snapshot, combined)
     mi.newScene()
@@ -749,6 +749,7 @@ def set_snapshot_as_current(snapshot):
         create_combined_version(snapshot, postfix='combined')
 
     return True
+
 
 get_publish_targets = util.get_all_publish_targets
 get_publish_source = util.get_publish_source
