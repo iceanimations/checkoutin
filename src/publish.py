@@ -114,6 +114,8 @@ class PublishDialog(Form, Base):
         self.linkButton.clicked.connect(self.doLink)
         self.doButton.clicked.connect(self.do)
         self.cancelButton.clicked.connect(self.reject)
+        self.shotBox.setEnabled(False)
+        self.seqBox.setEnabled(False)
 
     def updateSourceModel(self):
         self.snapshot = be.get_snapshot_info(self.search_key)
@@ -287,15 +289,14 @@ class PublishDialog(Form, Base):
         else:
             self.linkButton.setEnabled(True)
 
-        isenvironment = self.category.startswith('env')
+        is_environment = self.category.startswith('env')
         publishable = (self.context == 'rig' or self.context == 'model' or
                     self.pairSourceLinked or self.category.startswith('env'))
         texture_publishable = self.context == 'shaded'
-        combineable = (self.context in ['rig', 'shaded'] and not
-                self.category.startswith('env'))
+        combineable = (self.context in ['shaded'] and not is_environment)
         linkable = (self.context == 'rig' and not self.pairSourceLinked)
         gpuCacheable = (self.context == 'model' or (self.context=='shaded' and
-            isenvironment))
+            is_environment))
 
         prod_elem = self.shot or self.sequence or self.episode
 
