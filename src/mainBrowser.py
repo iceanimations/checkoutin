@@ -150,14 +150,22 @@ class MainBrowser(Explorer):
         return compatibility
 
     def publish(self):
-        self.publishDialog = publish.PublishDialog(
-                self.currentFile.objectName(), qtify.getMayaWindow() )
-        self.publishDialog.exec_()
+        try:
+            self.terminateUpdateThread()
+            self.publishDialog = publish.PublishDialog(
+                    self.currentFile.objectName(), qtify.getMayaWindow() )
+            self.publishDialog.exec_()
+        finally:
+            self.startUpdateThread()
 
     def linkShadedToRig(self):
-        self.linkDialog = link_rig_shaded.LinkShadedRig(
-                self.currentFile.objectName(), self )
-        self.linkDialog.exec_()
+        try:
+            self.terminateUpdateThread()
+            self.linkDialog = link_rig_shaded.LinkShadedRig(
+                    self.currentFile.objectName(), self )
+            self.linkDialog.exec_()
+        finally:
+            self.startUpdateThread()
 
     def linkRigToShaded(self):
         self.linkShadedToRig()

@@ -66,10 +66,25 @@ class Explorer(cui.Explorer):
 
         self.setProjectsBox()
 
+        self.thread = None
+        self.startUpdateThread()
+
+        appUsageApp.updateDatabase(''.join(self.title.split()))
+
+    def startUpdateThread(self):
+        try:
+            self.thread.terminate()
+        except AttributeError:
+            pass
         self.thread = Thread(self)
         self.thread.start()
 
-        appUsageApp.updateDatabase(''.join(self.title.split()))
+    def terminateUpdateThread(self):
+        try:
+            self.thread.terminate()
+        except AttributeError:
+            pass
+        self.thread = None
 
     def updateThumb(self):
         self.itemsBox.scrolled(None)
@@ -77,7 +92,7 @@ class Explorer(cui.Explorer):
         self.filesBox.scrolled(None)
 
     def closeEvent(self, event):
-        self.thread.terminate()
+        self.terminateUpdateThread()
         self.deleteLater()
         del self
 
@@ -149,33 +164,37 @@ class Explorer(cui.Explorer):
             backend.checkout(str(self.currentFile.objectName()), r = r)
 
     def showCheckinputDialog(self):
-        if mi.is_modified():
-            b = cui.showMessage(self, title=self.title,
-                                msg='Your scene contains unsaved changes',
-                                icon=QMessageBox.Warning,
-                                btns=QMessageBox.Save|QMessageBox.Cancel)
-            if b == QMessageBox.Save:
-                mi.save_scene('.ma')
-            else:
-                return
-        if self.currentContext:
-            if security.checkinability(
-                    str(self.currentItem.objectName()),
-                    self.currentContext.title().split('/')[0]):
-                self.checkinputDialog = checkinput.Dialog(self)
-                self.checkinputDialog.setMainName(self.currentItem.title())
-                self.checkinputDialog.setContext(self.currentContext.title())
-                self.checkinputDialog.show()
+        try:
+            self.terminateUpdateThread()
+            if mi.is_modified():
+                b = cui.showMessage(self, title=self.title,
+                                    msg='Your scene contains unsaved changes',
+                                    icon=QMessageBox.Warning,
+                                    btns=QMessageBox.Save|QMessageBox.Cancel)
+                if b == QMessageBox.Save:
+                    mi.save_scene('.ma')
+                else:
+                    return
+            if self.currentContext:
+                if security.checkinability(
+                        str(self.currentItem.objectName()),
+                        self.currentContext.title().split('/')[0]):
+                    self.checkinputDialog = checkinput.Dialog(self)
+                    self.checkinputDialog.setMainName(self.currentItem.title())
+                    self.checkinputDialog.setContext(self.currentContext.title())
+                    self.checkinputDialog.show()
+                else:
+                    cui.showMessage(self, title='Assets Explorer',
+                                    msg="Access denied. You don't have "+
+                                    'permissions to make changes to the '+
+                                    'selected Process',
+                                    icon=QMessageBox.Critical)
             else:
                 cui.showMessage(self, title='Assets Explorer',
-                                msg="Access denied. You don't have "+
-                                'permissions to make changes to the '+
-                                'selected Process',
-                                icon=QMessageBox.Critical)
-        else:
-            cui.showMessage(self, title='Assets Explorer',
-                            msg='No Process/Context selected',
-                            icon=QMessageBox.Warning)
+                                msg='No Process/Context selected',
+                                icon=QMessageBox.Warning)
+        finally:
+            self.startUpdateThread()
 
     def checkin(self, context, detail, filePath = None):
         if self.currentItem:
