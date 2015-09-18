@@ -115,7 +115,7 @@ class PublishDialog(Form, Base):
         self.doButton.clicked.connect(self.do)
         self.cancelButton.clicked.connect(self.reject)
         self.shotBox.setEnabled(False)
-        self.seqBox.setEnabled(False)
+        self.sequenceBox.setEnabled(False)
 
     def updateSourceModel(self):
         self.snapshot = be.get_snapshot_info(self.search_key)
