@@ -708,7 +708,7 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
 
     return pub
 
-def create_combined_version(snapshot, postfix='combined'):
+def create_combined_version(snapshot, postfix='combined', cleanup=True):
     context = snapshot['context']
 
     logger.info('Checking out snapshot for combining ...')
@@ -721,7 +721,14 @@ def create_combined_version(snapshot, postfix='combined'):
         mi.newScene()
         raise Exception, 'No valid geo sets found'
     geo_set = geo_sets[0]
-    mi.getCombinedMeshFromSet(geo_set)
+    mesh = mi.getCombinedMeshFromSet(geo_set)
+
+    if cleanup:
+        pc.select(mesh)
+        pc.mel.DeleteHistory()
+        cameras = mi.getCameras(False, True, True)
+        if cameras:
+            pc.delete(cameras)
 
     logger.info('checking in file as combined')
     combinedContext = '/'.join([context, postfix])

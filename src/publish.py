@@ -283,19 +283,20 @@ class PublishDialog(Form, Base):
         self.updateControllers()
 
     def updateControllers(self):
-        if self.pairSourceLinked or not self.pair and self.context in ('rig',
+        if self.pairSourceLinked or not self.pair and self.targetContext in ('rig',
                 'shaded'):
             self.linkButton.setEnabled(False)
         else:
             self.linkButton.setEnabled(True)
 
         is_environment = self.category.startswith('env')
-        publishable = (self.context == 'rig' or self.context == 'model' or
-                    self.pairSourceLinked or self.category.startswith('env'))
-        texture_publishable = self.context == 'shaded'
-        combineable = (self.context in ['shaded'] and not is_environment)
-        linkable = (self.context == 'rig' and not self.pairSourceLinked)
-        gpuCacheable = (self.context == 'model' or (self.context=='shaded' and
+        publishable = (self.targetContext == 'rig' or
+                self.targetContext == 'model' or self.pairSourceLinked or
+                self.category.startswith('env'))
+        texture_publishable = self.targetContext == 'shaded'
+        combineable = (self.targetContext in ['shaded'] and not is_environment)
+        linkable = (self.targetContext == 'rig' and not self.pairSourceLinked)
+        gpuCacheable = (self.targetContext == 'model' or (self.targetContext=='shaded' and
             is_environment))
 
         prod_elem = self.shot or self.sequence or self.episode
