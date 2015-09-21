@@ -724,11 +724,12 @@ def create_combined_version(snapshot, postfix='combined', cleanup=True):
     mesh = mi.getCombinedMeshFromSet(geo_set)
 
     if cleanup:
-        pc.select(mesh)
-        pc.mel.DeleteHistory()
+        if context.split('/')[0] != 'rig':
+            pc.select(mesh)
+            pc.mel.DeleteHistory()
         cameras = mi.getCameras(False, True, True)
         if cameras:
-            pc.delete(cameras)
+            pc.delete([cam.getParent() for cam in cameras])
 
     logger.info('checking in file as combined')
     combinedContext = '/'.join([context, postfix])
