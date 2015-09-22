@@ -283,8 +283,8 @@ class PublishDialog(Form, Base):
         self.updateControllers()
 
     def updateControllers(self):
-        if self.pairSourceLinked or not self.pair and self.targetContext in ('rig',
-                'shaded'):
+        if self.pairSourceLinked or not self.pair and self.targetContext in (
+                'rig', 'shaded'):
             self.linkButton.setEnabled(False)
         else:
             self.linkButton.setEnabled(True)
@@ -295,9 +295,10 @@ class PublishDialog(Form, Base):
                 self.category.startswith('env'))
         texture_publishable = self.targetContext == 'shaded'
         combineable = (self.targetContext in ['shaded'] and not is_environment)
-        linkable = (self.targetContext == 'rig' and not self.pairSourceLinked)
-        gpuCacheable = (self.targetContext == 'model' or (self.targetContext=='shaded' and
-            is_environment))
+        linkable = (self.targetContext == 'rig' and not self.pairSourceLinked
+                and self.pair)
+        gpuCacheable = (self.targetContext == 'model' or
+                (self.targetContext=='shaded' and is_environment))
 
         prod_elem = self.shot or self.sequence or self.episode
 

@@ -30,7 +30,6 @@ def set_project(name):
 def get_project():
     return pc.optionVar(q=CURRENT_PROJECT_KEY)
 
-
 def create_first_snapshot(item, context, check_out=True):
     '''
     To be used only if there is no snapshot associated with the given
@@ -757,7 +756,6 @@ def set_snapshot_as_current(snapshot):
         create_combined_version(snapshot, postfix='combined')
 
     return True
-
 
 get_publish_targets = util.get_all_publish_targets
 get_publish_source = util.get_publish_source
