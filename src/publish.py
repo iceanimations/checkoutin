@@ -422,7 +422,8 @@ class PublishDialog(Form, Base):
         self.shotBox.setCurrentIndex(0)
         self.shot = None
         if self.shots:
-            map(lambda x: self.shotBox.addItem(x['code']), filter(None, self.shots))
+            map(lambda x: self.shotBox.addItem(x['code']), filter(None,
+                self.shots))
 
     def episodeSelected(self, event):
         if not self.episodes:

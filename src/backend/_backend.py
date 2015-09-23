@@ -757,6 +757,30 @@ def set_snapshot_as_current(snapshot):
 
     return True
 
+def is_production_asset_paired(prod_asset):
+    prod_snapshots = util.get_snapshot_from_sobject(prod_asset['__search_key__'])
+    rigs = [snap for snap in prod_snapshots if snap['context'] == 'rig']
+    shadeds = [snap for snap in prod_snapshots if snap['context'] == 'shaded']
+
+    def get_current(snaps):
+        for snap in snaps:
+            if snap['is_current']:
+                return snap
+
+    current_rig = get_current(rigs)
+    current_shaded = get_current(shadeds)
+
+    if not (current_rig and current_shaded):
+        return False
+
+    source_rig = util.get_publish_source(current_rig)
+    source_shaded = util.get_publish_source(current_shaded)
+
+    return util.is_cache_compatible(source_shaded, source_rig)
+
+
+
+get_all_projects = util.get_all_projects
 get_publish_targets = util.get_all_publish_targets
 get_publish_source = util.get_publish_source
 get_snapshot_info = util.get_snapshot_info
@@ -768,3 +792,4 @@ get_linked = util.get_cache_compatible_objects
 filename_from_snap = util.get_filename_from_snap
 link_shaded_to_rig = util.link_shaded_to_rig
 get_combined_version = util.get_combined_version
+get_production_assets = util.get_production_assets
