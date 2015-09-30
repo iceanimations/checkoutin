@@ -113,9 +113,12 @@ class PublishReport(Form, Base):
             for prod_asset, item in zip(self.productionAssets, self.items):
                 self.statusbar.showMessage('getting statuses %d of %d' %(count,
                     l))
-                if backend.is_production_asset_paired(prod_asset):
+                rig, shaded, paired = backend.is_production_asset_paired(prod_asset)
+                if paired:
                     item.labelStatus |= item.kLabel.kPAIR
                 item.labelDisplay |= item.kLabel.kPAIR
+                item.setDetail('Rig:%r \t\t Shaded:%r' %(bool(rig),
+                    bool(shaded)))
                 gui.qApp.processEvents()
                 count += 1
             self.statusbar.showMessage('done!', 5000)
@@ -133,6 +136,8 @@ class PublishReport(Form, Base):
         self.scroller.setTitle(self.episode['code'] + ' assets')
         for prod_asset in self.productionAssets:
             cat = prod_asset['asset']['asset_category']
+            if cat.startswith('env'):
+                continue
             item = self.createItem(prod_asset['asset_code'],
                     cat , '', '', '')
             self.scroller.addItem(item)

@@ -771,12 +771,12 @@ def is_production_asset_paired(prod_asset):
     current_shaded = get_current(shadeds)
 
     if not (current_rig and current_shaded):
-        return False
+        return current_rig, current_shaded, False
 
     source_rig = util.get_publish_source(current_rig)
     source_shaded = util.get_publish_source(current_shaded)
 
-    return util.is_cache_compatible(source_shaded, source_rig)
+    return current_rig, current_shaded, util.is_cache_compatible(source_shaded, source_rig)
 
 
 
