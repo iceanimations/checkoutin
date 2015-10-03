@@ -77,7 +77,7 @@ class Dialog(Form, Base):
     def setValidator(self):
         # should we provide the privelege to add '/' in the subcontext
         # in order to add further subcontext, to certain users
-        regex = QRegExp('[1-9a-z_]*')
+        regex = QRegExp('[0-9a-z_]*')
         validator = QRegExpValidator(regex, self)
         self.newContextBox.setValidator(validator)
             

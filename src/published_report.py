@@ -16,6 +16,8 @@ reload(backend)
 import imaya as mi
 reload(mi)
 
+import qtify_maya_window as qtfy
+
 import PyQt4.QtGui as gui
 import os.path as osp
 
@@ -160,7 +162,7 @@ class PublishReport(Form, Base):
 
 def run_in_maya():
     global win
-    win = PublishReport()
+    win = PublishReport(parent=qtfy.getMayaWindow())
     win.show()
 
 if __name__ == '__main__':
