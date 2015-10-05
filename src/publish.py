@@ -308,10 +308,10 @@ class PublishDialog(Form, Base):
                         %(self.snapshot['code'], prod_elem['code']))
 
                 self.setDefaultAction('publish')
-                self.texturesCheck.setChecked(texture_publishable)
-                self.combinedCheck.setChecked(combineable)
-                self.linkCheck.setChecked(linkable)
-                self.gpuCacheCheck.setChecked(gpuCacheable)
+                self.texturesCheck.setChecked(bool(texture_publishable))
+                self.combinedCheck.setChecked(bool( combineable ))
+                self.linkCheck.setChecked(bool( linkable ))
+                self.gpuCacheCheck.setChecked(bool( gpuCacheable ))
                 self.setCurrentCheck.setChecked(True)
                 if self.targetSnapshots:
                     self.setCurrentCheck.setEnabled(False)
