@@ -157,14 +157,14 @@ class PublishDialog(Form, Base):
                 self.pairContext = 'rig'
         self.targetSubContext = self.subContextEdit.text()
         self.targetSubContext.strip('/')
-        targetContext = self.targetContext + ('/' if self.targetSubContext else ''
-                + self.targetSubContext)
+        self.publishContext = self.targetContext + ('/' if
+                self.targetSubContext else '') + self.targetSubContext
         ( self.targetSnapshots, self.targetLatest,
                 self.targetCurrent ) = be.get_targets_in_published(
                         self.snapshot, self.publishedSnapshots,
-                        targetContext)
+                        self.publishContext)
         self.currentPublished = be.get_current_in_published(
-                self.publishedSnapshots, self.targetContext )
+                self.publishedSnapshots, self.publishContext )
         self.currentPublishedSource = {}
         if self.currentPublished:
             self.currentPublishedSource = be.get_publish_source(
@@ -193,8 +193,8 @@ class PublishDialog(Form, Base):
         self.pair = None
         if self.pairContext:
             self.pairSubContext = self.targetSubContext
-            pairContext = self.pairContext + ( '/' if self.targetSubContext else ''
-                    + self.targetSubContext )
+            pairContext = self.pairContext + ( '/' if self.targetSubContext
+                    else '') + self.targetSubContext
 
             self.pair = be.get_current_in_published(self.publishedSnapshots,
                     pairContext)
@@ -566,17 +566,15 @@ class PublishDialog(Form, Base):
         return newss
 
     def simple_publish(self):
-        publishContext = self.targetContext
         newss = be.publish_asset(self.projectName, self.episode, self.sequence,
                 self.shot, self.snapshot['asset'], self.snapshot,
-                publishContext, self.setCurrentCheck.isChecked() )
+                self.publishContext, self.setCurrentCheck.isChecked() )
         return newss
 
     def publish_with_textures(self):
-        publishContext = self.targetContext
         newss = be.publish_asset_with_textures(self.projectName, self.episode,
                 self.sequence, self.shot, self.snapshot['asset'],
-                self.snapshot, publishContext,
+                self.snapshot, self.publishContext,
                 self.setCurrentCheck.isChecked())
         return newss
 

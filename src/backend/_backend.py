@@ -720,12 +720,22 @@ def create_combined_version(snapshot, postfix='combined', cleanup=True):
         mi.newScene()
         raise Exception, 'No valid geo sets found'
     geo_set = geo_sets[0]
-    mesh = mi.getCombinedMeshFromSet(geo_set)
+    combined_mesh = mi.getCombinedMeshFromSet(geo_set)
 
     if cleanup:
         if context.split('/')[0] != 'rig':
-            pc.select(mesh)
+            pc.select(combined_mesh)
             pc.mel.DeleteHistory()
+
+        for mesh in set((node.firstParent() for node in pc.ls(type='mesh'))):
+            if mesh != combined_mesh:
+                try:
+                    pc.delete(mesh)
+                except:
+                    pass
+
+        mi.removeAllReferences()
+        mi.removeAllLights()
         cameras = mi.getCameras(False, True, True)
         if cameras:
             pc.delete([cam.getParent() for cam in cameras])
