@@ -392,7 +392,7 @@ class PublishDialog(Form, Base):
 
     def subContextEditingFinished(self, *args):
         text = self.subContextEdit.text()
-        if re.match('combined', text, re.I):
+        if re.match('.*combined$', text, re.I):
             logger.error('%s is not allowed as subcontext'%text)
             self.subContextEditingCancelled()
         else:
