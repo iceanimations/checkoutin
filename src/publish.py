@@ -12,6 +12,7 @@ from .backend import _backend as be
 reload(be)
 
 import traceback
+import re
 
 import imaya as mi
 reload(mi)
@@ -390,9 +391,14 @@ class PublishDialog(Form, Base):
             self.subContextEdit.setFocus()
 
     def subContextEditingFinished(self, *args):
-        self.subContextEdit.setEnabled(False)
-        self.subContextEditButton.setText('E')
-        self.updateTarget()
+        text = self.subContextEdit.text()
+        if re.match('combined', text, re.I):
+            logger.error('%s is not allowed as subcontext'%text)
+            self.subContextEditingCancelled()
+        else:
+            self.subContextEdit.setEnabled(False)
+            self.subContextEditButton.setText('E')
+            self.updateTarget()
 
     def subContextEditingCancelled(self, *args):
         self.subContextEdit.setEnabled(False)
