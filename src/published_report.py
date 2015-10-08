@@ -27,7 +27,7 @@ uiPath = osp.join(rootPath, 'ui')
 
 Form, Base = uic.loadUiType(osp.join(uiPath, 'published_report.ui'))
 class PublishReport(Form, Base):
-    def __init__(self, project=None, episode=None, parent=None):
+    def __init__(self, project=None, episode=None, parent=qtfy.getMayaWindow()):
         super(PublishReport, self).__init__()
         self.setupUi(self)
         self.layout = self.centralwidget.layout()
