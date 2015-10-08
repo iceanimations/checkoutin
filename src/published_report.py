@@ -52,6 +52,7 @@ class PublishReport(Form, Base):
         self.populateProjectsBox()
 
         self.scroller.setTitle('Production Assets')
+        self.scroller.versionsButton.hide()
 
         self.projectSelected()
         self.episodeSelected()
@@ -112,15 +113,18 @@ class PublishReport(Form, Base):
             self.statusbar.showMessage('getting statuses')
             l = len(self.productionAssets)
             count = 1
-            for prod_asset, item in zip(self.productionAssets, self.items):
+            for item in self.items:
+                prod_asset = item.prod_asset
                 self.statusbar.showMessage('getting statuses %d of %d' %(count,
                     l))
                 rig, shaded, paired = backend.is_production_asset_paired(prod_asset)
                 if paired:
                     item.labelStatus |= item.kLabel.kPAIR
                 item.labelDisplay |= item.kLabel.kPAIR
-                item.setDetail('Rig:%r \t\t Shaded:%r' %(bool(rig),
-                    bool(shaded)))
+                item.setSubTitle('Rig: %r'%('v%03d'%rig['version'] if rig else
+                    'No'))
+                item.setThirdTitle('Shaded:%r'%('v%03d'%shaded['version'] if rig else
+                    'No'))
                 gui.qApp.processEvents()
                 count += 1
             self.statusbar.showMessage('done!', 5000)
@@ -137,11 +141,14 @@ class PublishReport(Form, Base):
         self.currentItem = None
         self.scroller.setTitle(self.episode['code'] + ' assets')
         for prod_asset in self.productionAssets:
+            if not prod_asset['asset']:
+                continue
             cat = prod_asset['asset']['asset_category']
             if cat.startswith('env'):
                 continue
             item = self.createItem(prod_asset['asset_code'],
                     cat , '', '', '')
+            item.prod_asset = prod_asset
             self.scroller.addItem(item)
             self.items.append(item)
 
