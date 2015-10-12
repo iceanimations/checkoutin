@@ -123,8 +123,8 @@ class PublishReport(Form, Base):
                 item.labelDisplay |= item.kLabel.kPAIR
                 item.setSubTitle('Rig: %r'%('v%03d'%rig['version'] if rig else
                     'No'))
-                item.setThirdTitle('Shaded:%r'%('v%03d'%shaded['version'] if rig else
-                    'No'))
+                item.setThirdTitle('Shaded:%r'%('v%03d'%shaded['version'] if
+                    shaded else 'No'))
                 gui.qApp.processEvents()
                 count += 1
             self.statusbar.showMessage('done!', 5000)
