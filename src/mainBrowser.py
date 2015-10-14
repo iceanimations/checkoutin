@@ -172,7 +172,7 @@ class MainBrowser(Explorer):
 
     def showAssets(self, assets):
         for asset in assets:
-            item = self.createItem('%s'%asset['code'],
+            item = self.itemsBox.createItem('%s'%asset['code'],
                                    asset['asset_category']
                                    if asset['asset_category'] else '',
                                    '', asset['description']
@@ -186,14 +186,14 @@ class MainBrowser(Explorer):
         super(MainBrowser, self).showFiles(context, files)
         for item in self.filesBox.items():
             item.contextMenuEvent = self.showContextMenu
-            snapshot = util.get_snapshot_info(item.objectName())
-            if util.get_all_publish_targets(snapshot):
-                item.labelStatus |= item.kLabel.kPUB
-                item.labelDisplay |= item.kLabel.kPUB
-            compatibles = util.get_cache_compatible_objects(snapshot)
-            if compatibles:
-                item.labelStatus |= item.kLabel.kPAIR
-            item.labelDisplay |= item.kLabel.kPAIR
+            #snapshot = util.get_snapshot_info(item.objectName())
+            #if util.get_all_publish_targets(snapshot):
+                #item.labelStatus |= item.kLabel.kPUB
+                #item.labelDisplay |= item.kLabel.kPUB
+            #compatibles = util.get_cache_compatible_objects(snapshot)
+            #if compatibles:
+                #item.labelStatus |= item.kLabel.kPAIR
+            #item.labelDisplay |= item.kLabel.kPAIR
 
     def clearWindow(self):
         self.itemsBox.clearItems()
