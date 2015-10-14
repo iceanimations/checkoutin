@@ -39,7 +39,7 @@ class MyTasks(Explorer):
     def addTasks(self, tasks):
         for tsk in tasks:
             title = util.get_task_process(tsk)
-            item = self.createItem(
+            item = self.itemsBox.createItem(
                 title,
                 util.get_sobject_name(util.get_sobject_from_task(tsk)),
                 util.get_project_title(util.get_project_from_task(tsk)),

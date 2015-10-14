@@ -35,6 +35,9 @@ class ShotExplorer(Explorer):
                            'lighting']
 
     def __init__(self, standalone=False):
+        self.episodes = {}
+        self.sequences = {'None': None}
+
         super(ShotExplorer, self).__init__(standalone=standalone)
 
         self.episodeBox.show()
@@ -43,8 +46,6 @@ class ShotExplorer(Explorer):
 
         self.currentSequence = None
 
-        self.episodes = {}
-        self.sequences = {'None': None}
 
         self.episodeBox.activated[str].connect(self.callSetSequenceBox)
         self.sequenceBox.activated[str].connect(self.shotItems)
@@ -110,7 +111,7 @@ class ShotExplorer(Explorer):
             else: ep = self.episodes[ep]
         projectCode = self.projects[str(self.projectsBox.currentText())]
         for shot in util.get_shots(projectCode, episode=ep, sequence=self.sequences[str(seq)]):
-            item = self.createItem(shot['code'],
+            item = self.itemsBox.createItem(shot['code'],
                                    'Start: '+ (str(shot['tc_frame_start']) +'\n'
                                                if shot['tc_frame_start']
                                                else '\n') +
