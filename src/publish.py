@@ -228,18 +228,18 @@ class PublishDialog(Form, Base):
         self.publishedLabel.setPixmap(self.getPublishedLabel(self.published))
         self.updatePairView()
 
-    __pairTrue = QPixmap(cui._Label.get_path(cui._Label.kPAIR, True)).scaled(15,
+    __pairTrue = QPixmap(cui.Item.kLabel.get_path(cui.Item.kLabel.kPAIR, True)).scaled(15,
             15, Qt.KeepAspectRatioByExpanding)
-    __pairFalse = QPixmap(cui._Label.get_path(cui._Label.kPAIR, False)).scaled(15,
+    __pairFalse = QPixmap(cui.Item.kLabel.get_path(cui.Item.kLabel.kPAIR, False)).scaled(15,
             15, Qt.KeepAspectRatioByExpanding)
     def getPairLabel(self, state=True):
         if state:
             return self.__pairTrue
         return self.__pairFalse
 
-    __publishedTrue = QPixmap(cui._Label.get_path(cui._Label.kPUB, True)).scaled(15,
+    __publishedTrue = QPixmap(cui.Item.kLabel.get_path(cui.Item.kLabel.kPUB, True)).scaled(15,
             15, Qt.KeepAspectRatioByExpanding)
-    __publishedFalse = QPixmap(cui._Label.get_path(cui._Label.kPUB, False)).scaled(15,
+    __publishedFalse = QPixmap(cui.Item.kLabel.get_path(cui.Item.kLabel.kPUB, False)).scaled(15,
             15, Qt.KeepAspectRatioByExpanding)
     def getPublishedLabel(self, state=True):
         if state:

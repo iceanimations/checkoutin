@@ -55,9 +55,11 @@ class Explorer(cui.Explorer):
             self.openButton.setEnabled(False)
             self.referenceButton.setEnabled(False)
 
-        self.itemsBox = self.createScroller("%ss" %self.item_name.capitalize())
+        self.itemsBox = self.createScroller("%ss" %self.item_name.capitalize(),
+                cls=cui.SObjectScroller)
         self.itemsBox.versionsButton.hide()
-        self.contextsBox = self.createScroller(self.scroller_arg)
+        self.contextsBox = self.createScroller(self.scroller_arg,
+                cls=cui.ContextScroller)
         self.contextsBox.versionsButton.hide()
 
         self.itemsBox.searchBox.setFocus()
@@ -282,7 +284,7 @@ class Explorer(cui.Explorer):
             self.checkinputDialog.setContext()
 
     def addContext(self, title, objName, description = ''):
-        item = self.createItem(title,
+        item = self.contextsBox.createItem(title,
                                '', '', '')
         item.setObjectName(objName)
         self.contextsBox.addItem(item)
