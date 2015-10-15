@@ -767,8 +767,14 @@ def set_snapshot_as_current(snapshot):
 
     return True
 
-def is_production_asset_paired(prod_asset):
-    prod_snapshots = util.get_snapshot_from_sobject(prod_asset['__search_key__'])
+def is_production_asset_paired(prod_asset, use_new=True):
+
+    cutil = util
+
+    if use_new:
+        cutil = util.create_new()
+
+    prod_snapshots = cutil.get_snapshot_from_sobject(prod_asset['__search_key__'])
     rigs = [snap for snap in prod_snapshots if snap['context'] == 'rig']
     shadeds = [snap for snap in prod_snapshots if snap['context'] == 'shaded']
 
@@ -783,10 +789,10 @@ def is_production_asset_paired(prod_asset):
     if not (current_rig and current_shaded):
         return current_rig, current_shaded, False
 
-    source_rig = util.get_publish_source(current_rig)
-    source_shaded = util.get_publish_source(current_shaded)
+    source_rig = cutil.get_publish_source(current_rig)
+    source_shaded = cutil.get_publish_source(current_shaded)
 
-    return current_rig, current_shaded, util.is_cache_compatible(source_shaded, source_rig)
+    return current_rig, current_shaded, cutil.is_cache_compatible(source_shaded, source_rig)
 
 
 

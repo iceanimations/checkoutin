@@ -18,12 +18,50 @@ reload(mi)
 
 import qtify_maya_window as qtfy
 
-import PyQt4.QtGui as gui
 import os.path as osp
 
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
+
+
+class GetProductionAssetPairing(cui.DeferredItemJob):
+
+    def __init__(self, parent):
+        super(GetProductionAssetPairing, self).__init__(parent)
+
+    def doAsync(self):
+        try:
+            prod_asset = self._parent.prod_asset
+            self.rig, self.shaded, self.paired = backend.is_production_asset_paired(prod_asset)
+            self.setSuccess()
+            self.jobDone.emit()
+        except Exception as e:
+            self.setFailure()
+            import traceback
+            print e, type(e)
+            traceback.print_exc()
+
+    def update(self):
+        if self.paired:
+            self._parent.labelStatus |= self._parent.kLabel.kPAIR
+        self._parent.labelDisplay |= self._parent.kLabel.kPAIR
+        self._parent.setSubTitle('Rig: %r'%('v%03d'%self.rig['version'] if
+            self.rig else 'No'))
+        self._parent.setThirdTitle('Shaded:%r'%('v%03d'%self.shaded['version']
+            if self.shaded else 'No'))
+
+
+class ProductionAssetItem(cui.Item):
+    def __init__(self, parent=None):
+        super(ProductionAssetItem, self).__init__(parent)
+        self.jobs.append(GetProductionAssetPairing(self))
+
+
+class ProductionAssetScroller(cui.Scroller):
+    Item = ProductionAssetItem
+
+
 
 Form, Base = uic.loadUiType(osp.join(uiPath, 'published_report.ui'))
 class PublishReport(Form, Base):
@@ -41,7 +79,7 @@ class PublishReport(Form, Base):
         self.detailsFrame.hide()
         self.menubar.hide()
 
-        self.scroller = cui.Scroller(self)
+        self.scroller = ProductionAssetScroller(self, pool_size=10)
         self.layout.addWidget(self.scroller)
 
         self.project = self.episode = None
@@ -109,27 +147,26 @@ class PublishReport(Form, Base):
             else:
                 self.productionAssets = []
             self.populateItems()
-            gui.qApp.processEvents()
-            self.statusbar.showMessage('getting statuses')
-            l = len(self.productionAssets)
-            count = 1
+            self.statusbar.showMessage('getting ' +str(len(self.items))+ 'statuses')
+            self.count = 1
             for item in self.items:
-                prod_asset = item.prod_asset
-                self.statusbar.showMessage('getting statuses %d of %d' %(count,
-                    l))
-                rig, shaded, paired = backend.is_production_asset_paired(prod_asset)
-                if paired:
-                    item.labelStatus |= item.kLabel.kPAIR
-                item.labelDisplay |= item.kLabel.kPAIR
-                item.setSubTitle('Rig: %r'%('v%03d'%rig['version'] if rig else
-                    'No'))
-                item.setThirdTitle('Shaded:%r'%('v%03d'%shaded['version'] if
-                    shaded else 'No'))
-                gui.qApp.processEvents()
-                count += 1
-            self.statusbar.showMessage('done!', 5000)
+                for job in item.jobs:
+                    if job.getStatus() == job.Status.kWaiting:
+                        job.setBusy()
+                        if type(job)==GetProductionAssetPairing:
+                            job.jobDone.connect(self.statusdone)
+                        self.scroller.pool.apply_async(job.doAsync)
         finally:
             self.setEnabled(True)
+
+    def statusdone(self):
+        l = len(self.items)
+        count = self.count
+        self.statusbar.showMessage('getting statuses %d of %d' %(count,
+            l))
+        self.count += 1
+        if count == l:
+            self.statusbar.showMessage('done!', 5000)
 
     def setEnabled(self, state):
         self.projectsBox.setEnabled(state)
@@ -146,8 +183,8 @@ class PublishReport(Form, Base):
             cat = prod_asset['asset']['asset_category']
             if cat.startswith('env'):
                 continue
-            item = self.createItem(prod_asset['asset_code'],
-                    cat , '', '', '')
+            item = self.scroller.createItem(prod_asset['asset_code'],
+                    cat , '', '')
             item.prod_asset = prod_asset
             self.scroller.addItem(item)
             self.items.append(item)
