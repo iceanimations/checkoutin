@@ -693,7 +693,7 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
             util.get_filename_from_snap(pub_texture_vless, mode='client_repo'))
     map_textures(mi.texture_mapping(newloc, oldloc))
     if cleanup:
-        delete_unknown_nodes()
+        general_cleanup()
 
     logger.info('checking in remapped file')
     pub = checkin(prod_asset['__search_key__'], context, dotextures=False,
@@ -715,6 +715,15 @@ def delete_unknown_nodes():
             pc.delete(node)
         except Exception as e:
             print e
+
+def general_cleanup(delete_unknown=True):
+    mi.removeAllReferences()
+    mi.removeAllLights()
+    cameras = mi.getCameras(False, True, True)
+    if cameras:
+        pc.delete([cam.getParent() for cam in cameras])
+    if delete_unknown:
+        delete_unknown_nodes()
 
 def create_combined_version(snapshot, postfix='combined', cleanup=True):
     context = snapshot['context']
@@ -743,11 +752,8 @@ def create_combined_version(snapshot, postfix='combined', cleanup=True):
                 except:
                     pass
 
-        mi.removeAllReferences()
-        mi.removeAllLights()
-        cameras = mi.getCameras(False, True, True)
-        if cameras:
-            pc.delete([cam.getParent() for cam in cameras])
+        general_cleanup()
+
 
     logger.info('checking in file as combined')
     combinedContext = '/'.join([context, postfix])
