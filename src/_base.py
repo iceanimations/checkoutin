@@ -28,6 +28,8 @@ try:
     parent = qtfy.getMayaWindow()
 except:
     pass
+
+
 import auth.security as security
 reload(security)
 import checkinput

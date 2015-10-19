@@ -656,7 +656,7 @@ def publish_asset(project, episode, sequence, shot, asset, snapshot, context,
             set_current=set_current)
 
 def publish_asset_with_textures(project, episode, sequence, shot, asset,
-        snapshot, context, set_current=True):
+        snapshot, context, set_current=True, cleanup=True):
     ''' convenience function for publishing shaded '''
 
     prod_elem = shot or sequence or episode
@@ -692,6 +692,8 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
     newloc = os.path.dirname(
             util.get_filename_from_snap(pub_texture_vless, mode='client_repo'))
     map_textures(mi.texture_mapping(newloc, oldloc))
+    if cleanup:
+        delete_unknown_nodes()
 
     logger.info('checking in remapped file')
     pub = checkin(prod_asset['__search_key__'], context, dotextures=False,
@@ -706,6 +708,13 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
     mi.newScene()
 
     return pub
+
+def delete_unknown_nodes():
+    for node in pc.ls(type='unknown'):
+        try:
+            pc.delete(node)
+        except Exception as e:
+            print e
 
 def create_combined_version(snapshot, postfix='combined', cleanup=True):
     context = snapshot['context']
