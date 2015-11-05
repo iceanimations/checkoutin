@@ -138,12 +138,26 @@ def checkout(snapshot, r = False, with_texture = True):
             return _reference(snap)
 
 # check the set and obj check cache checkin simultaneously
-def _reference(snapshot):
+def _reference(snapshot, translatePaths=True):
     filename = util.filename_from_snap(snapshot, mode = 'client_repo')
-    try:
-        mi.addReference(paths = [filename], dup = True)
-    except:
-        pass
+    # try:
+        # mi.addReferene(paths = [filename], dup = True)
+    # except:
+        # pass
+
+    refNode = mi.createReference(filename)
+
+    if translatePaths:
+        file_nodes = []
+        for file_node in refNode.nodes():
+            try:
+                file_node = pc.nt.File(file_node)
+                file_nodes.append(file_node)
+            except:
+                continue
+        pc.select(file_nodes)
+        mapping = { path: util.translatePath(path) for path in mi.textureFiles() }
+        mi.map_textures(mapping)
 
     tactic = util.get_tactic_file_info()
 
@@ -168,6 +182,9 @@ def _reference(snapshot):
     assets.append(snapshot)
     util.set_tactic_file_info(tactic)
     return present
+
+def translateTexturePaths():
+    mi.texture_mapping
 
 def checkin(sobject, context, process = None,
             version=-1, description = 'No description',
@@ -310,7 +327,7 @@ def make_temp_dir():
                                        mkd = True
                                    )).replace("\\", "/")
 
-def checkin_texture(search_key, context, is_current=False):
+def checkin_texture(search_key, context, is_current=False, translatePath=True):
     if not security.checkinability(search_key):
 
         raise Exception('Permission denied. You do not have permission to'+
@@ -366,9 +383,10 @@ def checkin_texture(search_key, context, is_current=False):
     server.delete_sobject(latest_dummy_snapshot['__search_key__'])
 
     client_dir = op.dirname(server.get_paths(texture_child, context,
-                                             versionless = True,
-                                             file_type = 'image')
-                            ['client_lib_paths'][0])
+        versionless = True, file_type = 'image') ['client_lib_paths'][0])
+
+    if translatePath:
+        client_dir = util.translatePath(client_dir)
 
     ftn_to_central = {ftn: op.join(client_dir, op.basename(cur_to_temp[ftn]))
             for ftn in ftn_to_texs}
@@ -693,7 +711,7 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
             util.get_filename_from_snap(pub_texture_vless, mode='client_repo'))
     map_textures(mi.texture_mapping(newloc, oldloc))
     if cleanup:
-        general_cleanup()
+        general_cleanup(lights=False)
 
     logger.info('checking in remapped file')
     pub = checkin(prod_asset['__search_key__'], context, dotextures=False,
@@ -716,13 +734,14 @@ def delete_unknown_nodes():
         except Exception as e:
             print e
 
-def general_cleanup(delete_unknown=True):
-    mi.removeAllReferences()
-    mi.removeAllLights()
-    cameras = mi.getCameras(False, True, True)
-    if cameras:
-        pc.delete([cam.getParent() for cam in cameras])
-    if delete_unknown:
+def general_cleanup(unknowns=True, lights=True, refs=True, cams=True):
+    if refs: mi.removeAllReferences()
+    if lights: mi.removeAllLights()
+    if cams:
+        cameras = mi.getCameras(False, True, True)
+        if cameras:
+            pc.delete([cam.getParent() for cam in cameras])
+    if unknowns:
         delete_unknown_nodes()
 
 def create_combined_version(snapshot, postfix='combined', cleanup=True):
