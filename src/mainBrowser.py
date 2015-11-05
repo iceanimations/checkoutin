@@ -7,7 +7,7 @@ copyright (c) at Ice Animations (Pvt) Ltd
 from . import _base as base
 Explorer = base.Explorer
 import os.path as osp
-from PyQt4.QtGui import QMenu, QCursor
+from PyQt4.QtGui import QMenu, QCursor, QMessageBox
 import app.util as util
 reload(util)
 import backend
@@ -18,6 +18,8 @@ from . import publish
 reload(publish)
 from . import link_rig_shaded
 reload(link_rig_shaded)
+
+import qtify_maya_window as qtify
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
@@ -68,10 +70,7 @@ class MainBrowser(Explorer):
         publishAction.setEnabled(False)
         publishAction.triggered.connect(self.publish)
         if checkinable:
-            if rootCtx == 'rig':
-                publishAction.setEnabled(True)
-            elif (rootCtx == 'shaded' and self.currentItem.labelStatus &
-                    self.currentItem.kLabel.kPAIR):
+            if rootCtx in ('shaded', 'rig', 'model'):
                 publishAction.setEnabled(True)
 
         linkShadedToRigAction = menu.addAction('link To Rig')
@@ -86,24 +85,94 @@ class MainBrowser(Explorer):
         if checkinable and rootCtx == 'rig':
             linkRigToShadedAction.setEnabled(True)
 
+        checkValidityAction = menu.addAction('Check Cache Validity')
+        checkValidityAction.setEnabled(True)
+        checkValidityAction.triggered.connect(self.checkValidity)
+
+        checkCompatibilityAction = menu.addAction('Check Cache Compatibility')
+        checkCompatibilityAction.setEnabled(False)
+        checkCompatibilityAction.triggered.connect(self.checkCompatibility)
+        if backend.current_scene_valid():
+            checkCompatibilityAction.setEnabled(True)
+
         menu.popup(pos)
 
+    def checkValidity(self):
+        snapkey = self.currentFile.objectName()
+        validity = False
+        title = 'Cache Validity Check'
+        snapshot = backend.get_snapshot_info(snapkey)
+        filename = backend.filename_from_snap(snapshot, mode='client_repo')
+        reason = '%s is not valid for geometry caching' %osp.basename(filename)
+        try:
+            validity = backend.check_validity(snapshot)
+        except Exception as e:
+            import traceback
+            reason += '\nreason: ' + str(e)
+            reason += ''
+            traceback.print_exc()
+
+        if validity == False:
+            base.cui.showMessage(self, title=title, msg=reason,
+                    icon=QMessageBox.Warning)
+        else:
+
+            base.cui.showMessage(self, title=title,
+                msg="%s is valid for geometry caching"%osp.basename(filename),
+                icon=QMessageBox.Information)
+
+        return validity
+
+    def checkCompatibility(self):
+        snapkey = self.currentFile.objectName()
+        snapshot = backend.get_snapshot_info(snapkey)
+        compatibility = False
+        title = 'Cache Compatibility Check'
+        filename = backend.filename_from_snap(snapshot, mode='client_repo')
+        reason = 'Current scene is not cache compatible with %s' %osp.basename(filename)
+
+        try:
+            compatibility = backend.check_validity(snapshot)
+        except Exception as e:
+            import traceback
+            reason += '\nreason: ' + str(e)
+            reason += ''
+            traceback.print_exc()
+
+        if compatibility == False:
+            base.cui.showMessage(self, title=title, msg=reason,
+                    icon=QMessageBox.Warning)
+        else:
+            base.cui.showMessage(self, title=title,
+                msg="%s is cache compatible with the current scene"%osp.basename( filename ),
+                    icon=QMessageBox.Information)
+
+        return compatibility
+
     def publish(self):
-        self.publishDialog = publish.PublishDialog(
-                self.currentFile.objectName(), self )
-        self.publishDialog.exec_()
+        try:
+            self.terminateUpdateThread()
+            self.publishDialog = publish.PublishDialog(
+                    self.currentFile.objectName(), qtify.getMayaWindow() )
+            self.publishDialog.exec_()
+        finally:
+            self.startUpdateThread()
 
     def linkShadedToRig(self):
-        self.linkDialog = link_rig_shaded.LinkShadedRig(
-                self.currentFile.objectName(), self )
-        self.linkDialog.exec_()
+        try:
+            self.terminateUpdateThread()
+            self.linkDialog = link_rig_shaded.LinkShadedRig(
+                    self.currentFile.objectName(), self )
+            self.linkDialog.exec_()
+        finally:
+            self.startUpdateThread()
 
     def linkRigToShaded(self):
         self.linkShadedToRig()
 
     def showAssets(self, assets):
         for asset in assets:
-            item = self.createItem('%s'%asset['code'],
+            item = self.itemsBox.createItem('%s'%asset['code'],
                                    asset['asset_category']
                                    if asset['asset_category'] else '',
                                    '', asset['description']
@@ -117,14 +186,14 @@ class MainBrowser(Explorer):
         super(MainBrowser, self).showFiles(context, files)
         for item in self.filesBox.items():
             item.contextMenuEvent = self.showContextMenu
-            snapshot = util.get_snapshot_info(item.objectName())
-            if util.get_all_publish_targets(snapshot):
-                item.labelStatus |= item.kLabel.kPUB
-                item.labelDisplay |= item.kLabel.kPUB
-            compatibles = util.get_cache_compatible_objects(snapshot)
-            if compatibles:
-                item.labelStatus |= item.kLabel.kPAIR
-            item.labelDisplay |= item.kLabel.kPAIR
+            #snapshot = util.get_snapshot_info(item.objectName())
+            #if util.get_all_publish_targets(snapshot):
+                #item.labelStatus |= item.kLabel.kPUB
+                #item.labelDisplay |= item.kLabel.kPUB
+            #compatibles = util.get_cache_compatible_objects(snapshot)
+            #if compatibles:
+                #item.labelStatus |= item.kLabel.kPAIR
+            #item.labelDisplay |= item.kLabel.kPAIR
 
     def clearWindow(self):
         self.itemsBox.clearItems()

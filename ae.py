@@ -18,7 +18,7 @@ def do():
     import checkoutin
     
     global win
-    win = checkoutin.AssetsExplorer(standalone=True)
+    win = checkoutin.MainBrowser(standalone=True)
     win.show()
 
 newApp = QApplication(sys.argv)

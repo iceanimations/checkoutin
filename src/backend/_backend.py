@@ -3,6 +3,7 @@ import app.util as util
 reload(util)
 import pymel.core as pc
 import imaya as mi
+reload(mi)
 import iutil
 import tactic_client_lib.application.maya as maya
 import datetime
@@ -11,7 +12,12 @@ import os.path as op
 import shutil
 import auth.security as security
 
-import re
+import sys
+
+import logging
+logger = logging.getLogger(__name__)
+if not logger.handlers:
+    logger.addHandler(logging.StreamHandler(sys.stderr))
 
 dt = datetime.datetime
 m = maya.Maya()
@@ -20,12 +26,9 @@ CURRENT_PROJECT_KEY = 'current_project_key'
 
 def set_project(name):
     pc.optionVar(sv=(CURRENT_PROJECT_KEY, name))
-    
+
 def get_project():
     return pc.optionVar(q=CURRENT_PROJECT_KEY)
-    
-
-
 
 def create_first_snapshot(item, context, check_out=True):
     '''
@@ -83,8 +86,10 @@ def checkout(snapshot, r = False, with_texture = True):
             tactic['whoami'] = snapshot
             util.set_tactic_file_info(tactic)
             # checkout texture
-            tex = server.get_all_children(sobj['__search_key__'], TEXTURE_TYPE)
-            if tex and with_texture:
+            tex = []
+            if with_texture:
+                tex = server.get_all_children(sobj['__search_key__'], TEXTURE_TYPE)
+            if tex:
                 context_comp = snap['context'].split('/')
 
                 # the required context
@@ -121,8 +126,8 @@ def checkout(snapshot, r = False, with_texture = True):
                             basename = op.basename(path)
                             tex_mapping[path] = op.join(dirname, basename)
                     except Exception as e:
-                        print e
-                        print path
+                        logger.warning("%s"%str(e))
+                        logger.error('%s'%path)
 
                 map_textures(tex_mapping)
                 pc.mel.eval('file -save')
@@ -133,12 +138,25 @@ def checkout(snapshot, r = False, with_texture = True):
             return _reference(snap)
 
 # check the set and obj check cache checkin simultaneously
-def _reference(snapshot):
+def _reference(snapshot, translatePaths=True):
     filename = util.filename_from_snap(snapshot, mode = 'client_repo')
-    try:
-        mi.addReference(paths = [filename], dup = True)
-    except:
-        pass
+
+    refNode = mi.createReference(filename)
+
+    if not refNode:
+        raise Exception, 'reference node not found for %s' %filename
+
+    if translatePaths:
+        file_nodes = []
+        for file_node in refNode.nodes():
+            try:
+                file_node = pc.nt.File(file_node)
+                file_nodes.append(file_node)
+            except:
+                continue
+        pc.select(file_nodes)
+        mapping = { path: util.translatePath(path) for path in mi.textureFiles() }
+        mi.map_textures(mapping)
 
     tactic = util.get_tactic_file_info()
 
@@ -162,11 +180,15 @@ def _reference(snapshot):
 
     assets.append(snapshot)
     util.set_tactic_file_info(tactic)
-    return True
+    return present
+
+def translateTexturePaths():
+    mi.texture_mapping
 
 def checkin(sobject, context, process = None,
             version=-1, description = 'No description',
-            file = None, geos = [], camera = None, preview = None):
+            file = None, geos = [], camera = None, preview = None,
+            is_current=True, dotextures=True):
 
     '''
     :sobject: search_key of sobject to which the checkin belongs
@@ -193,12 +215,17 @@ def checkin(sobject, context, process = None,
         context = '/'.join([process, context])
 
     shaded = context.startswith('shaded')
-    if shaded and not file:
-        ftn_to_central = checkin_texture(sobject, context)
+    ftn_to_central = central_to_ftn = {}
+    if dotextures and shaded and not file:
+        ftn_to_central = checkin_texture(sobject, context,
+                is_current=is_current)
         central_to_ftn = map_textures(ftn_to_central)
 
+    snapshot = server.create_snapshot(sobject, context, is_current=is_current)
 
-    snapshot = server.create_snapshot(sobject, context)
+    if central_to_ftn:
+        texture_snap = util.get_texture_snapshot(sobject, snapshot)
+        util.add_texture_dependency(snapshot, texture_snap)
 
     if not file:
         tactic = util.get_tactic_file_info()
@@ -213,7 +240,7 @@ def checkin(sobject, context, process = None,
     snap_code = snapshot.get('code')
     server.add_file(snap_code, save_path, file_type = 'maya',
                       mode = 'copy', create_icon = False)
-    if shaded and not file:
+    if dotextures and shaded and not file:
 
         map_textures(central_to_ftn)
 
@@ -231,7 +258,7 @@ def checkin(sobject, context, process = None,
     except:
         pass
 
-    return snapshot['__search_key__']
+    return snapshot
 
 def asset_textures(search_key):
     '''
@@ -299,7 +326,7 @@ def make_temp_dir():
                                        mkd = True
                                    )).replace("\\", "/")
 
-def checkin_texture(search_key, context):
+def checkin_texture(search_key, context, is_current=False, translatePath=True):
     if not security.checkinability(search_key):
 
         raise Exception('Permission denied. You do not have permission to'+
@@ -338,7 +365,7 @@ def checkin_texture(search_key, context):
 
 
     texture_snap = server.create_snapshot(texture_child['__search_key__'],
-                                          context, is_current=False)
+                                          context, is_current=is_current)
     latest_dummy_snapshot = server.create_snapshot(texture_child['__search_key__'],
                                           context)
 
@@ -355,9 +382,10 @@ def checkin_texture(search_key, context):
     server.delete_sobject(latest_dummy_snapshot['__search_key__'])
 
     client_dir = op.dirname(server.get_paths(texture_child, context,
-                                             versionless = True,
-                                             file_type = 'image')
-                            ['client_lib_paths'][0])
+        versionless = True, file_type = 'image') ['client_lib_paths'][0])
+
+    if translatePath:
+        client_dir = util.translatePath(client_dir)
 
     ftn_to_central = {ftn: op.join(client_dir, op.basename(cur_to_temp[ftn]))
             for ftn in ftn_to_texs}
@@ -480,10 +508,10 @@ def checkin_cache(shot, objs, camera = None):
                 naming.append(name)
                 break
 
-    print '='*2**10
-    print set(obj_ref.values())
-    print objs
-    print '='*2**10
+    logger.debug('='*2**10)
+    logger.debug(str(set(obj_ref.values())))
+    logger.debug( str(objs) )
+    logger.debug( '='*2**10 )
 
     if not (# to avoid repeated objs
             len(objs) == len(obj_ref) and
@@ -525,15 +553,10 @@ def context_path(search_key, context):
 
     return op.dirname(util.get_filename_from_snap(snap, mode = 'client_repo'))
 
-
-publish_asset_to_episode = util.publish_asset_to_episode
-get_publish_targets = util.get_all_publish_targets
-get_published_snapshots = util.get_published_snapshots_in_episode
-
-
-def get_targets_in_published(snapshot, published):
+def get_targets_in_published(snapshot, published, ctx=None):
     ''' your company doesnt pay you a fortune '''
-
+    if ctx is not None:
+        published = [ss for ss in published if ctx == ss['context']]
     published_codes = [ss['code'] for ss in published]
     targets = get_publish_targets(snapshot)
     context_targets = []
@@ -552,63 +575,270 @@ def get_targets_in_published(snapshot, published):
 
     return context_targets, latest, current
 
-
-def set_snapshot_as_current(snapshot):
-    server = user.get_server()
-    server.set_current_snapshot(snapshot)
-
-def createReference(path, stripVersionInNamespace=True):
-    if not path or not op.exists(path):
-        return None
-    before = pc.listReferences()
-    namespace = op.basename(path)
-    namespace = op.splitext(namespace)[0]
-    if stripVersionInNamespace:
-        # version part of the string is recognized as .v001
-        match = re.match('(.*)([-._]v\d+)(.*)', namespace)
-        if match:
-            namespace = match.group(1) + match.group(3)
-    pc.createReference(path, namespace=namespace, mnc=False)
-    after = pc.listReferences()
-    new = [ref for ref in after if ref not in before and not
-            ref.refNode.isReferenced()]
-    return new[0]
-
-def removeReference(ref):
-    ''':type ref: pymel.core.system.FileReference()'''
-    if ref:
-        ref.removeReferenceEdits()
-        ref.remove()
-
-def find_geo_set_in_ref(ref, key=lambda node: 'geo_set' in node.name().lower()):
-    for node in ref.nodes():
-        if pc.nodeType(node) == 'objectSet':
-            if key(node):
-                return node
+def get_current_in_published(published, context):
+    for snap in published:
+        if snap['context'] == context and snap['is_current'] :
+            return snap
 
 def verify_cache_compatibility(shaded, rig, newFile=False):
     if newFile:
         pc.newFile(f=True)
+
     shaded_path = util.filename_from_snap(shaded, mode='client_repo')
-    shaded_ref = createReference(shaded_path)
+    shaded_ref = mi.createReference(shaded_path)
     if not shaded_ref:
         raise Exception, 'file not found: %s'%shaded_path
-    shaded_geo_set = find_geo_set_in_ref(shaded_ref)
-    if shaded_geo_set is None:
-        removeReference(shaded_ref)
-        raise Exception, 'geo_set not found in %s'%shaded_path
+
+    shaded_geo_set = mi.find_geo_set_in_ref(shaded_ref)
+    if shaded_geo_set is None or not mi.geo_set_valid(shaded_geo_set):
+        mi.removeReference(shaded_ref)
+        raise Exception, 'no valid geo_set found in shaded file %s'%shaded_path
+
     rig_path = util.filename_from_snap(rig, mode='client_repo')
-    rig_ref = createReference(rig_path)
+    rig_ref = mi.createReference(rig_path)
     if not rig_ref:
-        removeReference(shaded_ref)
+        mi.removeReference(shaded_ref)
         raise Exception, 'file not found: %s'%rig_path
-    rig_geo_set = find_geo_set_in_ref(rig_ref)
-    if rig_geo_set is None:
-        removeReference(shaded_ref)
-        removeReference(rig_ref)
-        raise Exception, 'geo_set not found in %s'%rig_path
-    result = mi.setsCompatible(shaded_geo_set, rig_geo_set)
-    removeReference(shaded_ref)
-    removeReference(rig_ref)
+
+    rig_geo_set = mi.find_geo_set_in_ref(rig_ref)
+    if rig_geo_set is None or not mi.geo_set_valid(rig_geo_set):
+        mi.removeReference(shaded_ref)
+        mi.removeReference(rig_ref)
+        raise Exception, 'no valid geo_set found in rig file %s'%rig_path
+
+    result = mi.geo_sets_compatible(shaded_geo_set, rig_geo_set)
+    mi.removeReference(shaded_ref)
+    mi.removeReference(rig_ref)
     return result
 
+def current_scene_compatible(other):
+    geo_set = mi.get_geo_sets()
+    if not geo_set or not mi.geo_set_valid(geo_set[0]):
+        raise Exception, 'no valid geo_set found in current scene'
+    else:
+        geo_set = geo_set[0]
+
+    other_path = util.filename_from_snap(other, mode='client_repo')
+    other_ref = mi.createReference(other_path)
+    if not other_ref:
+        raise Exception, 'other file not found %s' %other_path
+
+    other_geo_set = mi.find_geo_set_in_ref(other_ref)
+    if other_geo_set is None or not mi.geo_set_valid(other_geo_set):
+        mi.removeReference(other_geo_set)
+        raise Exception, 'no valid geo_set found in other file %s'%other_path
+
+    result = mi.geo_sets_compatible(geo_set, other_geo_set)
+    mi.removeReference(other_geo_set)
+
+    return result
+
+def check_validity(other):
+    other_path = util.filename_from_snap(other, mode='client_repo')
+    other_ref = mi.createReference(other_path)
+
+    if not other_ref:
+        raise Exception, 'other file not found %s' %other_path
+
+    other_geo_set = mi.find_geo_set_in_ref(other_ref)
+    validity = False
+
+    try:
+        if other_geo_set is None or not mi.geo_set_valid(other_geo_set):
+            validity = False
+        else:
+            validity = True
+    except Exception as e:
+        mi.removeReference(other_ref)
+        raise e
+        return False
+
+    mi.removeReference(other_ref)
+    return validity
+
+def current_scene_valid():
+    geo_set = mi.get_geo_sets(True)
+    if not geo_set or not mi.geo_set_valid(geo_set[0]):
+        return False
+    return True
+
+def get_published_snapshots(project, episode, sequence, shot, asset):
+    prod_elem = shot or sequence or episode
+    return util.get_published_snapshots(project, prod_elem, asset)
+
+def publish_asset(project, episode, sequence, shot, asset, snapshot, context,
+        set_current=True):
+    prod_elem = shot or sequence or episode
+    return util.publish_asset(project, prod_elem, asset, snapshot, context,
+            set_current=set_current)
+
+def publish_asset_with_textures(project, episode, sequence, shot, asset,
+        snapshot, context, set_current=True, cleanup=True):
+    ''' convenience function for publishing shaded '''
+
+    prod_elem = shot or sequence or episode
+    logger.info('getting source texture')
+    texture = util.get_texture_snapshot(asset, snapshot)
+    vless_texture = util.get_texture_snapshot(asset, snapshot,
+            versionless=True)
+    try:
+        texture_file = util.get_filename_from_snap(vless_texture)
+    except:
+        texture_file = None
+
+    if not texture_file:
+        logger.info('no textures found ... publishing directly')
+        return util.publish_asset(project, prod_elem, asset, snapshot, context,
+                set_current=set_current)
+
+    logger.info('copying and opening file for texture remapping')
+    path = checkout(snapshot['__search_key__'], with_texture=False)
+    mi.openFile(path)
+
+    logger.info('publishing textures')
+    texture_context = util.get_texture_context(snapshot)
+    pub_texture = util.publish_asset(project, prod_elem, asset, texture,
+            texture_context, set_current)
+    prod_asset = util.get_production_asset(project, prod_elem, asset)
+    pub_texture_vless = util.get_published_texture_snapshot(prod_asset,
+            snapshot, versionless=True)
+
+    logger.info('remapping textures to published location')
+    oldloc = os.path.dirname(
+            util.get_filename_from_snap(vless_texture, mode='client_repo'))
+    newloc = os.path.dirname(
+            util.get_filename_from_snap(pub_texture_vless, mode='client_repo'))
+    map_textures(mi.texture_mapping(newloc, oldloc))
+    if cleanup:
+        general_cleanup(lights=False)
+
+    logger.info('checking in remapped file')
+    pub = checkin(prod_asset['__search_key__'], context, dotextures=False,
+            is_current=set_current)
+
+    logger.info('adding dependencies ...')
+    logger.debug('adding publish dependency ...')
+    util.add_publish_dependency(snapshot, pub)
+    logger.debug('adding texture dependency ...')
+    util.add_texture_dependency(pub, pub_texture)
+
+    mi.newScene()
+
+    return pub
+
+def delete_unknown_nodes():
+    for node in pc.ls(type='unknown'):
+        try:
+            pc.delete(node)
+        except Exception as e:
+            print e
+
+def general_cleanup(unknowns=True, lights=True, refs=True, cams=True):
+    if refs: mi.removeAllReferences()
+    if lights: mi.removeAllLights()
+    if cams:
+        cameras = mi.getCameras(False, True, True)
+        if cameras:
+            pc.delete([cam.getParent() for cam in cameras])
+    if unknowns:
+        delete_unknown_nodes()
+
+def create_combined_version(snapshot, postfix='combined', cleanup=True):
+    context = snapshot['context']
+
+    logger.info('Checking out snapshot for combining ...')
+    path = checkout(snapshot, with_texture=False)
+    mi.openFile(path)
+
+    logger.info('Combining geo sets ...')
+    geo_sets = mi.get_geo_sets( nonReferencedOnly=True, validOnly=True )
+    if not geo_sets:
+        mi.newScene()
+        raise Exception, 'No valid geo sets found'
+    geo_set = geo_sets[0]
+    combined_mesh = mi.getCombinedMeshFromSet(geo_set)
+
+    if cleanup:
+        if context.split('/')[0] != 'rig':
+            pc.select(combined_mesh)
+            pc.mel.DeleteHistory()
+
+        for mesh in set((node.firstParent() for node in pc.ls(type='mesh'))):
+            if mesh != combined_mesh:
+                try:
+                    pc.delete(mesh)
+                except:
+                    pass
+
+        general_cleanup()
+
+
+    logger.info('checking in file as combined')
+    combinedContext = '/'.join([context, postfix])
+    sobject = util.get_sobject_from_snap(snapshot)
+    combined = checkin(sobject, combinedContext, dotextures=False,
+            is_current=snapshot['is_current'])
+    util.add_combined_dependency(snapshot, combined)
+    mi.newScene()
+
+    return combined
+
+def set_snapshot_as_current(snapshot):
+    server = user.get_server()
+    logger.info('setting as current ...')
+    server.set_current_snapshot(snapshot)
+    texture = util.get_texture_by_dependency(snapshot)
+    if texture:
+        logger.info('setting dependent textures as current')
+        server.set_current_snapshot( texture )
+    combined = util.get_dependencies(snapshot, keyword='keyword', source=False)
+    if combined:
+        logger.info('setting combined version as current')
+        server.set_current_snapshot( texture )
+    else:
+        create_combined_version(snapshot, postfix='combined')
+
+    return True
+
+def is_production_asset_paired(prod_asset, use_new=True):
+
+    cutil = util
+
+    if use_new:
+        cutil = util.create_new()
+
+    prod_snapshots = cutil.get_snapshot_from_sobject(prod_asset['__search_key__'])
+    rigs = [snap for snap in prod_snapshots if snap['context'] == 'rig']
+    shadeds = [snap for snap in prod_snapshots if snap['context'] == 'shaded']
+
+    def get_current(snaps):
+        for snap in snaps:
+            if snap['is_current']:
+                return snap
+
+    current_rig = get_current(rigs)
+    current_shaded = get_current(shadeds)
+
+    if not (current_rig and current_shaded):
+        return current_rig, current_shaded, False
+
+    source_rig = cutil.get_publish_source(current_rig)
+    source_shaded = cutil.get_publish_source(current_shaded)
+
+    return current_rig, current_shaded, cutil.is_cache_compatible(source_shaded, source_rig)
+
+
+
+get_all_projects = util.get_all_projects
+get_publish_targets = util.get_all_publish_targets
+get_publish_source = util.get_publish_source
+get_snapshot_info = util.get_snapshot_info
+get_icon = util.get_icon
+get_episodes = util.get_episodes
+get_sequences = util.get_sequences
+get_shots = util.get_shots
+get_linked = util.get_cache_compatible_objects
+filename_from_snap = util.get_filename_from_snap
+link_shaded_to_rig = util.link_shaded_to_rig
+get_combined_version = util.get_combined_version
+get_production_assets = util.get_production_assets
