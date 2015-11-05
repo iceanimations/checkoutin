@@ -140,12 +140,11 @@ def checkout(snapshot, r = False, with_texture = True):
 # check the set and obj check cache checkin simultaneously
 def _reference(snapshot, translatePaths=True):
     filename = util.filename_from_snap(snapshot, mode = 'client_repo')
-    # try:
-        # mi.addReferene(paths = [filename], dup = True)
-    # except:
-        # pass
 
     refNode = mi.createReference(filename)
+
+    if not refNode:
+        raise Exception, 'reference node not found for %s' %filename
 
     if translatePaths:
         file_nodes = []
