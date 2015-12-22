@@ -203,6 +203,11 @@ class Explorer(cui.Explorer):
     def checkin(self, context, detail, filePath = None):
         if self.currentItem:
             sobj = str(self.currentItem.objectName())
+            error = backend.checkCheckinValidity(sobj, context)
+            if error:
+                cui.showMessage(self, title='Asset Explorer',
+                                msg=error, icon=QMessageBox.Critical)
+                return
             pro = self.currentContext.title().split('/')[0]
             backend.checkin(sobj, context, process = pro, description = detail,
                             file = filePath)
