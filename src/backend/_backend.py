@@ -54,16 +54,16 @@ def create_first_snapshot(item, context, check_out=True):
 def checkCheckinValidity(sobj, context):
     '''Performs check if the scene contains more than one geosets and if the name of the only geoset matches the asset name'''
     geosets = [geoset for geoset in pc.ls(exactType=pc.nt.ObjectSet) if geoset.name().lower().endswith('_geo_set')]
-    if context.lower().startswith('rig') or context.lower() == 'shaded':
+    if context.lower().startswith('rig'):
         if not geosets: return 'Could not find a geoset or properly named geoset'
-    if not geosets: return
     if len(geosets) > 1:
         return 'A scene can not contain more than one geosets'
-    if not mi.getNiceName(geosets[0].name()).lower().replace('_geo_set', '') == sobj.split('=')[-1]:
-        try:
-            pc.rename(geosets[0], "%s_geo_set"%sobj.split('=')[-1])
-        except Exception as ex:
-            return 'Geoset name does not match the Asset name and could not rename it\n'+ str(ex)
+    if geosets:
+        if not mi.getNiceName(geosets[0].name()).lower().replace('_geo_set', '') == sobj.split('=')[-1]:
+            try:
+                pc.rename(geosets[0], "%s_geo_set"%sobj.split('=')[-1])
+            except Exception as ex:
+                return 'Geoset name does not match the Asset name and could not rename it\n'+ str(ex)
 
 def checkout(snapshot, r = False, with_texture = True):
     '''
