@@ -89,7 +89,7 @@ class Dialog(Form, Base):
             version = int(re.search('\d{4}', pc.about(v=True)).group())
         except ImportError:
             pass
-        fileName = QFileDialog.getOpenFileName(self, 'Select File', '', '*.mb *.ma *.ztl')
+        fileName = QFileDialog.getOpenFileName(self, 'Select File', '', '*.mb *.ma *.ztl *.rs')
         if version and version == 2014:
             fileName = fileName[0]
         fileName = str(fileName)
