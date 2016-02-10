@@ -253,7 +253,7 @@ def checkin(sobject, context, process = None,
         proxy_path = op.join(proxy_dir, filename +'.rs')#.replace(" ", "_")
         if not op.exists(proxy_dir): iutil.mkdir(tmpdir, context)
         pc.mel.eval('file -force -options \"\" -typ \"Redshift Proxy\" -pr -es \"%s\";'%proxy_path.replace('\\', '/'))
-        pc.mel.rsProxy(proxy_path.replace('\\', '/'), fp=True, sl=True)[0]
+        pc.mel.rsProxy(proxy_path.replace('\\', '/'), fp=True, sl=True)
         map_textures(temp_to_cur)
 
 
