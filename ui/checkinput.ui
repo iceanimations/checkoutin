@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>434</width>
+    <width>460</width>
     <height>224</height>
    </rect>
   </property>
@@ -118,6 +118,26 @@ padding-left: 5px;</string>
        </property>
        <property name="text">
         <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="gpuCacheButton">
+       <property name="toolTip">
+        <string>Export GPU Cache for the selected Mesh</string>
+       </property>
+       <property name="text">
+        <string>GPU Cache</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="rsProxyButton">
+       <property name="toolTip">
+        <string>Export the Redshift Proxy for the selected Mesh</string>
+       </property>
+       <property name="text">
+        <string>RS Proxy</string>
        </property>
       </widget>
      </item>

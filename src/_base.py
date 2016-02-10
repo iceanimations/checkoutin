@@ -200,7 +200,7 @@ class Explorer(cui.Explorer):
         finally:
             self.startUpdateThread()
 
-    def checkin(self, context, detail, filePath = None):
+    def checkin(self, context, detail, filePath = None, doproxy=False, dogpu=False):
         if self.currentItem:
             sobj = str(self.currentItem.objectName())
             error = backend.checkCheckinValidity(sobj, context)
@@ -210,7 +210,7 @@ class Explorer(cui.Explorer):
                 return
             pro = self.currentContext.title().split('/')[0]
             backend.checkin(sobj, context, process = pro, description = detail,
-                            file = filePath)
+                            file = filePath, doproxy=doproxy, dogpu=dogpu)
 
             # redisplay the contextsBox/filesBox
             currentContext = self.currentContext

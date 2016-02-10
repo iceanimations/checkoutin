@@ -202,7 +202,7 @@ def translateTexturePaths():
 def checkin(sobject, context, process = None,
             version=-1, description = 'No description',
             file = None, geos = [], camera = None, preview = None,
-            is_current=True, dotextures=True):
+            is_current=True, dotextures=True, doproxy=True, dogpu=True):
 
     '''
     :sobject: search_key of sobject to which the checkin belongs
@@ -210,7 +210,7 @@ def checkin(sobject, context, process = None,
     :version: version number of the snapshot (functionality not implemented)
     :return: search_key of the created snapshot
     '''
-
+    
     server = user.get_server()
     if not security.checkinability(sobject, process, context):
         raise Exception('Permission denied. You do not have permission to'+
@@ -230,10 +230,48 @@ def checkin(sobject, context, process = None,
 
     shaded = context.startswith('shaded')
     ftn_to_central = central_to_ftn = {}
+    cur_to_temp = temp_to_cur = {}
+    filename = 'temp_file_name'
+    tmpdir = make_temp_dir()
+    proxy_path = gpu_path = ''
+    
     if dotextures and shaded and not file:
-        ftn_to_central = checkin_texture(sobject, context,
-                is_current=is_current)
-        central_to_ftn = map_textures(ftn_to_central)
+        # texture location mapping in temp
+        # normalized and lowercased -> temppath
+        ftn_to_texs = mi.textureFiles(selection = False, key=op.exists, returnAsDict=True)
+        alltexs = list(reduce(lambda a,b: a.union(b), ftn_to_texs.values(), set()))        
+        
+        if alltexs: 
+            texture_context = '/'.join(['texture'] + context.split('/')[1:])
+            texdir = op.join(tmpdir, texture_context)
+            if not op.exists(texdir): iutil.mkdir(tmpdir, texture_context)
+            cur_to_temp = collect_textures(texdir, ftn_to_texs)
+        
+    if doproxy:
+        temp_to_cur = map_textures(cur_to_temp)
+        proxy_dir = op.join(tmpdir, context)
+        proxy_path = op.join(proxy_dir, filename +'.rs')#.replace(" ", "_")
+        if not op.exists(proxy_dir): iutil.mkdir(tmpdir, context)
+        pc.mel.eval('file -force -options \"\" -typ \"Redshift Proxy\" -pr -es \"%s\";'%proxy_path.replace('\\', '/'))
+        pc.mel.rsProxy(proxy_path.replace('\\', '/'), fp=True, sl=True)[0]
+        map_textures(temp_to_cur)
+
+
+    if dogpu:
+        gpu_path = pc.mel.gpuCache(pc.ls(sl=True)[0], startTime=1, endTime=1, optimize=True,
+                        optimizationThreshold=40000,
+                        writeMaterials=True, dataFormat="ogawa",
+                        directory=tmpdir, fileName=filename)
+        
+        # if no reachable texture exists no need to go return dict
+    if dotextures and shaded and not file:
+        
+        if alltexs:
+            client_dir = checkin_texture(sobject, texture_context,
+                is_current=is_current, tmpdir=texdir)
+            ftn_to_central = {ftn: op.join(client_dir, op.basename(cur_to_temp[ftn]))
+                              for ftn in ftn_to_texs}
+            central_to_ftn = map_textures(ftn_to_central)
 
     snapshot = server.create_snapshot(sobject, context, is_current=is_current)
 
@@ -254,6 +292,13 @@ def checkin(sobject, context, process = None,
     snap_code = snapshot.get('code')
     server.add_file(snap_code, save_path, file_type = 'maya',
                       mode = 'copy', create_icon = False)
+    if doproxy and op.exists(proxy_path):
+        print 'Proxy File:', proxy_path
+        server.add_file(snap_code, proxy_path, file_type='rs', mode='copy', create_icon=False)
+    if dogpu and op.exists(gpu_path[0]):
+        server.add_file(snap_code, gpu_path, file_type='gpu', mode='copy', create_icon=False)
+        
+    
     if dotextures and shaded and not file:
 
         map_textures(central_to_ftn)
@@ -340,26 +385,14 @@ def make_temp_dir():
                                        mkd = True
                                    )).replace("\\", "/")
 
-def checkin_texture(search_key, context, is_current=False, translatePath=True):
+def checkin_texture(search_key, context, is_current=False, translatePath=True, tmpdir=None):
     if not security.checkinability(search_key):
 
         raise Exception('Permission denied. You do not have permission to'+
                         ' save here.')
 
-    context = '/'.join(['texture'] + context.split('/')[1:])
     server = util.get_server()
     sobject = search_key
-    tmpdir = make_temp_dir()
-
-    # texture location mapping in temp
-    # normalized and lowercased -> temppath
-    ftn_to_texs = mi.textureFiles(selection = False, key=op.exists, returnAsDict=True)
-    # if no reachable texture exists no need to go return dict
-    alltexs = list(reduce(lambda a,b: a.union(b), ftn_to_texs.values(), set()))
-    if not alltexs:
-        return dict()
-
-    cur_to_temp = collect_textures(tmpdir, ftn_to_texs)
 
     # set the project
     util.set_project(search_key = search_key)
@@ -400,11 +433,9 @@ def checkin_texture(search_key, context, is_current=False, translatePath=True):
 
     if translatePath:
         client_dir = util.translatePath(client_dir)
+        
+    return client_dir
 
-    ftn_to_central = {ftn: op.join(client_dir, op.basename(cur_to_temp[ftn]))
-            for ftn in ftn_to_texs}
-
-    return ftn_to_central
 
 def map_textures(mapping):
     reverse = {}

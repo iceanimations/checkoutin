@@ -7,6 +7,7 @@ from PyQt4.QtCore import *
 import os.path as osp
 import sys
 from customui import ui as cui
+import pymel.core as pc
 
 
 rootPath = osp.dirname(osp.dirname(__file__))
@@ -17,13 +18,17 @@ class Dialog(Form, Base):
     def __init__(self, parent=None):
         super(Dialog, self).__init__(parent)
         self.setupUi(self)
-        self.parent = parent
-        self.parent.saveButton.setEnabled(False)
+        self.parentWin = parent
+        self.parentWin.saveButton.setEnabled(False)
         self.setValidator()
         
-        if self.parent.standalone:
+        if self.parentWin.standalone:
             self.currentSceneButton.setEnabled(False)
             self.filePathButton.setChecked(True)
+        if self.parentWin.currentContext:
+            if self.parentWin.currentContext.title().lower().startswith('rig'):
+                self.gpuCacheButton.hide()
+                self.rsProxyButton.hide()
         
         self.descriptionBox.horizontalScrollBar().setFixedHeight(12)
         self.descriptionBox.verticalScrollBar().setFixedWidth(12)
@@ -41,16 +46,16 @@ class Dialog(Form, Base):
             self.descriptionBox.setPlainText('No description')
         
     def handleNewName(self, name):
-        if not self.parent.currentContext:
+        if not self.parentWin.currentContext:
             cui.showMessage(self, title='Save', msg='No Context selected', icon=QMessageBox.Warning)
             return
-        pro = self.parent.currentContext.title()
+        pro = self.parentWin.currentContext.title()
         if name == pro:
             self.warningLabel.setText('Context name matches the Process name')
             self.okButton.setEnabled(False)
         elif name in ['/'.join(ctx.title().split('/')[1:])
                       if len(ctx.title().split('/')) > 1
-                      else '-' for ctx in self.parent.contextsBox.items()
+                      else '-' for ctx in self.parentWin.contextsBox.items()
                       if ctx.title().split('/')[0] == pro]:
             self.warningLabel.setText('Context name already exists')
             self.okButton.setEnabled(False)
@@ -62,10 +67,10 @@ class Dialog(Form, Base):
         
     def handleNewContextButtonClick(self):
         if self.newContextButton.isChecked():
-            self.setContext(self.parent.currentContext.title() +
+            self.setContext(self.parentWin.currentContext.title() +
                             '/' + str(self.newContextBox.text()))
         else:
-            self.setContext(self.parent.currentContext.title())
+            self.setContext(self.parentWin.currentContext.title())
             self.newContextBox.clear()
         
     def setMainName(self, name='-'):
@@ -95,6 +100,12 @@ class Dialog(Form, Base):
         fileName = str(fileName)
         if fileName:
             self.pathBox.setText(fileName)
+            
+    def isGPU(self):
+        return self.gpuCacheButton.isChecked()
+    
+    def isProxy(self):
+        return self.rsProxyButton.isChecked()
         
     def ok(self):
         try:
@@ -122,15 +133,23 @@ class Dialog(Form, Base):
                     self.okButton.setEnabled(True)
                     return
             context = None
-            if self.parent.currentContext:
+            if self.parentWin.currentContext:
                 if self.newContextButton.isChecked():
                     context = str('/'.join(self.contextLabel.text().split('/')[1:]))
                 else:
-                    split = self.parent.currentContext.title().split('/')
+                    split = self.parentWin.currentContext.title().split('/')
                     context = split[0] if len(split) == 1 else '/'.join(split[1:])
                 if not context:
-                    context = self.parent.currentContext.title().split('/')[0]
-                self.parent.checkin(context, description, filePath = path)
+                    context = self.parentWin.currentContext.title().split('/')[0]
+                if self.isGPU() or self.isProxy():
+                    if not pc.ls(sl=True, type='mesh', dag=True):
+                        cui.showMessage(self, title='No Selection',
+                                        msg='No selection found to export the Proxy or GPU Cahce for',
+                                        icon=QMessageBox.Information)
+                        return
+                self.parentWin.checkin(context, description, filePath = path,
+                                       doproxy=self.isProxy(),
+                                       dogpu=self.isGPU())
                 self.close()
             else:
                 cui.showMessage(self, title='Save', msg='No context selected',
@@ -147,8 +166,8 @@ class Dialog(Form, Base):
         self.close()
     
     def closeEvent(self, event):
-        self.parent.saveButton.setEnabled(True)
-        self.parent.checkinputDialog = None
+        self.parentWin.saveButton.setEnabled(True)
+        self.parentWin.checkinputDialog = None
         self.deleteLater()
 
 
