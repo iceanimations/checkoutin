@@ -146,6 +146,7 @@ class Dialog(Form, Base):
                         cui.showMessage(self, title='No Selection',
                                         msg='No selection found to export the Proxy or GPU Cahce for',
                                         icon=QMessageBox.Information)
+                        self.okButton.setEnabled(True)
                         return
                 self.parentWin.checkin(context, description, filePath = path,
                                        doproxy=self.isProxy(),
