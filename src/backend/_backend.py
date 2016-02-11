@@ -37,7 +37,7 @@ def createRedshiftProxy(snapshot):
         for path in paths:
             if path.endswith('.rs'):
                 if op.exists(path):
-                    mi.createRedshiftProxy(path)
+                    mi.createRedshiftProxy(util.translatePath(path))
                     break
 
 def createGPUCache(snapshot):
@@ -48,7 +48,7 @@ def createGPUCache(snapshot):
         for path in paths:
             if path.endswith('.abc'):
                 if op.exists(path):
-                    mi.createGPUCache(path)
+                    mi.createGPUCache(util.translatePath(path))
                     break
 
 def validateSelectionForProxy():
