@@ -24,6 +24,33 @@ m = maya.Maya()
 TEXTURE_TYPE = 'vfx/texture'
 CURRENT_PROJECT_KEY = 'current_project_key'
 
+def getSnapshotPaths(snapshot):
+    if user.user_registered():
+        server = user.get_server().server
+        return server.get_all_paths_from_snapshot(snapshot.split('?')[-1].split('=')[-1])
+
+def createRedshiftProxy(snapshot):
+    '''@params: snapshot search key'''
+    errors = []
+    paths = getSnapshotPaths(snapshot)
+    if paths:
+        for path in paths:
+            if path.endswith('.rs'):
+                if op.exists(path):
+                    mi.createRedshiftProxy(path)
+                    break
+
+def createGPUCache(snapshot):
+    '''@params: snapshot search key'''
+    errors = []
+    paths = getSnapshotPaths(snapshot)
+    if paths:
+        for path in paths:
+            if path.endswith('.abc'):
+                if op.exists(path):
+                    mi.createGPUCache(path)
+                    break
+
 def validateSelectionForProxy():
     error = ''
     sl = pc.ls(sl=True, type=['mesh', 'gpuCache'], dag=True)
@@ -89,7 +116,7 @@ def checkout(snapshot, r = False, with_texture = True):
     '''
     @snapshot: snapshot search_key
     '''
-
+    print 'snapshot:', snapshot
     server = user.get_server()
     if user.user_registered():
 

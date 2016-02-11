@@ -72,8 +72,19 @@ class Explorer(cui.Explorer):
 
         self.thread = None
         self.startUpdateThread()
+        
+        self.proxyButton.clicked.connect(self.createRedshiftProxy)
+        self.gpuCacheButton.clicked.connect(self.createGPUCache)
 
         appUsageApp.updateDatabase(''.join(self.title.split()))
+        
+    def createRedshiftProxy(self):
+        if self.currentFile:
+            backend.createRedshiftProxy(self.currentFile.objectName())
+    
+    def createGPUCache(self):
+        if self.currentFile:
+            backend.createGPUCache(self.currentFile.objectName())
 
     def startUpdateThread(self):
         try:
