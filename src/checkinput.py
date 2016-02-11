@@ -8,6 +8,8 @@ import os.path as osp
 import sys
 from customui import ui as cui
 import pymel.core as pc
+import backend
+reload(backend)
 
 
 rootPath = osp.dirname(osp.dirname(__file__))
@@ -142,9 +144,10 @@ class Dialog(Form, Base):
                 if not context:
                     context = self.parentWin.currentContext.title().split('/')[0]
                 if self.isGPU() or self.isProxy():
-                    if not pc.ls(sl=True, type='mesh', dag=True):
-                        cui.showMessage(self, title='No Selection',
-                                        msg='No selection found to export the Proxy or GPU Cahce for',
+                    error = backend.validateSelectionForProxy()
+                    if error:
+                        cui.showMessage(self, title='Selection Error',
+                                        msg=error,
                                         icon=QMessageBox.Information)
                         self.okButton.setEnabled(True)
                         return

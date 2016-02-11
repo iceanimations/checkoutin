@@ -24,6 +24,26 @@ m = maya.Maya()
 TEXTURE_TYPE = 'vfx/texture'
 CURRENT_PROJECT_KEY = 'current_project_key'
 
+def validateSelectionForProxy():
+    error = ''
+    sl = pc.ls(sl=True, type=['mesh', 'gpuCache'], dag=True)
+    if sl:
+        for s in sl:
+            if type(s) == pc.nt.GpuCache:
+                error = 'GPU Cache found in the selection, Proxy and/or GPU Cache for existing GPU Cache not allowed'
+                break
+            inputs = s.inMesh.inputs()
+            if inputs:
+                for input in inputs:
+                    if type(input) == pc.nt.RedshiftProxyMesh:
+                        error = 'Proxy found in the selection, Proxy and/or GPU Cache for existing proxies not allowed'
+                        break
+            if error:
+                break
+    else:
+        error = 'No selection found in the scene to export Proxy or GPU Cache for'
+    return error
+
 def set_project(name):
     pc.optionVar(sv=(CURRENT_PROJECT_KEY, name))
 
