@@ -305,11 +305,10 @@ def checkin(sobject, context, process = None,
 
 
     if dogpu:
-        gpu_path = pc.mel.gpuCache(pc.ls(sl=True)[0], startTime=1, endTime=1, optimize=True,
+        gpu_path = pc.mel.gpuCache(*pc.ls(sl=True), startTime=1, endTime=1, optimize=True,
                         optimizationThreshold=40000,
-                        writeMaterials=True, dataFormat="ogawa",
+                        writeMaterials=True, dataFormat="ogawa", saveMultipleFiles=False,
                         directory=tmpdir, fileName=filename)
-        
         # if no reachable texture exists no need to go return dict
     if dotextures and shaded and not file:
         
