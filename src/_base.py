@@ -80,11 +80,17 @@ class Explorer(cui.Explorer):
         
     def createRedshiftProxy(self):
         if self.currentFile:
-            backend.createRedshiftProxy(self.currentFile.objectName())
+            error = backend.createRedshiftProxy(self.currentFile.objectName())
+            if error:
+                cui.showMessage(self, title='No File',
+                                msg=error, icon=QMessageBox.Information)
     
     def createGPUCache(self):
         if self.currentFile:
-            backend.createGPUCache(self.currentFile.objectName())
+            error = backend.createGPUCache(self.currentFile.objectName())
+            if error:
+                cui.showMessage(self, title='No File',
+                                msg=error, icon=QMessageBox.Information)
 
     def startUpdateThread(self):
         try:

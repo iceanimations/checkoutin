@@ -31,25 +31,33 @@ def getSnapshotPaths(snapshot):
 
 def createRedshiftProxy(snapshot):
     '''@params: snapshot search key'''
-    errors = []
+    filePath = ''
     paths = getSnapshotPaths(snapshot)
     if paths:
         for path in paths:
             if path.endswith('.rs'):
                 if op.exists(path):
-                    mi.createRedshiftProxy(util.translatePath(path))
+                    filePath = util.translatePath(path)
                     break
+    if filePath:
+        mi.createRedshiftProxy(filePath)
+    else:
+        return 'Could not find a Proxy file'
 
 def createGPUCache(snapshot):
     '''@params: snapshot search key'''
-    errors = []
+    filePath = ''
     paths = getSnapshotPaths(snapshot)
     if paths:
         for path in paths:
             if path.endswith('.abc'):
                 if op.exists(path):
-                    mi.createGPUCache(util.translatePath(path))
+                    filePath = util.translatePath(path)
                     break
+    if filePath:
+        mi.createGPUCache(filePath)
+    else:
+        return 'Could not find a GPU Cache file'
 
 def validateSelectionForProxy():
     error = ''
