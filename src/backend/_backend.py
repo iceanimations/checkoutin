@@ -40,6 +40,7 @@ def createRedshiftProxy(snapshot):
                     filePath = util.translatePath(path)
                     break
     if filePath:
+        pc.select(cl=True)
         mi.createRedshiftProxy(filePath)
     else:
         return 'Could not find a Proxy file'
