@@ -583,6 +583,9 @@ class PublishDialog(Form, Base):
                 self.snapshot, self.publishContext,
                 self.setCurrentCheck.isChecked())
         return newss
+    
+    def publish_with_proxies(self):
+        pass
 
     def export_gpu_cache(self, snapshot):
         #checkout

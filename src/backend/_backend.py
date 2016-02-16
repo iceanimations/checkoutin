@@ -781,6 +781,7 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
     texture = util.get_texture_snapshot(asset, snapshot)
     vless_texture = util.get_texture_snapshot(asset, snapshot,
             versionless=True)
+    
     try:
         texture_file = util.get_filename_from_snap(vless_texture)
     except:
@@ -825,6 +826,107 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
     mi.newScene()
 
     return pub
+
+def publish_asset_with_dependencies(project, episode, sequence, shot, asset, snapshot, context, set_current=True, cleanup=True, publish_textures=True, publish_proxies=True):
+    
+
+    
+    prod_elem = shot or sequence or episode
+    logger.info('getting source texture')
+    
+    if publish_textures:
+        texture = util.get_texture_snapshot(asset, snapshot)
+        vless_texture = util.get_texture_snapshot(asset, snapshot,
+                                                  versionless=True)
+        
+        try:
+            texture_file = util.get_filename_from_snap(vless_texture)
+        except:
+            texture_file = None
+    
+        if not texture_file:
+            publish_textures = False
+
+
+    logger.info('copying and opening file for texture remapping')
+    path = checkout(snapshot['__search_key__'], with_texture=False)
+    mi.openFile(path) 
+
+    if publish_textures:    
+        logger.info('publishing textures')
+        texture_context = util.get_texture_context(snapshot)
+        pub_texture = util.publish_asset(project, prod_elem, asset, texture,
+                texture_context, set_current)
+        prod_asset = util.get_production_asset(project, prod_elem, asset)
+        pub_texture_vless = util.get_published_texture_snapshot(prod_asset,
+                snapshot, versionless=True)
+    
+        logger.info('remapping textures to published location')
+        oldloc = os.path.dirname(
+                util.get_filename_from_snap(vless_texture, mode='client_repo'))
+        newloc = os.path.dirname(
+                util.get_filename_from_snap(pub_texture_vless, mode='client_repo'))
+        map_textures(mi.texture_mapping(newloc, oldloc))
+        
+       
+    if publish_proxies:
+        publish_all_proxies()
+        
+
+    if cleanup:
+        general_cleanup(lights=False)
+
+    logger.info('checking in remapped file')
+    pub = checkin(prod_asset['__search_key__'], context, dotextures=False,
+            is_current=set_current)
+    
+    logger.info('adding dependencies ...')
+    logger.debug('adding publish dependency ...')
+    util.add_publish_dependency(snapshot, pub)
+    
+    if publish_textures:
+        logger.debug('adding texture dependency ...')
+        util.add_texture_dependency(pub, pub_texture)
+
+    mi.newScene()
+
+    return pub
+
+
+def publish_all_proxies():
+    
+    # for node in (proxy and gpu nodes):
+    for node in pc.ls(type=[pc.nt.gpuCache]):
+        path = None
+        attr = None
+        try:
+            attr = node.cacheFileName
+            path = attr.get()
+        except AttributeError:
+            attr = node.fileName.get() 
+            path = attr.get()
+        
+        if path is None:
+            continue
+
+        newpath = publish_proxy(path)
+        attr.set(newpath)
+        
+
+def publish_proxy(path):
+
+    basedir = util.server.get_base_dirs()['win32_client_repo_dir']
+    symlmaps = iutil.symlinks.getSymlinks(basedir)
+    uncpath = util.networkmaps.translateMappedToUNC(path)
+    #get file object
+    #get snapshot object
+    #get latest snapshot
+    #If not already published in current episode 
+        #publish latest (with textures without opening file)
+    return #newpath
+    
+    
+    
 
 def delete_unknown_nodes():
     for node in pc.ls(type='unknown'):
@@ -926,6 +1028,7 @@ def is_production_asset_paired(prod_asset, use_new=True):
     source_shaded = cutil.get_publish_source(current_shaded)
 
     return current_rig, current_shaded, cutil.is_cache_compatible(source_shaded, source_rig)
+
 
 
 
