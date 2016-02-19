@@ -91,7 +91,7 @@ def create_first_snapshot(item, context, check_out=True):
     To be used only if there is no snapshot associated with the given
     context of the item. Item could be task, shot or asset.
     Caution: Clears the scene.
-    :item: search_key of 
+    :item: search_key of
     :context: context of the item
     :check_out: specify whether to create the newly created snapshot
     :return: search_key of newly created snapshot
@@ -252,9 +252,6 @@ def _reference(snapshot, translatePaths=True):
     util.set_tactic_file_info(tactic)
     return present
 
-def translateTexturePaths():
-    mi.texture_mapping
-
 def checkin(sobject, context, process = None,
             version=-1, description = 'No description',
             file = None, geos = [], camera = None, preview = None,
@@ -266,7 +263,7 @@ def checkin(sobject, context, process = None,
     :version: version number of the snapshot (functionality not implemented)
     :return: search_key of the created snapshot
     '''
-    
+
     server = user.get_server()
     if not security.checkinability(sobject, process, context):
         raise Exception('Permission denied. You do not have permission to'+
@@ -290,19 +287,19 @@ def checkin(sobject, context, process = None,
     filename = 'temp_file_name'
     tmpdir = make_temp_dir()
     proxy_path = gpu_path = ''
-    
+
     if dotextures and shaded and not file:
         # texture location mapping in temp
         # normalized and lowercased -> temppath
         ftn_to_texs = mi.textureFiles(selection = False, key=op.exists, returnAsDict=True)
-        alltexs = list(reduce(lambda a,b: a.union(b), ftn_to_texs.values(), set()))        
-        
-        if alltexs: 
+        alltexs = list(reduce(lambda a,b: a.union(b), ftn_to_texs.values(), set()))
+
+        if alltexs:
             texture_context = '/'.join(['texture'] + context.split('/')[1:])
             texdir = op.join(tmpdir, texture_context)
             if not op.exists(texdir): iutil.mkdir(tmpdir, texture_context)
             cur_to_temp = collect_textures(texdir, ftn_to_texs)
-        
+
     if doproxy:
         temp_to_cur = map_textures(cur_to_temp)
         proxy_dir = op.join(tmpdir, context)
@@ -320,7 +317,7 @@ def checkin(sobject, context, process = None,
                         directory=tmpdir, fileName=filename)
         # if no reachable texture exists no need to go return dict
     if dotextures and shaded and not file:
-        
+
         if alltexs:
             client_dir = checkin_texture(sobject, texture_context,
                 is_current=is_current, tmpdir=texdir)
@@ -352,8 +349,8 @@ def checkin(sobject, context, process = None,
         server.add_file(snap_code, proxy_path, file_type='rs', mode='copy', create_icon=False)
     if dogpu and op.exists(gpu_path[0]):
         server.add_file(snap_code, gpu_path, file_type='gpu', mode='copy', create_icon=False)
-        
-    
+
+
     if dotextures and shaded and not file:
 
         map_textures(central_to_ftn)
@@ -488,7 +485,7 @@ def checkin_texture(search_key, context, is_current=False, translatePath=True, t
 
     if translatePath:
         client_dir = util.translatePath(client_dir)
-        
+
     return client_dir
 
 
@@ -781,7 +778,7 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
     texture = util.get_texture_snapshot(asset, snapshot)
     vless_texture = util.get_texture_snapshot(asset, snapshot,
             versionless=True)
-    
+
     try:
         texture_file = util.get_filename_from_snap(vless_texture)
     except:
@@ -827,32 +824,31 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
 
     return pub
 
-def publish_asset_with_dependencies(project, episode, sequence, shot, asset, snapshot, context, set_current=True, cleanup=True, publish_textures=True, publish_proxies=True):
-    
-
-    
+def publish_asset_with_dependencies(project, episode, sequence, shot, asset,
+        snapshot, context, set_current=True, cleanup=True,
+        publish_textures=True, publish_proxies=True):
     prod_elem = shot or sequence or episode
     logger.info('getting source texture')
-    
+
     if publish_textures:
         texture = util.get_texture_snapshot(asset, snapshot)
         vless_texture = util.get_texture_snapshot(asset, snapshot,
                                                   versionless=True)
-        
+
         try:
             texture_file = util.get_filename_from_snap(vless_texture)
         except:
             texture_file = None
-    
+
         if not texture_file:
             publish_textures = False
 
 
     logger.info('copying and opening file for texture remapping')
     path = checkout(snapshot['__search_key__'], with_texture=False)
-    mi.openFile(path) 
+    mi.openFile(path)
 
-    if publish_textures:    
+    if publish_textures:
         logger.info('publishing textures')
         texture_context = util.get_texture_context(snapshot)
         pub_texture = util.publish_asset(project, prod_elem, asset, texture,
@@ -860,18 +856,16 @@ def publish_asset_with_dependencies(project, episode, sequence, shot, asset, sna
         prod_asset = util.get_production_asset(project, prod_elem, asset)
         pub_texture_vless = util.get_published_texture_snapshot(prod_asset,
                 snapshot, versionless=True)
-    
+
         logger.info('remapping textures to published location')
         oldloc = os.path.dirname(
                 util.get_filename_from_snap(vless_texture, mode='client_repo'))
         newloc = os.path.dirname(
                 util.get_filename_from_snap(pub_texture_vless, mode='client_repo'))
         map_textures(mi.texture_mapping(newloc, oldloc))
-        
-       
+
     if publish_proxies:
         publish_all_proxies()
-        
 
     if cleanup:
         general_cleanup(lights=False)
@@ -879,11 +873,11 @@ def publish_asset_with_dependencies(project, episode, sequence, shot, asset, sna
     logger.info('checking in remapped file')
     pub = checkin(prod_asset['__search_key__'], context, dotextures=False,
             is_current=set_current)
-    
+
     logger.info('adding dependencies ...')
     logger.debug('adding publish dependency ...')
     util.add_publish_dependency(snapshot, pub)
-    
+
     if publish_textures:
         logger.debug('adding texture dependency ...')
         util.add_texture_dependency(pub, pub_texture)
@@ -893,40 +887,62 @@ def publish_asset_with_dependencies(project, episode, sequence, shot, asset, sna
     return pub
 
 
-def publish_all_proxies():
-    
-    # for node in (proxy and gpu nodes):
-    for node in pc.ls(type=[pc.nt.gpuCache]):
-        path = None
-        attr = None
-        try:
-            attr = node.cacheFileName
-            path = attr.get()
-        except AttributeError:
-            attr = node.fileName.get() 
-            path = attr.get()
-        
-        if path is None:
-            continue
+def publish_all_proxies( project, episode, sequence, shot ):
+    ''' publish all proxies in current scene and remap path '''
+    for node in pc.ls(type='gpuCache'):
+        path = node.cacheFilename.get()
+        newpath = publish_proxy( project, episode, sequence, shot, path, 'gpu')
+        if newpath:
+            node.cacheFilename.set(newpath)
 
-        newpath = publish_proxy(path)
-        attr.set(newpath)
-        
+    for node in pc.ls(type='RedshiftProxyMesh'):
+        path = node.cacheFilename.get()
+        newpath = publish_proxy( project, episode, sequence, shot, path, 'rs' )
+        if newpath:
+            node.cacheFilename.set(newpath)
 
-def publish_proxy(path):
+def publish_proxy( project, episode, sequence, shot, path, filetype='rs' ):
+    ''' publish given proxies '''
 
-    basedir = util.server.get_base_dirs()['win32_client_repo_dir']
-    symlmaps = iutil.symlinks.getSymlinks(basedir)
-    uncpath = util.networkmaps.translateMappedToUNC(path)
-    #get file object
-    #get snapshot object
-    #get latest snapshot
-    #If not already published in current episode 
-        #publish latest (with textures without opening file)
-    return #newpath
-    
-    
-    
+    prod_elem = shot or sequence or episode
+
+    newpath = ''
+    fileobj = util.get_fileobj_from_path( path )
+    if not fileobj:
+        return ''
+    snap = util.get_snapshot_from_fileobj( fileobj )
+
+    if snap:
+        server = user.get_server()
+        context = snap.get( 'context' )
+        latest = server.get_snapshot( snap['__search_key__'], context=context,
+                version=-1)
+        targets = util.get_published_targets( latest, latest, project,
+                prod_elem )
+
+        if targets:
+            target = targets[0]
+            if not target.get( 'is_current' ):
+                set_snapshot_as_current( target )
+            newpath = util.get_filename_from_snap( latest, filetype=filetype )
+
+        else:
+            asset = server.get_parent(snap)
+            logger.debug( 'publishing proxy %s ...' % os.path.basename(path) )
+            pub = publish_asset( project, episode, sequence, shot, asset, snap,
+                    context=context, set_current=True )
+            texture = util.get_texture_snapshot( snap )
+
+            if context.startswith('shaded'):
+                logger.debug( 'publishing proxy textures ...' )
+                pub_texture = publish_asset( project, episode, sequence, shot,
+                        asset, texture, context=context )
+                logger.debug( 'adding texture dependency ...' )
+                util.add_texture_dependency( pub, pub_texture )
+
+            newpath = util.get_filename_from_snap( asset, filetype=filetype )
+
+    return newpath
 
 def delete_unknown_nodes():
     for node in pc.ls(type='unknown'):
@@ -974,8 +990,7 @@ def create_combined_version(snapshot, postfix='combined', cleanup=True):
 
         general_cleanup()
 
-
-    logger.info('checking in file as combined')
+    logger.info('Checking in file as combined')
     combinedContext = '/'.join([context, postfix])
     sobject = util.get_sobject_from_snap(snapshot)
     combined = checkin(sobject, combinedContext, dotextures=False,
@@ -988,7 +1003,7 @@ def create_combined_version(snapshot, postfix='combined', cleanup=True):
 def set_snapshot_as_current(snapshot):
     server = user.get_server()
     logger.info('setting as current ...')
-    server.set_current_snapshot(snapshot)
+    server.set_current_snapshot( snapshot )
     texture = util.get_texture_by_dependency(snapshot)
     if texture:
         logger.info('setting dependent textures as current')
@@ -1003,7 +1018,6 @@ def set_snapshot_as_current(snapshot):
     return True
 
 def is_production_asset_paired(prod_asset, use_new=True):
-
     cutil = util
 
     if use_new:
