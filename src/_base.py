@@ -281,10 +281,15 @@ class Explorer(cui.Explorer):
                 contexts[snap['process']].add(snap['context'])
             else:
                 contexts[snap['process']] = set([snap['context']])
-
         for context in self.pre_defined_contexts:
             if context not in contexts:
                 contexts[context] = set([context])
+        for sub_context in self.pre_defined_sub_contexts:
+            context = sub_context.split('/')[0]
+            if contexts.has_key(context):
+                sub_contexts = contexts.get(context)
+                if not sub_context in sub_contexts:
+                    contexts[context].add(sub_context)
         return contexts
 
     def contextsLen(self, contexts):

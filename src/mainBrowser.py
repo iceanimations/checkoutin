@@ -30,7 +30,8 @@ class MainBrowser(Explorer):
     item_name = 'asset'
     title = 'Assets Explorer'
     scroller_arg = 'Process/Context'
-    pre_defined_contexts = ['model', 'rig', 'shaded', 'model/low_res', 'shaded/low_res', 'rig/low_res']
+    pre_defined_contexts = ['model', 'rig', 'shaded']
+    pre_defined_sub_contexts = ['model/low_res', 'shaded/low_res', 'rig/low_res']
 
     def __init__(self, shot=None, standalone=False):
 
