@@ -9,6 +9,7 @@ import tactic_client_lib.application.maya as maya
 import datetime
 import os
 import os.path as op
+
 import shutil
 import auth.security as security
 
@@ -102,7 +103,7 @@ def create_first_snapshot(item, context, check_out=True):
         sobject = util.get_sobject_from_task(item)
     else:
         sobject = item
-    snapshot = checkin(sobject, context)
+    snapshot = checkin(sobject, context, doproxy=False, dotexture=False)
     if check_out:
         checkout(snapshot)
     return snapshot
@@ -145,7 +146,7 @@ def checkout(snapshot, r = False, with_texture = True):
                                     snap['context'],
                                     to_sandbox_dir = True,
                                     version = snap['version'],
-                                    file_type = '*')
+                                    file_type = 'maya')
 
             # this has the potential of failing in case of multiple files
             # and the first file returns a non-Maya file
@@ -180,7 +181,7 @@ def checkout(snapshot, r = False, with_texture = True):
                                            snap['context'],
                                            to_sandbox_dir = True,
                                            mode = 'copy',
-                                           file_type = '*')
+                                           file_type = 'maya')
                 tex_mapping = {}
                 tex_path_base = map(op.basename, tex_path)
                 for path, files in mi.textureFiles(False, key = op.exists,
@@ -245,12 +246,22 @@ def _reference(snapshot, translatePaths=True):
             # should be able to reference multiple times
             # return True
 
-    map(snapshot.pop, ['is_synced', 's_status',
-                       'server', 'login'])
+    map(snapshot.pop, ['is_synced', 's_status', 'server', 'login'])
 
     assets.append(snapshot)
     util.set_tactic_file_info(tactic)
     return present
+
+def saveToTemp():
+    ''' '''
+    orig_path = pc.sceneName()
+    tmpfile = op.normpath(iutil.getTemp(prefix = dt.now().
+                                        strftime("%Y-%M-%d_%H-%M-%S")
+                                    )).replace("\\", "/")
+    m.save(tmpfile, file_type = "mayaBinary"
+            if pc.sceneName().endswith(".mb")
+            else "mayaAscii")
+    return orig_path, tmpfile
 
 def checkin(sobject, context, process = None,
             version=-1, description = 'No description',
@@ -273,10 +284,6 @@ def checkin(sobject, context, process = None,
     if 'vfx/shot' in sobject:
         if context.startswith('cache'):
             checkin_cache(sobject, geos, camera)
-
-    tmpfile = op.normpath(iutil.getTemp(prefix = dt.now().
-                                        strftime("%Y-%M-%d %H-%M-%S")
-                                    )).replace("\\", "/")
 
     if process and process != context:
         context = '/'.join([process, context])
@@ -309,13 +316,12 @@ def checkin(sobject, context, process = None,
         pc.mel.rsProxy(proxy_path.replace('\\', '/'), fp=True, sl=True)
         map_textures(temp_to_cur)
 
-
     if dogpu:
         gpu_path = pc.mel.gpuCache(*pc.ls(sl=True), startTime=1, endTime=1, optimize=True,
                         optimizationThreshold=40000,
                         writeMaterials=True, dataFormat="ogawa", saveMultipleFiles=False,
                         directory=tmpdir, fileName=filename)
-        # if no reachable texture exists no need to go return dict
+
     if dotextures and shaded and not file:
 
         if alltexs:
@@ -335,6 +341,10 @@ def checkin(sobject, context, process = None,
         tactic = util.get_tactic_file_info()
         tactic['whoami'] = snapshot['__search_key__']
         util.set_tactic_file_info(tactic)
+
+    tmpfile = op.normpath(iutil.getTemp(prefix = dt.now().
+                                        strftime("%Y-%M-%d %H-%M-%S")
+                                    )).replace("\\", "/")
     orig_path = pc.sceneName()
     save_path = (m.save(tmpfile, file_type = "mayaBinary"
                         if pc.sceneName().endswith(".mb")
@@ -812,7 +822,8 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
 
     logger.info('checking in remapped file')
     pub = checkin(prod_asset['__search_key__'], context, dotextures=False,
-            is_current=set_current)
+            doproxy=False, is_current=set_current)
+    util.copy_snapshot(snapshot, pub, exclude_types=['maya'])
 
     logger.info('adding dependencies ...')
     logger.debug('adding publish dependency ...')
@@ -844,35 +855,39 @@ def publish_asset_with_dependencies(project, episode, sequence, shot, asset,
             publish_textures = False
 
 
-    logger.info('copying and opening file for texture remapping')
+    logger.info('copying and opening file for texture / proxy remapping')
     path = checkout(snapshot['__search_key__'], with_texture=False)
     mi.openFile(path)
 
+    prod_asset = util.get_production_asset(project, prod_elem, asset,
+            force_create=True)
     if publish_textures:
         logger.info('publishing textures')
         texture_context = util.get_texture_context(snapshot)
         pub_texture = util.publish_asset(project, prod_elem, asset, texture,
                 texture_context, set_current)
-        prod_asset = util.get_production_asset(project, prod_elem, asset)
         pub_texture_vless = util.get_published_texture_snapshot(prod_asset,
                 snapshot, versionless=True)
 
         logger.info('remapping textures to published location')
         oldloc = os.path.dirname(
-                util.get_filename_from_snap(vless_texture, mode='client_repo'))
+                util.get_filename_from_snap( vless_texture,
+                    mode='client_repo'))
         newloc = os.path.dirname(
-                util.get_filename_from_snap(pub_texture_vless, mode='client_repo'))
+                util.get_filename_from_snap( pub_texture_vless,
+                    mode='client_repo'))
         map_textures(mi.texture_mapping(newloc, oldloc))
 
     if publish_proxies:
-        publish_all_proxies()
+        publish_all_proxies(project, episode, sequence, shot)
 
     if cleanup:
         general_cleanup(lights=False)
 
     logger.info('checking in remapped file')
     pub = checkin(prod_asset['__search_key__'], context, dotextures=False,
-            is_current=set_current)
+            doproxy=False, is_current=set_current)
+    util.copy_snapshot(snapshot, pub, exclude_types=['maya'])
 
     logger.info('adding dependencies ...')
     logger.debug('adding publish dependency ...')
@@ -883,26 +898,55 @@ def publish_asset_with_dependencies(project, episode, sequence, shot, asset,
         util.add_texture_dependency(pub, pub_texture)
 
     mi.newScene()
-
     return pub
 
 
 def publish_all_proxies( project, episode, sequence, shot ):
     ''' publish all proxies in current scene and remap path '''
+
+    gpus = [node.cacheFilename.get() for node in pc.ls(type='gpuCache')]
+    proxies = [node.fileName.get() for node in pc.ls(type='RedshiftProxyMesh')]
+    gpuMap = {}
+    proxyMap = {}
+
+    tmpFile = ''
+    if gpus or proxies:
+        tmpFile = op.normpath(iutil.getTemp(prefix = dt.now().
+                                            strftime("%Y-%M-%d %H-%M-%S")
+                                        )).replace("\\", "/")
+        m.save(tmpFile, file_type = "mayaBinary"
+                if pc.sceneName().endswith(".mb")
+                else "mayaAscii")
+
+    for path in gpus:
+            newpath = publish_proxy( project, episode, sequence, shot, path, 'gpu')
+            if newpath:
+                gpuMap[path] = newpath
+
+    for path in proxies:
+            newpath = publish_proxy( project, episode, sequence, shot, path, 'rs' )
+            if newpath:
+                proxyMap[path]=newpath
+
+    logging.info('Opening original file')
+    if tmpFile: mi.openFile(tmpFile)
+
+    logging.info('remapping gpu caches file')
     for node in pc.ls(type='gpuCache'):
         path = node.cacheFilename.get()
-        newpath = publish_proxy( project, episode, sequence, shot, path, 'gpu')
-        if newpath:
-            node.cacheFilename.set(newpath)
+        if gpuMap.has_key(path):
+            node.cacheFilename.set(gpuMap.get(path))
 
+    logging.info('remapping rsProxies file')
     for node in pc.ls(type='RedshiftProxyMesh'):
-        path = node.cacheFilename.get()
-        newpath = publish_proxy( project, episode, sequence, shot, path, 'rs' )
-        if newpath:
-            node.cacheFilename.set(newpath)
+        path = node.fileName.get()
+        if proxyMap.has_key(path):
+            node.fileName.set(proxyMap.get(path))
+
+    return True
 
 def publish_proxy( project, episode, sequence, shot, path, filetype='rs' ):
-    ''' publish given proxies '''
+    ''' publish given proxy using path '''
 
     prod_elem = shot or sequence or episode
 
@@ -913,34 +957,35 @@ def publish_proxy( project, episode, sequence, shot, path, filetype='rs' ):
     snap = util.get_snapshot_from_fileobj( fileobj )
 
     if snap:
-        server = user.get_server()
+        server = util.get_server()
         context = snap.get( 'context' )
         latest = server.get_snapshot( snap['__search_key__'], context=context,
                 version=-1)
-        targets = util.get_published_targets( latest, latest, project,
-                prod_elem )
+        targets = util.get_published_targets_in_episode( latest, project, prod_elem )
+
+        pub = None
 
         if targets:
-            target = targets[0]
-            if not target.get( 'is_current' ):
-                set_snapshot_as_current( target )
-            newpath = util.get_filename_from_snap( latest, filetype=filetype )
+            logger.info('proxy %s already published' % os.path.basename(path))
+            pub = targets[0]
+            if not pub.get( 'is_current' ):
+                set_snapshot_as_current( pub )
 
         else:
             asset = server.get_parent(snap)
-            logger.debug( 'publishing proxy %s ...' % os.path.basename(path) )
-            pub = publish_asset( project, episode, sequence, shot, asset, snap,
-                    context=context, set_current=True )
-            texture = util.get_texture_snapshot( snap )
-
+            logger.info( 'publishing proxy %s ...' % os.path.basename(path) )
             if context.startswith('shaded'):
-                logger.debug( 'publishing proxy textures ...' )
-                pub_texture = publish_asset( project, episode, sequence, shot,
-                        asset, texture, context=context )
-                logger.debug( 'adding texture dependency ...' )
-                util.add_texture_dependency( pub, pub_texture )
+                pub = publish_asset_with_textures(project, episode, sequence, shot,
+                        asset, snap, context=context)
+            else:
+                pub = publish_asset( project, episode, sequence, shot, asset, snap,
+                        context=context, set_current=True )
 
-            newpath = util.get_filename_from_snap( asset, filetype=filetype )
+        if pub:
+            vless_pub = server.get_snapshot(pub['__search_key__'],
+                    context=pub.get('context'), version=0, versionless=True)
+            newpath = util.get_filename_from_snap( vless_pub,
+                    filetype=filetype)
 
     return newpath
 
@@ -994,7 +1039,7 @@ def create_combined_version(snapshot, postfix='combined', cleanup=True):
     combinedContext = '/'.join([context, postfix])
     sobject = util.get_sobject_from_snap(snapshot)
     combined = checkin(sobject, combinedContext, dotextures=False,
-            is_current=snapshot['is_current'])
+            doproxy=False, is_current=snapshot['is_current'])
     util.add_combined_dependency(snapshot, combined)
     mi.newScene()
 

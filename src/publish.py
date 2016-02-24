@@ -298,7 +298,7 @@ class PublishDialog(Form, Base):
         combineable = (self.targetContext in ['shaded'] and not is_environment)
         linkable = (self.targetContext == 'rig' and not self.pairSourceLinked
                 and self.pair)
-        gpuCacheable = (self.targetContext == 'model' or
+        compositable = (self.targetContext == 'model' or
                 (self.targetContext=='shaded' and is_environment))
 
         prod_elem = self.shot or self.sequence or self.episode
@@ -312,7 +312,7 @@ class PublishDialog(Form, Base):
                 self.texturesCheck.setChecked(bool(texture_publishable))
                 self.combinedCheck.setChecked(bool( combineable ))
                 self.linkCheck.setChecked(bool( linkable ))
-                self.gpuCacheCheck.setChecked(bool( gpuCacheable ))
+                self.proxyCheck.setChecked(bool( compositable ))
                 self.setCurrentCheck.setChecked(True)
                 if self.targetSnapshots:
                     self.setCurrentCheck.setEnabled(False)
@@ -557,11 +557,17 @@ class PublishDialog(Form, Base):
                 logger.info('Linking successful!')
             except Exception as e:
                 logger.error('Linking failed!: %s' % str(e))
-        newss = None
-        if self.texturesCheck.isChecked():
-            newss = self.publish_with_textures()
-        else:
-            newss = self.simple_publish()
+        # newss = None
+        newss = be.publish_asset_with_dependencies(self.projectName,
+                self.episode, self.sequence, self.shot, self.snapshot['asset'],
+                self.snapshot, self.publishContext,
+                self.setCurrentCheck.isChecked(),
+                publish_textures=self.texturesCheck.isChecked(),
+                publish_proxies=self.proxyCheck.isChecked())
+        # if self.texturesCheck.isChecked():
+            # newss = self.publish_with_textures()
+        # else:
+            # newss = self.simple_publish()
         if newss and self.combinedCheck.isChecked():
             try:
                 self.publish_combined_version(newss)
@@ -583,15 +589,22 @@ class PublishDialog(Form, Base):
                 self.snapshot, self.publishContext,
                 self.setCurrentCheck.isChecked())
         return newss
-    
-    def publish_with_proxies(self):
-        pass
 
-    def export_gpu_cache(self, snapshot):
-        #checkout
-        #open
-        #export gpu cache
-        pass
+    def publish_with_proxies(self):
+        newss = be.publish_asset_with_dependencies(self.projectName,
+                self.episode, self.sequence, self.shot, self.snapshot['asset'],
+                self.snapshot, self.publishContext,
+                self.setCurrentCheck.isChecked(), publish_textures=False,
+                publish_proxies=True)
+        return newss
+
+    def publish_with_proxies_and_textures(self):
+        newss = be.publish_asset_with_dependencies(self.projectName,
+                self.episode, self.sequence, self.shot, self.snapshot['asset'],
+                self.snapshot, self.publishContext,
+                self.setCurrentCheck.isChecked(), publish_textures=True,
+                publish_proxies=True)
+        return newss
 
     def publish_combined_version(self, snapshot=None):
         if not snapshot:
