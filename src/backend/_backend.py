@@ -103,7 +103,8 @@ def create_first_snapshot(item, context, check_out=True):
         sobject = util.get_sobject_from_task(item)
     else:
         sobject = item
-    snapshot = checkin(sobject, context, doproxy=False, dotexture=False)
+    snapshot = checkin(sobject, context, doproxy=False, dogpu=False,
+            dotexture=False)
     if check_out:
         checkout(snapshot)
     return snapshot
@@ -295,7 +296,9 @@ def checkin(sobject, context, process = None,
     tmpdir = make_temp_dir()
     proxy_path = gpu_path = ''
 
-    if dotextures and shaded and not file:
+    dotextures = dotextures and shaded and not file
+
+    if dotextures:
         # texture location mapping in temp
         # normalized and lowercased -> temppath
         ftn_to_texs = mi.textureFiles(selection = False, key=op.exists, returnAsDict=True)
@@ -322,14 +325,17 @@ def checkin(sobject, context, process = None,
                         writeMaterials=True, dataFormat="ogawa", saveMultipleFiles=False,
                         directory=tmpdir, fileName=filename)
 
-    if dotextures and shaded and not file:
+    if dotextures:
 
         if alltexs:
             client_dir = checkin_texture(sobject, texture_context,
                 is_current=is_current, tmpdir=texdir)
-            ftn_to_central = {ftn: op.join(client_dir, op.basename(cur_to_temp[ftn]))
+            ftn_to_central = {ftn: op.join(client_dir,
+                op.basename(cur_to_temp[ftn]))
                               for ftn in ftn_to_texs}
             central_to_ftn = map_textures(ftn_to_central)
+            print 'ftn_to_central:', ftn_to_central
+            print 'central_to_ftn:', central_to_ftn
 
     snapshot = server.create_snapshot(sobject, context, is_current=is_current)
 
@@ -341,6 +347,9 @@ def checkin(sobject, context, process = None,
         tactic = util.get_tactic_file_info()
         tactic['whoami'] = snapshot['__search_key__']
         util.set_tactic_file_info(tactic)
+
+    if dotextures:
+        map_textures(central_to_ftn)
 
     tmpfile = op.normpath(iutil.getTemp(prefix = dt.now().
                                         strftime("%Y-%M-%d %H-%M-%S")
@@ -361,9 +370,6 @@ def checkin(sobject, context, process = None,
         server.add_file(snap_code, gpu_path, file_type='gpu', mode='copy', create_icon=False)
 
 
-    if dotextures and shaded and not file:
-
-        map_textures(central_to_ftn)
 
     search_key = snapshot['__search_key__']
 
@@ -790,7 +796,8 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
             versionless=True)
 
     try:
-        texture_file = util.get_filename_from_snap(vless_texture)
+        texture_file = util.get_filename_from_snap(vless_texture,
+                mode='client_repo')
     except:
         texture_file = None
 
@@ -822,7 +829,7 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
 
     logger.info('checking in remapped file')
     pub = checkin(prod_asset['__search_key__'], context, dotextures=False,
-            doproxy=False, is_current=set_current)
+            doproxy=False, dogpu=False, is_current=set_current)
     util.copy_snapshot(snapshot, pub, exclude_types=['maya'])
 
     logger.info('adding dependencies ...')
@@ -886,7 +893,7 @@ def publish_asset_with_dependencies(project, episode, sequence, shot, asset,
 
     logger.info('checking in remapped file')
     pub = checkin(prod_asset['__search_key__'], context, dotextures=False,
-            doproxy=False, is_current=set_current)
+            doproxy=False, dogpu=False, is_current=set_current)
     util.copy_snapshot(snapshot, pub, exclude_types=['maya'])
 
     logger.info('adding dependencies ...')
@@ -904,7 +911,7 @@ def publish_asset_with_dependencies(project, episode, sequence, shot, asset,
 def publish_all_proxies( project, episode, sequence, shot ):
     ''' publish all proxies in current scene and remap path '''
 
-    gpus = [node.cacheFilename.get() for node in pc.ls(type='gpuCache')]
+    gpus = [node.cacheFileName.get() for node in pc.ls(type='gpuCache')]
     proxies = [node.fileName.get() for node in pc.ls(type='RedshiftProxyMesh')]
     gpuMap = {}
     proxyMap = {}
@@ -933,9 +940,9 @@ def publish_all_proxies( project, episode, sequence, shot ):
 
     logging.info('remapping gpu caches file')
     for node in pc.ls(type='gpuCache'):
-        path = node.cacheFilename.get()
+        path = node.cacheFileName.get()
         if gpuMap.has_key(path):
-            node.cacheFilename.set(gpuMap.get(path))
+            node.cacheFileName.set(gpuMap.get(path))
 
     logging.info('remapping rsProxies file')
     for node in pc.ls(type='RedshiftProxyMesh'):
@@ -985,7 +992,7 @@ def publish_proxy( project, episode, sequence, shot, path, filetype='rs' ):
             vless_pub = server.get_snapshot(pub['__search_key__'],
                     context=pub.get('context'), version=0, versionless=True)
             newpath = util.get_filename_from_snap( vless_pub,
-                    filetype=filetype)
+                    filetype=filetype, mode='client_repo')
 
     return newpath
 
@@ -1039,7 +1046,7 @@ def create_combined_version(snapshot, postfix='combined', cleanup=True):
     combinedContext = '/'.join([context, postfix])
     sobject = util.get_sobject_from_snap(snapshot)
     combined = checkin(sobject, combinedContext, dotextures=False,
-            doproxy=False, is_current=snapshot['is_current'])
+            doproxy=False, dogpu=False, is_current=snapshot['is_current'])
     util.add_combined_dependency(snapshot, combined)
     mi.newScene()
 
