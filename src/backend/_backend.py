@@ -127,7 +127,6 @@ def checkout(snapshot, r = False, with_texture = True):
     '''
     @snapshot: snapshot search_key
     '''
-    print 'snapshot:', snapshot
     server = user.get_server()
     if user.user_registered():
 
@@ -334,8 +333,6 @@ def checkin(sobject, context, process = None,
                 op.basename(cur_to_temp[ftn]))
                               for ftn in ftn_to_texs}
             central_to_ftn = map_textures(ftn_to_central)
-            print 'ftn_to_central:', ftn_to_central
-            print 'central_to_ftn:', central_to_ftn
 
     snapshot = server.create_snapshot(sobject, context, is_current=is_current)
 
@@ -364,7 +361,6 @@ def checkin(sobject, context, process = None,
     server.add_file(snap_code, save_path, file_type = 'maya',
                       mode = 'copy', create_icon = False)
     if doproxy and op.exists(proxy_path):
-        print 'Proxy File:', proxy_path
         server.add_file(snap_code, proxy_path, file_type='rs', mode='copy', create_icon=False)
     if dogpu and op.exists(gpu_path[0]):
         server.add_file(snap_code, gpu_path, file_type='gpu', mode='copy', create_icon=False)
@@ -797,7 +793,7 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
 
     try:
         texture_file = util.get_filename_from_snap(vless_texture,
-                mode='client_repo')
+                mode='client_repo', filetype='image')
     except:
         texture_file = None
 
@@ -820,9 +816,11 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
 
     logger.info('remapping textures to published location')
     oldloc = os.path.dirname(
-            util.get_filename_from_snap(vless_texture, mode='client_repo'))
+            util.get_filename_from_snap(vless_texture, mode='client_repo',
+                filetype='image'))
     newloc = os.path.dirname(
-            util.get_filename_from_snap(pub_texture_vless, mode='client_repo'))
+            util.get_filename_from_snap(pub_texture_vless, mode='client_repo',
+                filetype='image'))
     map_textures(mi.texture_mapping(newloc, oldloc))
     if cleanup:
         general_cleanup(lights=False)
@@ -854,7 +852,8 @@ def publish_asset_with_dependencies(project, episode, sequence, shot, asset,
                                                   versionless=True)
 
         try:
-            texture_file = util.get_filename_from_snap(vless_texture)
+            texture_file = util.get_filename_from_snap(vless_texture,
+                    mode='client_repo', filetype='image')
         except:
             texture_file = None
 
@@ -879,10 +878,10 @@ def publish_asset_with_dependencies(project, episode, sequence, shot, asset,
         logger.info('remapping textures to published location')
         oldloc = os.path.dirname(
                 util.get_filename_from_snap( vless_texture,
-                    mode='client_repo'))
+                    mode='client_repo', filetype='image'))
         newloc = os.path.dirname(
                 util.get_filename_from_snap( pub_texture_vless,
-                    mode='client_repo'))
+                    mode='client_repo', filetype='image'))
         map_textures(mi.texture_mapping(newloc, oldloc))
 
     if publish_proxies:
@@ -921,7 +920,7 @@ def publish_all_proxies( project, episode, sequence, shot ):
         tmpFile = op.normpath(iutil.getTemp(prefix = dt.now().
                                             strftime("%Y-%M-%d %H-%M-%S")
                                         )).replace("\\", "/")
-        m.save(tmpFile, file_type = "mayaBinary"
+        tmpFile = m.save(tmpFile, file_type = "mayaBinary"
                 if pc.sceneName().endswith(".mb")
                 else "mayaAscii")
 
