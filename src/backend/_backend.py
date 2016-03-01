@@ -160,6 +160,7 @@ def checkout(snapshot, r = False, with_texture = True):
             tex = []
             if with_texture:
                 tex = server.get_all_children(sobj['__search_key__'], TEXTURE_TYPE)
+
             if tex:
                 context_comp = snap['context'].split('/')
 
@@ -181,7 +182,7 @@ def checkout(snapshot, r = False, with_texture = True):
                                            snap['context'],
                                            to_sandbox_dir = True,
                                            mode = 'copy',
-                                           file_type = 'maya')
+                                           file_type='*')
                 tex_mapping = {}
                 tex_path_base = map(op.basename, tex_path)
                 for path, files in mi.textureFiles(False, key = op.exists,
@@ -308,31 +309,28 @@ def checkin(sobject, context, process = None,
             texdir = op.join(tmpdir, texture_context)
             if not op.exists(texdir): iutil.mkdir(tmpdir, texture_context)
             cur_to_temp = collect_textures(texdir, ftn_to_texs)
+            map_textures(cur_to_temp)
 
     if doproxy:
-        temp_to_cur = map_textures(cur_to_temp)
-        proxy_dir = op.join(tmpdir, context)
+        proxy_dir = op.join( tmpdir, context )
         proxy_path = op.join(proxy_dir, filename +'.rs')#.replace(" ", "_")
         if not op.exists(proxy_dir): iutil.mkdir(tmpdir, context)
         pc.mel.eval('file -force -options \"\" -typ \"Redshift Proxy\" -pr -es \"%s\";'%proxy_path.replace('\\', '/'))
         pc.mel.rsProxy(proxy_path.replace('\\', '/'), fp=True, sl=True)
-        map_textures(temp_to_cur)
 
     if dogpu:
-        gpu_path = pc.mel.gpuCache(*pc.ls(sl=True), startTime=1, endTime=1, optimize=True,
-                        optimizationThreshold=40000,
-                        writeMaterials=True, dataFormat="ogawa", saveMultipleFiles=False,
-                        directory=tmpdir, fileName=filename)
+        gpu_path = pc.mel.gpuCache(*pc.ls(sl=True), startTime=1, endTime=1,
+                optimize=True, optimizationThreshold=40000,
+                writeMaterials=True, dataFormat="ogawa",
+                saveMultipleFiles=False, directory=tmpdir, fileName=filename)
 
     if dotextures:
 
         if alltexs:
             client_dir = checkin_texture(sobject, texture_context,
                 is_current=is_current, tmpdir=texdir)
-            ftn_to_central = {ftn: op.join(client_dir,
-                op.basename(cur_to_temp[ftn]))
-                              for ftn in ftn_to_texs}
-            central_to_ftn = map_textures(ftn_to_central)
+            mapping = mi.texture_mapping(client_dir, texdir)
+            map_textures(mapping)
 
     snapshot = server.create_snapshot(sobject, context, is_current=is_current)
 
@@ -344,9 +342,6 @@ def checkin(sobject, context, process = None,
         tactic = util.get_tactic_file_info()
         tactic['whoami'] = snapshot['__search_key__']
         util.set_tactic_file_info(tactic)
-
-    if dotextures:
-        map_textures(central_to_ftn)
 
     tmpfile = op.normpath(iutil.getTemp(prefix = dt.now().
                                         strftime("%Y-%M-%d %H-%M-%S")
@@ -364,8 +359,6 @@ def checkin(sobject, context, process = None,
         server.add_file(snap_code, proxy_path, file_type='rs', mode='copy', create_icon=False)
     if dogpu and op.exists(gpu_path[0]):
         server.add_file(snap_code, gpu_path, file_type='gpu', mode='copy', create_icon=False)
-
-
 
     search_key = snapshot['__search_key__']
 
@@ -512,8 +505,8 @@ def map_textures(mapping):
 
 def collect_textures(dest, scene_textures=None):
     '''
-    Collect all scene texturefiles to a flat hierarchy in a single directory while resolving
-    nameclashes
+    Collect all scene texturefiles to a flat hierarchy in a single directory
+    while resolving nameclashes
 
     @return: {ftn: tmp}
     '''
@@ -1093,9 +1086,6 @@ def is_production_asset_paired(prod_asset, use_new=True):
     source_shaded = cutil.get_publish_source(current_shaded)
 
     return current_rig, current_shaded, cutil.is_cache_compatible(source_shaded, source_rig)
-
-
-
 
 get_all_projects = util.get_all_projects
 get_publish_targets = util.get_all_publish_targets
