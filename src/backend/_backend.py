@@ -363,7 +363,7 @@ def checkin(sobject, context, process = None,
     search_key = snapshot['__search_key__']
 
     if process:
-        server.update(search_key, data = {'process': process})
+        server.update(search_key, data = { 'process': process })
 
     if (any([key in sobject for key in ['vfx/shot', 'vfx/asset']])
         and preview and op.exist(preview)):
@@ -947,44 +947,84 @@ def publish_all_proxies( project, episode, sequence, shot ):
 def publish_proxy( project, episode, sequence, shot, path, filetype='rs' ):
     ''' publish given proxy using path '''
 
-    prod_elem = shot or sequence or episode
 
-    newpath = ''
+    pub_path = ''
     fileobj = util.get_fileobj_from_path( path )
     if not fileobj:
         return ''
     snap = util.get_snapshot_from_fileobj( fileobj )
 
     if snap:
-        server = util.get_server()
         context = snap.get( 'context' )
-        latest = server.get_snapshot( snap['__search_key__'], context=context,
-                version=-1)
-        targets = util.get_published_targets_in_episode( latest, project, prod_elem )
+        server = util.get_server()
+        asset = server.get_parent(snap)
+        latest_snaps = get_publishable_snaps(asset)
 
-        pub = None
+        try:
+            if not has_proxy(
+                    filter(lambda s: s['context']==context, latest_snaps)[0],
+                    filetype=filetype):
+                raise Exception, 'proxy not found in latest snapshot of %s'%path
+        except IndexError:
+            raise Exception, 'proxy not found in latest snapshot of %s'%path
 
-        if targets:
-            logger.info('proxy %s already published' % os.path.basename(path))
-            pub = targets[0]
-            if not pub.get( 'is_current' ):
-                set_snapshot_as_current( pub )
+        for latest in latest_snaps:
+            newpath = publish_proxy_snapshot( project, episode, sequence, shot,
+                    asset, latest, filetype=filetype)
+            if latest[ 'context' ] == context:
+                pub_path = newpath
 
+    return pub_path
+
+def has_proxy(snapshot, filetype='rs'):
+    server = util.get_server()
+    files = server.get_all_children(snapshot['__search_key__'], 'sthpw/file',
+        filters=[( 'type', filetype )])
+    return bool(files)
+
+def get_publishable_snaps(asset):
+    server = util.get_server()
+    stype, code = server.split_search_key(asset['__search_key__'])
+    snaps = server.query('sthpw/snapshot', filters=[('search_code', code),
+        ('search_type', stype), ('is_latest', True), ('version', '>=', 0)])
+    return snaps
+
+def publish_proxy_snapshot( project, episode, sequence, shot, asset, latest,
+        filetype='rs'):
+    prod_elem = shot or sequence or episode
+    newpath = ''
+    server = util.get_server()
+    context = latest.get('context')
+
+    targets = util.get_published_targets_in_episode( latest, project,
+            prod_elem )
+
+    name = '_'.join([latest.get('search_code'),
+        latest.get('context').replace('/', '_'), 'v%03d'%latest.get('version')])
+
+    logger.info('taking up proxy %s ... ' %name)
+
+    pub = None
+    if targets:
+        logger.info('proxy %s already published!' % name)
+        pub = targets[0]
+        if not pub.get( 'is_current' ):
+            set_snapshot_as_current( pub )
+
+    else:
+        logger.info( 'publishing proxy %s ...' % name )
+        if context.startswith('shaded'):
+            pub = publish_asset_with_textures(project, episode, sequence, shot,
+                    asset, latest, context=context)
         else:
-            asset = server.get_parent(snap)
-            logger.info( 'publishing proxy %s ...' % os.path.basename(path) )
-            if context.startswith('shaded'):
-                pub = publish_asset_with_textures(project, episode, sequence, shot,
-                        asset, snap, context=context)
-            else:
-                pub = publish_asset( project, episode, sequence, shot, asset, snap,
-                        context=context, set_current=True )
+            pub = publish_asset( project, episode, sequence, shot, asset,
+                    latest, context=context, set_current=True )
 
-        if pub:
-            vless_pub = server.get_snapshot(pub['__search_key__'],
-                    context=pub.get('context'), version=0, versionless=True)
-            newpath = util.get_filename_from_snap( vless_pub,
-                    filetype=filetype, mode='client_repo')
+    if pub:
+        vless_pub = server.get_snapshot(pub['__search_key__'],
+                context=pub.get('context'), version=0, versionless=True)
+        newpath = util.get_filename_from_snap( vless_pub,
+                filetype=filetype, mode='client_repo')
 
     return newpath
 
