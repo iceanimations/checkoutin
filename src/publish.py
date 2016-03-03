@@ -329,7 +329,7 @@ class PublishDialog(Form, Base):
                 self.snapshot['code'], prod_elem['code'], self.target['code']))
             if not self.current and publishable:
                 self.setDefaultAction('setCurrent')
-            elif not self.combined:
+            elif not self.combined and combineable:
                 self.setDefaultAction('combine')
             else:
                 self.setDefaultAction()
