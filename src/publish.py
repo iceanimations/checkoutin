@@ -291,6 +291,7 @@ class PublishDialog(Form, Base):
             self.linkButton.setEnabled(True)
 
         is_environment = self.category.startswith('env')
+        is_neighborhood = self.category.startswith('neigh')
         publishable = (self.targetContext == 'rig' or
                 self.targetContext == 'model' or self.pairSourceLinked or
                 self.category.startswith('env'))
@@ -299,7 +300,8 @@ class PublishDialog(Form, Base):
         linkable = (self.targetContext == 'rig' and not self.pairSourceLinked
                 and self.pair)
         compositable = (self.targetContext == 'model' or
-                (self.targetContext=='shaded' and is_environment))
+                (self.targetContext=='shaded' and ( is_environment or
+                    is_neighborhood )))
 
         prod_elem = self.shot or self.sequence or self.episode
 
@@ -558,16 +560,20 @@ class PublishDialog(Form, Base):
             except Exception as e:
                 logger.error('Linking failed!: %s' % str(e))
         # newss = None
-        newss = be.publish_asset_with_dependencies(self.projectName,
+        publish_with_proxy = self.proxyCheck.isChecked()
+        publish_with_textures = self.texturesCheck.isChecked()
+
+        if publish_with_proxy:
+            newss = be.publish_asset_with_dependencies(self.projectName,
                 self.episode, self.sequence, self.shot, self.snapshot['asset'],
                 self.snapshot, self.publishContext,
                 self.setCurrentCheck.isChecked(),
                 publish_textures=self.texturesCheck.isChecked(),
                 publish_proxies=self.proxyCheck.isChecked())
-        # if self.texturesCheck.isChecked():
-            # newss = self.publish_with_textures()
-        # else:
-            # newss = self.simple_publish()
+        elif publish_with_textures:
+            newss = self.publish_with_textures()
+        else:
+            newss = self.simple_publish()
         if newss and self.combinedCheck.isChecked():
             try:
                 self.publish_combined_version(newss)
@@ -610,15 +616,6 @@ class PublishDialog(Form, Base):
         if not snapshot:
             snapshot = self.target
         return be.create_combined_version(snapshot)
-
-    def export_mesh(self):
-        #checkout
-        #open
-        #combine mesh
-        #delete history
-        #save
-        #create snapshot and add file
-        pass
 
     def validate(self):
         validity = False
