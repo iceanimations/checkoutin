@@ -296,7 +296,8 @@ class PublishDialog(Form, Base):
                 self.targetContext == 'model' or self.pairSourceLinked or
                 self.category.startswith('env'))
         texture_publishable = self.targetContext == 'shaded'
-        combineable = (self.targetContext in ['rig', 'shaded'] and not is_environment)
+        combineable = (self.targetContext in ['rig', 'shaded'] and not
+                (is_environment or is_neighborhood))
         linkable = (self.targetContext == 'rig' and not self.pairSourceLinked
                 and self.pair)
         compositable = (self.targetContext == 'model' or
