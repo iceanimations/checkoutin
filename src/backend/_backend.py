@@ -947,12 +947,12 @@ def publish_all_proxies( project, episode, sequence, shot ):
 def publish_proxy( project, episode, sequence, shot, path, filetype='rs' ):
     ''' publish given proxy using path '''
 
-
     pub_path = ''
     fileobj = util.get_fileobj_from_path( path )
     if not fileobj:
         return ''
     snap = util.get_snapshot_from_fileobj( fileobj )
+    snap_latest = None
 
     if snap:
         context = snap.get( 'context' )
@@ -969,10 +969,17 @@ def publish_proxy( project, episode, sequence, shot, path, filetype='rs' ):
             raise Exception, 'proxy not found in latest snapshot of %s'%path
 
         for latest in latest_snaps:
+            if latest.get('context').split('/')[0] not in ['model', 'shaded']:
+                continue
             newpath = publish_proxy_snapshot( project, episode, sequence, shot,
                     asset, latest, filetype=filetype)
             if latest[ 'context' ] == context:
+                snap_latest = latest
                 pub_path = newpath
+
+    if not pub_path:
+        raise Exception, 'snapshot %s does not have filetype %s' % (
+                snap_latest['code'], filetype)
 
     return pub_path
 
@@ -1000,7 +1007,8 @@ def publish_proxy_snapshot( project, episode, sequence, shot, asset, latest,
             prod_elem )
 
     name = '_'.join([latest.get('search_code'),
-        latest.get('context').replace('/', '_'), 'v%03d'%latest.get('version')])
+        latest.get('context').replace('/', '_'),
+        'v%03d'%latest.get('version')])
 
     logger.info('taking up proxy %s ... ' %name)
 
@@ -1023,8 +1031,12 @@ def publish_proxy_snapshot( project, episode, sequence, shot, asset, latest,
     if pub:
         vless_pub = server.get_snapshot(pub['__search_key__'],
                 context=pub.get('context'), version=0, versionless=True)
-        newpath = util.get_filename_from_snap( vless_pub,
-                filetype=filetype, mode='client_repo')
+        try:
+            newpath = util.get_filename_from_snap( vless_pub,
+                    filetype=filetype, mode='client_repo')
+        except IndexError as e:
+            logger.error('Error: %s! Snapshot %s does not have filetype %s' % (
+                str(e), latest.get('code', ''), filetype))
 
     return newpath
 
