@@ -300,9 +300,9 @@ class PublishDialog(Form, Base):
                 (is_environment or is_neighborhood))
         linkable = (self.targetContext == 'rig' and not self.pairSourceLinked
                 and self.pair)
-        compositable = (self.targetContext == 'model' or
-                (self.targetContext=='shaded' and ( is_environment or
-                    is_neighborhood )))
+        compositable = ((self.targetContext == 'model' or
+                self.targetContext=='shaded') and ( is_environment or
+                    is_neighborhood ))
 
         prod_elem = self.shot or self.sequence or self.episode
 
