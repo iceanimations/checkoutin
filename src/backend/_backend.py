@@ -1104,7 +1104,7 @@ def set_snapshot_as_current(snapshot):
     if texture:
         logger.info('setting dependent textures as current')
         server.set_current_snapshot( texture )
-    combined = util.get_dependencies(snapshot, keyword='keyword', source=False)
+    combined = util.get_dependencies(snapshot, keyword='combined', source=False)
     if combined:
         logger.info('setting combined version as current')
         server.set_current_snapshot( texture )
