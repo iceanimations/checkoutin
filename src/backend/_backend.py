@@ -1017,7 +1017,7 @@ def publish_proxy_snapshot( project, episode, sequence, shot, asset, latest,
         logger.info('proxy %s already published!' % name)
         pub = targets[0]
         if not pub.get( 'is_current' ):
-            set_snapshot_as_current( pub )
+            set_snapshot_as_current( pub, doCombine = False )
 
     else:
         logger.info( 'publishing proxy %s ...' % name )
@@ -1096,7 +1096,7 @@ def create_combined_version(snapshot, postfix='combined', cleanup=True):
 
     return combined
 
-def set_snapshot_as_current(snapshot):
+def set_snapshot_as_current(snapshot, doCombine=True):
     server = user.get_server()
     logger.info('setting as current ...')
     server.set_current_snapshot( snapshot )
@@ -1107,8 +1107,8 @@ def set_snapshot_as_current(snapshot):
     combined = util.get_dependencies(snapshot, keyword='combined', source=False)
     if combined:
         logger.info('setting combined version as current')
-        server.set_current_snapshot( texture )
-    else:
+        server.set_current_snapshot( combined )
+    elif doCombine:
         create_combined_version(snapshot, postfix='combined')
 
     return True
