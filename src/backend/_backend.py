@@ -992,8 +992,9 @@ def has_proxy(snapshot, filetype='rs'):
 def get_publishable_snaps(asset):
     server = util.get_server()
     stype, code = server.split_search_key(asset['__search_key__'])
+    print 'publishable', code, stype
     snaps = server.query('sthpw/snapshot', filters=[('search_code', code),
-        ('search_type', stype), ('is_latest', True), ('version', '>=', 0)])
+        ('search_type', stype), ('is_latest', True), ('version', '>=', '0')])
     return snaps
 
 def publish_proxy_snapshot( project, episode, sequence, shot, asset, latest,
