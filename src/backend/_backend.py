@@ -10,6 +10,7 @@ import datetime
 import os
 import os.path as op
 
+
 import shutil
 import auth.security as security
 
@@ -24,6 +25,18 @@ dt = datetime.datetime
 m = maya.Maya()
 TEXTURE_TYPE = 'vfx/texture'
 CURRENT_PROJECT_KEY = 'current_project_key'
+
+try:
+    if not pc.pluginInfo('redshift4maya', q=1, l=1):
+        pc.loadPlugin('redshift4maya')
+except Exception as e:
+    logging.error('cannot load plugin %s'%str(e))
+
+try:
+    if not pc.pluginInfo('gpuCache', q=1, l=1):
+        pc.loadPlugin('gpuCache')
+except Exception as e:
+    logging.error('cannot load plugin %s'%str(e))
 
 def getSnapshotPaths(snapshot):
     if user.user_registered():
@@ -948,16 +961,36 @@ def publish_proxy( project, episode, sequence, shot, path, filetype='rs' ):
     ''' publish given proxy using path '''
 
     pub_path = ''
+
+
     fileobj = util.get_fileobj_from_path( path )
     if not fileobj:
         return ''
     snap = util.get_snapshot_from_fileobj( fileobj )
     snap_latest = None
+    server = util.get_server()
+    asset = server.get_parent(snap)
+    if not util.is_production_asset(asset):
+        logging.info('Production asset referenced ... translating back to source')
+        prod_asset = asset
+        current_snap = server.get_snapshot(prod_asset['__search_key__'],
+                version=0, context=snap['context'])
+        source = util.get_publish_source(current_snap)
+        source_path = ''
+        try:
+            source_path = util.get_filename_from_snap(source, mode='client_repo',
+                    filetype=filetype)
+        except Exception as e:
+            logging.error('%s: cannot find %s file in source'%( str(e), filetype ))
+
+        if source_path:
+            snap = source
+            asset = server.get_parent(source)
+        else:
+            snap = None
 
     if snap:
         context = snap.get( 'context' )
-        server = util.get_server()
-        asset = server.get_parent(snap)
         latest_snaps = get_publishable_snaps(asset)
 
         try:
@@ -978,8 +1011,11 @@ def publish_proxy( project, episode, sequence, shot, path, filetype='rs' ):
                 pub_path = newpath
 
     if not pub_path:
-        raise Exception, 'snapshot %s does not have filetype %s' % (
-                snap_latest['code'], filetype)
+        if snap_latest:
+            raise Exception, 'snapshot %s does not have filetype %s' % (
+                    snap_latest['code'], filetype)
+        else:
+            raise Exception, 'invalid proxy %s' % path
 
     return pub_path
 
@@ -992,7 +1028,6 @@ def has_proxy(snapshot, filetype='rs'):
 def get_publishable_snaps(asset):
     server = util.get_server()
     stype, code = server.split_search_key(asset['__search_key__'])
-    print 'publishable', code, stype
     snaps = server.query('sthpw/snapshot', filters=[('search_code', code),
         ('search_type', stype), ('is_latest', True), ('version', '>=', '0')])
     return snaps
@@ -1046,7 +1081,8 @@ def delete_unknown_nodes():
         try:
             pc.delete(node)
         except Exception as e:
-            print e
+            logging.error('Error Encountered while deleting unknown nodes:%s'
+                    %str(e))
 
 def general_cleanup(unknowns=True, lights=True, refs=True, cams=True):
     if refs: mi.removeAllReferences()
