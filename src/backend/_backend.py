@@ -355,6 +355,8 @@ def checkin(sobject, context, process = None,
         tactic = util.get_tactic_file_info()
         tactic['whoami'] = snapshot['__search_key__']
         util.set_tactic_file_info(tactic)
+        general_cleanup(unknowns=True, lights=False, refs=False, cams=False,
+                bundleScriptNodes=True)
 
     tmpfile = op.normpath(iutil.getTemp(prefix = dt.now().
                                         strftime("%Y-%M-%d %H-%M-%S")
@@ -1084,7 +1086,20 @@ def delete_unknown_nodes():
             logging.error('Error Encountered while deleting unknown nodes:%s'
                     %str(e))
 
-def general_cleanup(unknowns=True, lights=True, refs=True, cams=True):
+def removeBundleScriptNodes():
+    scripts = pc.ls(type='script')
+    for node in scripts:
+        if node.name().find('ICE_BundleScript') >= 0:
+            try:
+                pc.lockNode(node, l=False)
+                pc.delete(node)
+            except Exception as e:
+                logger.error('Cannot remove node %s from scene: %s'%(
+                    node.name(), str(e)))
+
+
+def general_cleanup(unknowns=True, lights=True, refs=True, cams=True,
+        bundleScriptNodes=True):
     if refs: mi.removeAllReferences()
     if lights: mi.removeAllLights()
     if cams:
@@ -1093,6 +1108,8 @@ def general_cleanup(unknowns=True, lights=True, refs=True, cams=True):
             pc.delete([cam.getParent() for cam in cameras])
     if unknowns:
         delete_unknown_nodes()
+    if bundleScriptNodes:
+        removeBundleScriptNodes()
 
 def create_combined_version(snapshot, postfix='combined', cleanup=True):
     context = snapshot['context']
