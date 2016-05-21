@@ -746,7 +746,7 @@ def current_scene_compatible(other):
         raise Exception, 'no valid geo_set found in other file %s'%other_path
 
     result = mi.geo_sets_compatible(geo_set, other_geo_set)
-    mi.removeReference(other_geo_set)
+    mi.removeReference(other_ref)
 
     return result
 
