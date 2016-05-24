@@ -1069,6 +1069,11 @@ def publish_proxy_snapshot( project, episode, sequence, shot, asset, latest,
     if pub:
         vless_pub = server.get_snapshot(pub['__search_key__'],
                 context=pub.get('context'), version=0, versionless=True)
+        if not vless_pub:
+            server.set_current_snapshot(pub)
+            server.update(pub['__search_key__'], data={'is_current':False})
+            vless_pub = server.get_snapshot(pub['__search_key__'],
+                    context=pub.get('context'), version=0, versionless=True)
         try:
             newpath = util.get_filename_from_snap( vless_pub,
                     filetype=filetype, mode='client_repo')
