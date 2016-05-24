@@ -918,8 +918,10 @@ def publish_asset_with_dependencies(project, episode, sequence, shot, asset,
 def publish_all_proxies( project, episode, sequence, shot ):
     ''' publish all proxies in current scene and remap path '''
 
-    gpus = [node.cacheFileName.get() for node in pc.ls(type='gpuCache')]
-    proxies = [node.fileName.get() for node in pc.ls(type='RedshiftProxyMesh')]
+    gpus = list(set( [os.path.normpath( node.cacheFileName.get() ) for node in
+        pc.ls(type='gpuCache')] ) )
+    proxies = list(set( [os.path.normpath( node.fileName.get() ) for node in
+        pc.ls(type='RedshiftProxyMesh')] ) )
     gpuMap = {}
     proxyMap = {}
 
