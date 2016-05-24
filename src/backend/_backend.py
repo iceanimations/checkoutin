@@ -1070,8 +1070,9 @@ def publish_proxy_snapshot( project, episode, sequence, shot, asset, latest,
         vless_pub = server.get_snapshot(pub['__search_key__'],
                 context=pub.get('context'), version=0, versionless=True)
         if not vless_pub:
-            server.set_current_snapshot(pub)
+            logger.info('Repairing previous versionless replication fault')
             server.update(pub['__search_key__'], data={'is_current':False})
+            set_snapshot_as_current( pub, doCombine=False)
             vless_pub = server.get_snapshot(pub['__search_key__'],
                     context=pub.get('context'), version=0, versionless=True)
         try:
