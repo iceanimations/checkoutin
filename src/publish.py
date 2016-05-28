@@ -325,6 +325,7 @@ class PublishDialog(Form, Base):
                         %(self.snapshot['code'], prod_elem['code']))
 
                 self.setDefaultAction()
+
         else:
             logger.info('Asset snapshot %s is published in %s as %s' %(
                 self.snapshot['code'], prod_elem['code'], self.target['code']))

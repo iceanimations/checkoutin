@@ -783,6 +783,11 @@ def get_published_snapshots(project, episode, sequence, shot, asset):
     prod_elem = shot or sequence or episode
     return util.get_published_snapshots(project, prod_elem, asset)
 
+
+def publish_snapshot(project, episode, sequence, shot, asset, snapshot,
+        context, set_current=True):
+    pass
+
 def publish_asset(project, episode, sequence, shot, asset, snapshot, context,
         set_current=True):
     prod_elem = shot or sequence or episode
@@ -1074,7 +1079,7 @@ def publish_proxy_snapshot( project, episode, sequence, shot, asset, latest,
         if not vless_pub:
             logger.info('Repairing previous versionless replication fault')
             server.update(pub['__search_key__'], data={'is_current':False})
-            set_snapshot_as_current( pub, doCombine=False)
+            set_snapshot_as_current( pub, doCombine=False )
             vless_pub = server.get_snapshot(pub['__search_key__'],
                     context=pub.get('context'), version=0, versionless=True)
         try:
@@ -1119,7 +1124,8 @@ def general_cleanup(unknowns=True, lights=True, refs=True, cams=True,
     if bundleScriptNodes:
         removeBundleScriptNodes()
 
-def create_combined_version(snapshot, postfix='combined', cleanup=True):
+def create_combined_version(snapshot, postfix='combined', cleanup=True,
+        useCleanExport=True):
     context = snapshot['context']
 
     logger.info('Checking out snapshot for combining ...')
@@ -1133,11 +1139,14 @@ def create_combined_version(snapshot, postfix='combined', cleanup=True):
         raise Exception, 'No valid geo sets found'
     geo_set = geo_sets[0]
     combined_mesh = mi.getCombinedMeshFromSet(geo_set)
+    pc.refresh()
 
     if cleanup:
         if context.split('/')[0] != 'rig':
             pc.select(combined_mesh)
             pc.mel.DeleteHistory()
+        else:
+            useCleanExport = False
 
         for mesh in set((node.firstParent() for node in pc.ls(type='mesh'))):
             if mesh != combined_mesh:
@@ -1148,15 +1157,36 @@ def create_combined_version(snapshot, postfix='combined', cleanup=True):
 
         general_cleanup()
 
+    filepath = None
+
+    if useCleanExport:
+        logger.info('exporting combined mesh')
+        filepath = cleanAssetExport(combined_mesh)
+
     logger.info('Checking in file as combined')
     combinedContext = '/'.join([context, postfix])
     sobject = util.get_sobject_from_snap(snapshot)
     combined = checkin(sobject, combinedContext, dotextures=False,
-            doproxy=False, dogpu=False, is_current=snapshot['is_current'])
+            doproxy=False, dogpu=False, is_current=snapshot['is_current'],
+            file=filepath)
     util.add_combined_dependency(snapshot, combined)
     mi.newScene()
 
     return combined
+
+def cleanAssetExport(objects, filepath=None, forceLoad=False):
+    if not filepath:
+        filepath = op.normpath(iutil.getTemp(
+            prefix = dt.now().strftime("%Y-%M-%d %H-%M-%S"
+                ))).replace("\\", "/") + '.ma'
+    general_cleanup()
+    pc.select(objects)
+    pc.exportSelected(filepath, force=True, expressions=True,
+            constructionHistory=True, channels=True, shader=True,
+            constraints=True, options="v=0", type="mayaAscii", pr=False)
+    if forceLoad:
+        pc.openFile(filepath, force=True)
+    return filepath
 
 def set_snapshot_as_current(snapshot, doCombine=True):
     server = user.get_server()
