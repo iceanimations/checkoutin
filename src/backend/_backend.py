@@ -1124,8 +1124,8 @@ def general_cleanup(unknowns=True, lights=True, refs=True, cams=True,
     if bundleScriptNodes:
         removeBundleScriptNodes()
 
-def create_combined_version(snapshot, postfix='combined', cleanup=True,
-        useCleanExport=True):
+def create_combined_version(snapshot, postfix='combined',
+        cleanup=True, useCleanExport=True):
     context = snapshot['context']
 
     logger.info('Checking out snapshot for combining ...')
@@ -1138,8 +1138,8 @@ def create_combined_version(snapshot, postfix='combined', cleanup=True,
         mi.newScene()
         raise Exception, 'No valid geo sets found'
     geo_set = geo_sets[0]
-    combined_mesh = mi.getCombinedMeshFromSet(geo_set)
-    pc.refresh()
+    combined_mesh = mi.getCombinedMeshFromSet(geo_set,
+            midfix=context.split('/')[0])
 
     if cleanup:
         if context.split('/')[0] != 'rig':
@@ -1148,17 +1148,9 @@ def create_combined_version(snapshot, postfix='combined', cleanup=True,
         else:
             useCleanExport = False
 
-        for mesh in set((node.firstParent() for node in pc.ls(type='mesh'))):
-            if mesh != combined_mesh:
-                try:
-                    pc.delete(mesh)
-                except:
-                    pass
-
         general_cleanup()
 
     filepath = None
-
     if useCleanExport:
         logger.info('exporting combined mesh')
         filepath = cleanAssetExport(combined_mesh)
@@ -1166,21 +1158,22 @@ def create_combined_version(snapshot, postfix='combined', cleanup=True,
     logger.info('Checking in file as combined')
     combinedContext = '/'.join([context, postfix])
     sobject = util.get_sobject_from_snap(snapshot)
+
     combined = checkin(sobject, combinedContext, dotextures=False,
             doproxy=False, dogpu=False, is_current=snapshot['is_current'],
             file=filepath)
+
     util.add_combined_dependency(snapshot, combined)
     mi.newScene()
 
     return combined
 
-def cleanAssetExport(objects, filepath=None, forceLoad=False):
+def cleanAssetExport(obj, filepath=None, forceLoad=False):
     if not filepath:
         filepath = op.normpath(iutil.getTemp(
             prefix = dt.now().strftime("%Y-%M-%d %H-%M-%S"
                 ))).replace("\\", "/") + '.ma'
-    general_cleanup()
-    pc.select(objects)
+    pc.select(obj, ne=True)
     pc.exportSelected(filepath, force=True, expressions=True,
             constructionHistory=True, channels=True, shader=True,
             constraints=True, options="v=0", type="mayaAscii", pr=False)
