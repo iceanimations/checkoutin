@@ -126,7 +126,7 @@ class PublishDialog(Form, Base):
         self.version = self.snapshot['version']
         self.iconpath = be.get_icon(self.snapshot)
         self.category = self.snapshot['asset']['asset_category']
-        self.context = self.snapshot['context']
+        self.context = self.snapshot['context'].strip('/')
 
     def updateSourceView(self):
         self.assetCodeLabel.setText(self.snapshot['search_code'])
@@ -150,13 +150,17 @@ class PublishDialog(Form, Base):
 
         self.targetCategory = self.category.split('/')[0]
         self.targetContext = self.context.split('/')[0]
-        self.pairContext = ''
-        if not self.category.startswith('env'):
+        is_environment = self.category.startswith('env')
+        is_neighborhood = self.category.startswith('neighborhood')
+        if not (is_environment or is_neighborhood):
             if self.targetContext == 'rig':
                 self.pairContext = 'shaded'
             elif self.targetContext == 'shaded':
                 self.pairContext = 'rig'
-        self.targetSubContext = self.subContextEdit.text()
+        subContext = '/'.join(self.context.split('/')[1:])
+        customSubContext = self.subContextEdit.text()
+        self.targetSubContext = ( subContext + ('/' if customSubContext else '') +
+                customSubContext )
         self.targetSubContext.strip('/')
         self.publishContext = self.targetContext + ('/' if
                 self.targetSubContext else '') + self.targetSubContext
@@ -221,7 +225,7 @@ class PublishDialog(Form, Base):
     def updateTargetView(self):
         self.publishAssetCodeLabel.setText(self.snapshot['search_code'])
         self.publishCategoryLabel.setText(self.targetCategory.split('/')[0])
-        self.publishContextLabel.setText(self.context)
+        self.publishContextLabel.setText(self.publishContext)
         self.publishVersionLabel.setText('v%03d'%(self.targetVersion))
         if self.current or not self.published:
             self.setCurrentCheck.setChecked(True)
