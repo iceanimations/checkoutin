@@ -2,8 +2,8 @@ try:
     from uiContainer import uic
 except:
     from PyQt4 import uic
-from PyQt4.QtGui import QMessageBox, QFileDialog, qApp
-from PyQt4.QtCore import QRegExp, QRegExpValidator
+from PyQt4.QtGui import QMessageBox, QFileDialog, qApp, QRegExpValidator
+from PyQt4.QtCore import QRegExp
 import os.path as osp
 from customui import ui as cui
 import backend
