@@ -152,6 +152,7 @@ class PublishDialog(Form, Base):
         self.targetContext = self.context.split('/')[0]
         is_environment = self.category.startswith('env')
         is_neighborhood = self.category.startswith('neighborhood')
+        self.pairContext = ''
         if not (is_environment or is_neighborhood):
             if self.targetContext == 'rig':
                 self.pairContext = 'shaded'
