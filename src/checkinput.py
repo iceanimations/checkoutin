@@ -143,7 +143,7 @@ class Dialog(Form, Base):
                     context = split[0] if len(split) == 1 else '/'.join(split[1:])
                 if not context:
                     context = self.parentWin.currentContext.title().split('/')[0]
-                if self.isGPU() or self.isProxy():
+                if self.isProxy():
                     error = backend.validateSelectionForProxy()
                     if error:
                         cui.showMessage(self, title='Selection Error',
