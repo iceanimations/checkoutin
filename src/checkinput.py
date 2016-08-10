@@ -2,12 +2,10 @@ try:
     from uiContainer import uic
 except:
     from PyQt4 import uic
-from PyQt4.QtGui import *
-from PyQt4.QtCore import *
+from PyQt4.QtGui import QMessageBox, QFileDialog, qApp, QRegExpValidator
+from PyQt4.QtCore import QRegExp
 import os.path as osp
-import sys
 from customui import ui as cui
-import pymel.core as pc
 import backend
 reload(backend)
 
@@ -23,7 +21,7 @@ class Dialog(Form, Base):
         self.parentWin = parent
         self.parentWin.saveButton.setEnabled(False)
         self.setValidator()
-        
+
         if self.parentWin.standalone:
             self.currentSceneButton.setEnabled(False)
             self.filePathButton.setChecked(True)
@@ -31,22 +29,22 @@ class Dialog(Form, Base):
             if self.parentWin.currentContext.title().lower().startswith('rig'):
                 self.gpuCacheButton.hide()
                 self.rsProxyButton.hide()
-        
+
         self.descriptionBox.horizontalScrollBar().setFixedHeight(12)
         self.descriptionBox.verticalScrollBar().setFixedWidth(12)
-        
+
         self.okButton.clicked.connect(self.ok)
         self.cancelButton.clicked.connect(self.cancel)
         self.browseButton.clicked.connect(self.showFileDialog)
         self.newContextBox.textChanged.connect(self.handleNewName)
         self.newContextButton.clicked.connect(self.handleNewContextButtonClick)
         self.descriptionBox.focusOutEvent = lambda event: self.setDescription()
-        
+
     def setDescription(self):
         desc = str(self.descriptionBox.toPlainText())
         if not desc:
             self.descriptionBox.setPlainText('No description')
-        
+
     def handleNewName(self, name):
         if not self.parentWin.currentContext:
             cui.showMessage(self, title='Save', msg='No Context selected', icon=QMessageBox.Warning)
@@ -64,9 +62,9 @@ class Dialog(Form, Base):
         else:
             self.okButton.setEnabled(True)
             self.warningLabel.setText('')
-            
+
         self.setContext(pro +'/'+ name)
-        
+
     def handleNewContextButtonClick(self):
         if self.newContextButton.isChecked():
             self.setContext(self.parentWin.currentContext.title() +
@@ -74,20 +72,20 @@ class Dialog(Form, Base):
         else:
             self.setContext(self.parentWin.currentContext.title())
             self.newContextBox.clear()
-        
+
     def setMainName(self, name='-'):
         self.assetLabel.setText(name)
-    
+
     def setContext(self, context='-'):
         self.contextLabel.setText(context)
-        
+
     def setValidator(self):
         # should we provide the privelege to add '/' in the subcontext
         # in order to add further subcontext, to certain users
         regex = QRegExp('[0-9a-z_]*')
         validator = QRegExpValidator(regex, self)
         self.newContextBox.setValidator(validator)
-            
+
     def showFileDialog(self):
         version = None
         try:
@@ -102,13 +100,13 @@ class Dialog(Form, Base):
         fileName = str(fileName)
         if fileName:
             self.pathBox.setText(fileName)
-            
+
     def isGPU(self):
         return self.gpuCacheButton.isChecked()
-    
+
     def isProxy(self):
         return self.rsProxyButton.isChecked()
-        
+
     def ok(self):
         try:
             self.okButton.setEnabled(False)
@@ -151,6 +149,7 @@ class Dialog(Form, Base):
                                         icon=QMessageBox.Information)
                         self.okButton.setEnabled(True)
                         return
+                context = context.strip('/')
                 self.parentWin.checkin(context, description, filePath = path,
                                        doproxy=self.isProxy(),
                                        dogpu=self.isGPU())
@@ -164,11 +163,11 @@ class Dialog(Form, Base):
             traceback.print_exc()
             cui.showMessage(self, title='Error', msg=str(ex),
                             icon=QMessageBox.Information)
-                            
-    
+
+
     def cancel(self):
         self.close()
-    
+
     def closeEvent(self, event):
         self.parentWin.saveButton.setEnabled(True)
         self.parentWin.checkinputDialog = None

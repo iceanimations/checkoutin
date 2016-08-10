@@ -297,15 +297,15 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="gpuCacheCheck">
+            <widget class="QCheckBox" name="proxyCheck">
              <property name="enabled">
               <bool>false</bool>
              </property>
              <property name="text">
-              <string>Export GPU Cache (Coming soon ...)</string>
+              <string>Export with Proxies</string>
              </property>
              <property name="checked">
-              <bool>false</bool>
+              <bool>true</bool>
              </property>
             </widget>
            </item>

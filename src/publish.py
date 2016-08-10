@@ -126,7 +126,7 @@ class PublishDialog(Form, Base):
         self.version = self.snapshot['version']
         self.iconpath = be.get_icon(self.snapshot)
         self.category = self.snapshot['asset']['asset_category']
-        self.context = self.snapshot['context']
+        self.context = self.snapshot['context'].strip('/')
 
     def updateSourceView(self):
         self.assetCodeLabel.setText(self.snapshot['search_code'])
@@ -150,13 +150,18 @@ class PublishDialog(Form, Base):
 
         self.targetCategory = self.category.split('/')[0]
         self.targetContext = self.context.split('/')[0]
+        is_environment = self.category.startswith('env')
+        is_neighborhood = self.category.startswith('neighborhood')
         self.pairContext = ''
-        if not self.category.startswith('env'):
+        if not (is_environment or is_neighborhood):
             if self.targetContext == 'rig':
                 self.pairContext = 'shaded'
             elif self.targetContext == 'shaded':
                 self.pairContext = 'rig'
-        self.targetSubContext = self.subContextEdit.text()
+        subContext = '/'.join(self.context.split('/')[1:])
+        customSubContext = self.subContextEdit.text()
+        self.targetSubContext = ( subContext + ('/' if customSubContext else '') +
+                customSubContext )
         self.targetSubContext.strip('/')
         self.publishContext = self.targetContext + ('/' if
                 self.targetSubContext else '') + self.targetSubContext
@@ -221,7 +226,7 @@ class PublishDialog(Form, Base):
     def updateTargetView(self):
         self.publishAssetCodeLabel.setText(self.snapshot['search_code'])
         self.publishCategoryLabel.setText(self.targetCategory.split('/')[0])
-        self.publishContextLabel.setText(self.context)
+        self.publishContextLabel.setText(self.publishContext)
         self.publishVersionLabel.setText('v%03d'%(self.targetVersion))
         if self.current or not self.published:
             self.setCurrentCheck.setChecked(True)
@@ -291,15 +296,18 @@ class PublishDialog(Form, Base):
             self.linkButton.setEnabled(True)
 
         is_environment = self.category.startswith('env')
+        is_neighborhood = self.category.startswith('neigh')
         publishable = (self.targetContext == 'rig' or
                 self.targetContext == 'model' or self.pairSourceLinked or
                 self.category.startswith('env'))
         texture_publishable = self.targetContext == 'shaded'
-        combineable = (self.targetContext in ['shaded'] and not is_environment)
+        combineable = (self.targetContext in ['rig', 'shaded'] and not
+                (is_environment or is_neighborhood))
         linkable = (self.targetContext == 'rig' and not self.pairSourceLinked
                 and self.pair)
-        gpuCacheable = (self.targetContext == 'model' or
-                (self.targetContext=='shaded' and is_environment))
+        compositable = ((self.targetContext == 'model' or
+                self.targetContext=='shaded') and ( is_environment or
+                    is_neighborhood ))
 
         prod_elem = self.shot or self.sequence or self.episode
 
@@ -312,7 +320,7 @@ class PublishDialog(Form, Base):
                 self.texturesCheck.setChecked(bool(texture_publishable))
                 self.combinedCheck.setChecked(bool( combineable ))
                 self.linkCheck.setChecked(bool( linkable ))
-                self.gpuCacheCheck.setChecked(bool( gpuCacheable ))
+                self.proxyCheck.setChecked(bool( compositable ))
                 self.setCurrentCheck.setChecked(True)
                 if self.targetSnapshots:
                     self.setCurrentCheck.setEnabled(False)
@@ -322,12 +330,13 @@ class PublishDialog(Form, Base):
                         %(self.snapshot['code'], prod_elem['code']))
 
                 self.setDefaultAction()
+
         else:
             logger.info('Asset snapshot %s is published in %s as %s' %(
                 self.snapshot['code'], prod_elem['code'], self.target['code']))
             if not self.current and publishable:
                 self.setDefaultAction('setCurrent')
-            elif not self.combined:
+            elif not self.combined and combineable:
                 self.setDefaultAction('combine')
             else:
                 self.setDefaultAction()
@@ -557,8 +566,18 @@ class PublishDialog(Form, Base):
                 logger.info('Linking successful!')
             except Exception as e:
                 logger.error('Linking failed!: %s' % str(e))
-        newss = None
-        if self.texturesCheck.isChecked():
+        # newss = None
+        publish_with_proxy = self.proxyCheck.isChecked()
+        publish_with_textures = self.texturesCheck.isChecked()
+
+        if publish_with_proxy:
+            newss = be.publish_asset_with_dependencies(self.projectName,
+                self.episode, self.sequence, self.shot, self.snapshot['asset'],
+                self.snapshot, self.publishContext,
+                self.setCurrentCheck.isChecked(),
+                publish_textures=self.texturesCheck.isChecked(),
+                publish_proxies=self.proxyCheck.isChecked())
+        elif publish_with_textures:
             newss = self.publish_with_textures()
         else:
             newss = self.simple_publish()
@@ -583,29 +602,27 @@ class PublishDialog(Form, Base):
                 self.snapshot, self.publishContext,
                 self.setCurrentCheck.isChecked())
         return newss
-    
-    def publish_with_proxies(self):
-        pass
 
-    def export_gpu_cache(self, snapshot):
-        #checkout
-        #open
-        #export gpu cache
-        pass
+    def publish_with_proxies(self):
+        newss = be.publish_asset_with_dependencies(self.projectName,
+                self.episode, self.sequence, self.shot, self.snapshot['asset'],
+                self.snapshot, self.publishContext,
+                self.setCurrentCheck.isChecked(), publish_textures=False,
+                publish_proxies=True)
+        return newss
+
+    def publish_with_proxies_and_textures(self):
+        newss = be.publish_asset_with_dependencies(self.projectName,
+                self.episode, self.sequence, self.shot, self.snapshot['asset'],
+                self.snapshot, self.publishContext,
+                self.setCurrentCheck.isChecked(), publish_textures=True,
+                publish_proxies=True)
+        return newss
 
     def publish_combined_version(self, snapshot=None):
         if not snapshot:
             snapshot = self.target
         return be.create_combined_version(snapshot)
-
-    def export_mesh(self):
-        #checkout
-        #open
-        #combine mesh
-        #delete history
-        #save
-        #create snapshot and add file
-        pass
 
     def validate(self):
         validity = False

@@ -133,7 +133,7 @@ class MainBrowser(Explorer):
         reason = 'Current scene is not cache compatible with %s' %osp.basename(filename)
 
         try:
-            compatibility = backend.check_validity(snapshot)
+            compatibility = backend.current_scene_compatible(snapshot)
         except Exception as e:
             import traceback
             reason += '\nreason: ' + str(e)
