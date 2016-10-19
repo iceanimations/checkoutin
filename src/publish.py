@@ -358,7 +358,7 @@ class PublishDialog(Form, Base):
             traceback.print_exc()
             cui.showMessage(self, title=title,
                             msg = failureString + str(e),
-                            detail = traceback.format_exc(),
+                            details = traceback.format_exc(),
                             icon=QMessageBox.Critical)
             logger.error(failureString)
             success = False
@@ -522,7 +522,7 @@ class PublishDialog(Form, Base):
             traceback.print_exc()
             cui.showMessage(self, title='Asset Publish',
                             msg = failureString + str(e),
-                            detail = traceback.format_exc(),
+                            details = traceback.format_exc(),
                             icon=QMessageBox.Critical)
             logger.error(failureString)
             success = False
