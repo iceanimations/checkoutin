@@ -25,13 +25,14 @@ import logging
 class QTextLogHandler(QObject, logging.Handler):
     appended = pyqtSignal(str)
 
-    def __init__(self, text):
+    def __init__(self, text, progressBar=None):
         logging.Handler.__init__(self)
         QObject.__init__(self, parent=text)
         self.text=text
         self.text.setReadOnly(True)
         self.appended.connect(self._appended)
         self.loggers = []
+        self.progressBar = progressBar
 
     def __del__(self):
         for logger in self.loggers:
@@ -41,9 +42,24 @@ class QTextLogHandler(QObject, logging.Handler):
         self.text.append(msg)
         self.text.repaint()
 
+    def progress(self, record):
+        if record.msg.startswith('Progress') and self.progressBar:
+            splits = record.msg.split(':')
+            try:
+                val, maxx = (num.strip() for num in splits[2].split('of'))
+                self.progressBar.setMaximum(int(maxx))
+                self.progressBar.setValue(int(val))
+                self.progressBar.repaint()
+            except ( IndexError, ValueError ):
+                pass
+            return True
+        else:
+            return False
+
     def emit(self, record):
         try:
-            self.appended.emit(self.format(record))
+            if not self.progress(record):
+                self.appended.emit(self.format(record))
         except:
             pass
 
@@ -76,7 +92,7 @@ class PublishDialog(Form, Base):
         super(PublishDialog, self).__init__(parent=parent)
         self.setupUi(self)
         self.parent = parent
-        self.logHandler = QTextLogHandler(self.textEdit)
+        self.logHandler = QTextLogHandler(self.textEdit, self.progressBar)
         self.logHandler.addLogger(logging.getLogger(be.__name__))
         self.logHandler.addLogger(logger)
 
@@ -511,7 +527,12 @@ class PublishDialog(Form, Base):
             if not goahead:
                 return False
 
-            self.defaultAction()
+            self.showProgressBar()
+            self.progressBar.setMaximum(0)
+            try:
+                self.defaultAction()
+            finally:
+                self.hideProgressBar()
             if actionName == 'Close':
                 return success
             cui.showMessage(self, title='Assets Explorer',
