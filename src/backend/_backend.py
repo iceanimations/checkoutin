@@ -14,12 +14,8 @@ import os.path as op
 import shutil
 import auth.security as security
 
-import sys
-
 import logging
 logger = logging.getLogger(__name__)
-if not logger.handlers:
-    logger.addHandler(logging.StreamHandler(sys.stderr))
 
 dt = datetime.datetime
 m = maya.Maya()
