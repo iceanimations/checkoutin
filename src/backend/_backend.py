@@ -324,8 +324,9 @@ def checkin(sobject, context, process = None,
         proxy_dir = op.join( tmpdir, context )
         proxy_path = op.join(proxy_dir, filename +'.rs')#.replace(" ", "_")
         if not op.exists(proxy_dir): iutil.mkdir(tmpdir, context)
+        print proxy_path
         pc.mel.eval('file -force -options \"\" -typ \"Redshift Proxy\" -pr -es \"%s\";'%proxy_path.replace('\\', '/'))
-        pc.mel.rsProxy(proxy_path.replace('\\', '/'), fp=True, sl=True)
+        pc.mel.rsProxy(fp=proxy_path.replace('\\', '/'), sl=True)
 
     if dogpu:
         gpu_path = pc.mel.gpuCache(*pc.ls(sl=True), startTime=1, endTime=1,
@@ -449,7 +450,7 @@ def checkin_preview(search_key, path, file_type = None):
 
 def make_temp_dir():
     return op.normpath(iutil.getTemp(prefix = dt.now().
-                                       strftime("%Y-%M-%d %H-%M-%S"),
+                                       strftime("%Y-%m-%d_%H-%M-%S"),
                                        mkd = True
                                    )).replace("\\", "/")
 
