@@ -324,8 +324,6 @@ def checkin(sobject, context, process = None,
         proxy_dir = op.join( tmpdir, context )
         proxy_path = op.join(proxy_dir, filename +'.rs')#.replace(" ", "_")
         if not op.exists(proxy_dir): iutil.mkdir(tmpdir, context)
-        print proxy_path
-        pc.mel.eval('file -force -options \"\" -typ \"Redshift Proxy\" -pr -es \"%s\";'%proxy_path.replace('\\', '/'))
         pc.mel.rsProxy(fp=proxy_path.replace('\\', '/'), sl=True)
 
     if dogpu:
