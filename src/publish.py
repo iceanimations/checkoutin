@@ -13,6 +13,7 @@ reload(be)
 
 import traceback
 import re
+import json
 
 import imaya as mi
 reload(mi)
@@ -363,25 +364,31 @@ class PublishDialog(Form, Base):
         successString = '%s Successful'%actionName
         failureString = '%s Failed: '%actionName
         title = 'Publish Assets'
+        details = None
         try:
             logger.info('Doing %s'%actionName)
-            self.link()
-            cui.showMessage(self, title=title,
-                            msg=successString,
-                            icon=QMessageBox.Information)
-            logger.info(successString)
+            verified, details = self.link()
+            details = json.dumps(details, indent=4)
+            if verified:
+                cui.showMessage(self, title=title, msg=successString,
+                        icon=QMessageBox.Information)
+                logger.info(successString)
+            else:
+                cui.showMessage(self, title=title, msg=failureString,
+                        details=details, icon=QMessageBox.Information)
+                logger.error(failureString)
         except Exception as e:
             traceback.print_exc()
             cui.showMessage(self, title=title,
-                            msg = failureString + str(e),
-                            details = traceback.format_exc(),
-                            icon=QMessageBox.Critical)
-            logger.error(failureString)
+                    msg=failureString+': '+str(e),
+                    details=traceback.format_exc(), icon=QMessageBox.Critical)
+            logger.error(failureString + ': ' + str(e))
             success = False
         self.updatePair()
         return success
 
     def link(self):
+        details = None
         if self.context == 'rig':
             shaded, rig = self.pairSource, self.snapshot
         else:
@@ -390,21 +397,19 @@ class PublishDialog(Form, Base):
         verified = False
         reason = 'Given sets are not cache compatible'
         try:
-            verified = be.verify_cache_compatibility(shaded, rig)
+            verified, details = be.verify_cache_compatibility(shaded, rig,
+                    feedback=True)
         except Exception as e:
             reason = 'geo_set not found: ' + str(e)
             reason += ''
-
-        if not verified:
-            raise Exception, reason
-            return
 
         try:
             be.link_shaded_to_rig(shaded,rig)
         except Exception as e:
             msg='Cannot link due to Server Error: %s'%str(e)
             raise Exception, msg
-            return
+
+        return verified, details
 
     def subContextEditStart(self, *args):
         if self.subContextEdit.isEnabled():
