@@ -7,6 +7,7 @@ copyright (c) at Ice Animations (Pvt) Ltd
 from . import _base as base
 Explorer = base.Explorer
 import os.path as osp
+import json
 from PyQt4.QtGui import QMenu, QCursor, QMessageBox
 import app.util as util
 reload(util)
@@ -31,7 +32,8 @@ class MainBrowser(Explorer):
     title = 'Assets Explorer'
     scroller_arg = 'Process/Context'
     pre_defined_contexts = ['model', 'rig', 'shaded']
-    pre_defined_sub_contexts = ['model/low_res', 'shaded/low_res', 'rig/low_res']
+    pre_defined_sub_contexts = ['model/low_res', 'shaded/low_res',
+            'rig/low_res']
 
     def __init__(self, shot=None, standalone=False):
 
@@ -130,10 +132,14 @@ class MainBrowser(Explorer):
         compatibility = False
         title = 'Cache Compatibility Check'
         filename = backend.filename_from_snap(snapshot, mode='client_repo')
-        reason = 'Current scene is not cache compatible with %s' %osp.basename(filename)
+        details = None
+        reason = 'Current scene is not cache compatible with %s' %(
+                osp.basename(filename) )
 
         try:
-            compatibility = backend.current_scene_compatible(snapshot)
+            compatibility, details = backend.current_scene_compatible(snapshot,
+                    feedback=True)
+            details = json.dumps(details, indent=4)
         except Exception as e:
             import traceback
             reason += '\nreason: ' + str(e)
@@ -142,11 +148,11 @@ class MainBrowser(Explorer):
 
         if compatibility == False:
             base.cui.showMessage(self, title=title, msg=reason,
-                    icon=QMessageBox.Warning)
+                    details=details, icon=QMessageBox.Warning)
         else:
             base.cui.showMessage(self, title=title,
-                msg="%s is cache compatible with the current scene"%osp.basename( filename ),
-                    icon=QMessageBox.Information)
+                msg="%s is cache compatible with the current scene"%(
+                    osp.basename( filename ) ), icon=QMessageBox.Information)
 
         return compatibility
 
@@ -187,14 +193,6 @@ class MainBrowser(Explorer):
         super(MainBrowser, self).showFiles(context, files)
         for item in self.filesBox.items():
             item.contextMenuEvent = self.showContextMenu
-            #snapshot = util.get_snapshot_info(item.objectName())
-            #if util.get_all_publish_targets(snapshot):
-                #item.labelStatus |= item.kLabel.kPUB
-                #item.labelDisplay |= item.kLabel.kPUB
-            #compatibles = util.get_cache_compatible_objects(snapshot)
-            #if compatibles:
-                #item.labelStatus |= item.kLabel.kPAIR
-            #item.labelDisplay |= item.kLabel.kPAIR
 
     def clearWindow(self):
         self.itemsBox.clearItems()
@@ -217,7 +215,8 @@ class MainBrowser(Explorer):
         if assetsLen1 != assetsLen2:
             self.updateItemsBox(assetsLen1, assetsLen2, newItems)
         if self.currentItem and self.contextsBox:
-            if len(self.contextsBox.items()) != self.contextsLen(self.contextsProcesses()):
+            if len(self.contextsBox.items()) != self.contextsLen(
+                    self.contextsProcesses() ):
                 self.updateContextsBox()
         if self.currentContext and self.filesBox:
             if len(self.filesBox.items()) != len(

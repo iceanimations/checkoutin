@@ -692,7 +692,7 @@ def get_current_in_published(published, context):
         if snap['context'] == context and snap['is_current'] :
             return snap
 
-def verify_cache_compatibility(shaded, rig, newFile=False):
+def verify_cache_compatibility(shaded, rig, newFile=False, feedback=False):
     if newFile:
         pc.newFile(f=True)
 
@@ -718,12 +718,13 @@ def verify_cache_compatibility(shaded, rig, newFile=False):
         mi.removeReference(rig_ref)
         raise Exception, 'no valid geo_set found in rig file %s'%rig_path
 
-    result = mi.geo_sets_compatible(shaded_geo_set, rig_geo_set)
+    result = mi.geo_sets_compatible(shaded_geo_set, rig_geo_set,
+            feedback=feedback)
     mi.removeReference(shaded_ref)
     mi.removeReference(rig_ref)
     return result
 
-def current_scene_compatible(other):
+def current_scene_compatible(other, feedback=False):
     geo_set = mi.get_geo_sets()
     if not geo_set or not mi.geo_set_valid(geo_set[0]):
         raise Exception, 'no valid geo_set found in current scene'
@@ -740,7 +741,7 @@ def current_scene_compatible(other):
         mi.removeReference(other_geo_set)
         raise Exception, 'no valid geo_set found in other file %s'%other_path
 
-    result = mi.geo_sets_compatible(geo_set, other_geo_set)
+    result = mi.geo_sets_compatible(geo_set, other_geo_set, feedback=feedback)
     mi.removeReference(other_ref)
 
     return result

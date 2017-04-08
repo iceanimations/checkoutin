@@ -16,6 +16,8 @@ reload(backend)
 import imaya as mi
 reload(mi)
 
+import json
+
 import PyQt4.QtGui as gui
 import os.path as osp
 
@@ -69,10 +71,13 @@ class LinkShadedRig(Form, Base):
         else:
             shaded, rig = self.snapshot, currentSnapshot
 
+        details = None
         verified = False
         reason = 'Given sets are not cache compatible'
         try:
-            verified = backend.verify_cache_compatibility(shaded, rig)
+            verified, details = backend.verify_cache_compatibility(shaded, rig,
+                    feedback=True)
+            details = json.dumps(details, indent=4)
         except Exception as e:
             import traceback
             verified = False
@@ -83,7 +88,8 @@ class LinkShadedRig(Form, Base):
         if not verified:
             cui.showMessage(self, title='',
                             msg=reason,
-                            icon=gui.QMessageBox.Critical)
+                            icon=gui.QMessageBox.Critical,
+                            details=details)
             return
 
         try:
