@@ -14,12 +14,8 @@ import os.path as op
 import shutil
 import auth.security as security
 
-import sys
-
 import logging
 logger = logging.getLogger(__name__)
-if not logger.handlers:
-    logger.addHandler(logging.StreamHandler(sys.stderr))
 
 dt = datetime.datetime
 m = maya.Maya()
@@ -163,7 +159,7 @@ def checkout(snapshot, r = False, with_texture = True):
 
             # this has the potential of failing in case of multiple files
             # and the first file returns a non-Maya file
-            pc.openFile(paths[0], force = True)
+            pc.openFile(paths[0], force = True, prompt=0)
 
             # get the tactic file for identification
             tactic = util.get_tactic_file_info()
@@ -347,8 +343,7 @@ def checkin(sobject, context, process = None,
         proxy_dir = op.join( tmpdir, context )
         proxy_path = op.join(proxy_dir, filename +'.rs')#.replace(" ", "_")
         if not op.exists(proxy_dir): iutil.mkdir(tmpdir, context)
-        pc.mel.eval('file -force -options \"\" -typ \"Redshift Proxy\" -pr -es \"%s\";'%proxy_path.replace('\\', '/'))
-        pc.mel.rsProxy(proxy_path.replace('\\', '/'), fp=True, sl=True)
+        pc.mel.rsProxy(fp=proxy_path.replace('\\', '/'), sl=True)
 
     if dogpu:
         gpu_path = pc.mel.gpuCache(*pc.ls(sl=True), startTime=1, endTime=1,
@@ -404,7 +399,7 @@ def checkin(sobject, context, process = None,
         checkin_preview(sobject, preview, 'maya')
 
     try:
-        pc.openFile(orig_path, f = True)
+        pc.openFile(orig_path, f = True, prompt=0)
     except:
         pass
 
@@ -472,7 +467,7 @@ def checkin_preview(search_key, path, file_type = None):
 
 def make_temp_dir():
     return op.normpath(iutil.getTemp(prefix = dt.now().
-                                       strftime("%Y-%M-%d %H-%M-%S"),
+                                       strftime("%Y-%m-%d_%H-%M-%S"),
                                        mkd = True
                                    )).replace("\\", "/")
 
@@ -716,7 +711,7 @@ def get_current_in_published(published, context):
         if snap['context'] == context and snap['is_current'] :
             return snap
 
-def verify_cache_compatibility(shaded, rig, newFile=False):
+def verify_cache_compatibility(shaded, rig, newFile=False, feedback=False):
     if newFile:
         pc.newFile(f=True)
 
@@ -742,12 +737,13 @@ def verify_cache_compatibility(shaded, rig, newFile=False):
         mi.removeReference(rig_ref)
         raise Exception, 'no valid geo_set found in rig file %s'%rig_path
 
-    result = mi.geo_sets_compatible(shaded_geo_set, rig_geo_set)
+    result = mi.geo_sets_compatible(shaded_geo_set, rig_geo_set,
+            feedback=feedback)
     mi.removeReference(shaded_ref)
     mi.removeReference(rig_ref)
     return result
 
-def current_scene_compatible(other):
+def current_scene_compatible(other, feedback=False):
     geo_set = mi.get_geo_sets()
     if not geo_set or not mi.geo_set_valid(geo_set[0]):
         raise Exception, 'no valid geo_set found in current scene'
@@ -764,7 +760,7 @@ def current_scene_compatible(other):
         mi.removeReference(other_geo_set)
         raise Exception, 'no valid geo_set found in other file %s'%other_path
 
-    result = mi.geo_sets_compatible(geo_set, other_geo_set)
+    result = mi.geo_sets_compatible(geo_set, other_geo_set, feedback=feedback)
     mi.removeReference(other_ref)
 
     return result
@@ -836,7 +832,7 @@ def publish_asset_with_textures(project, episode, sequence, shot, asset,
 
     logger.info('copying and opening file for texture remapping')
     path = checkout(snapshot['__search_key__'], with_texture=False)
-    mi.openFile(path)
+    mi.openFile(path, prompt=0)
 
     logger.info('publishing textures')
     texture_context = util.get_texture_context(snapshot)
@@ -895,7 +891,7 @@ def publish_asset_with_dependencies(project, episode, sequence, shot, asset,
 
     logger.info('copying and opening file for texture / proxy remapping')
     path = checkout(snapshot['__search_key__'], with_texture=False)
-    mi.openFile(path)
+    mi.openFile(path, prompt=0)
 
     prod_asset = util.get_production_asset(project, prod_elem, asset,
             force_create=True)
@@ -946,6 +942,7 @@ def publish_all_proxies( project, episode, sequence, shot ):
         pc.ls(type='gpuCache')] ) )
     proxies = list(set( [os.path.normpath( node.fileName.get() ) for node in
         pc.ls(type='RedshiftProxyMesh')] ) )
+    total = len(proxies) + len(gpus)
     gpuMap = {}
     proxyMap = {}
 
@@ -957,19 +954,27 @@ def publish_all_proxies( project, episode, sequence, shot ):
         tmpFile = m.save(tmpFile, file_type = "mayaBinary"
                 if pc.sceneName().endswith(".mb")
                 else "mayaAscii")
+        logger.info('Progress:ProxyPublish:%s of %s'%(0, total))
+    else:
+        return True
 
+    count = 0
     for path in gpus:
             newpath = publish_proxy( project, episode, sequence, shot, path, 'gpu')
+            count += 1
+            logger.info('Progress:ProxyPublish:%s of %s'%(count, total))
             if newpath:
                 gpuMap[path] = newpath
 
     for path in proxies:
             newpath = publish_proxy( project, episode, sequence, shot, path, 'rs' )
+            count += 1
+            logger.info('Progress:ProxyPublish:%s of %s'%(count, total))
             if newpath:
                 proxyMap[path]=newpath
 
     logging.info('Opening original file')
-    if tmpFile: mi.openFile(tmpFile)
+    if tmpFile: mi.openFile(tmpFile, prompt=0)
 
     logging.info('remapping gpu caches file')
     for node in pc.ls(type='gpuCache'):
@@ -1149,7 +1154,7 @@ def create_combined_version(snapshot, postfix='combined',
 
     logger.info('Checking out snapshot for combining ...')
     path = checkout(snapshot, with_texture=False)
-    mi.openFile(path)
+    mi.openFile(path, prompt=0)
 
     logger.info('Combining geo sets ...')
     geo_sets = mi.get_geo_sets( nonReferencedOnly=True, validOnly=True )
@@ -1197,7 +1202,7 @@ def cleanAssetExport(obj, filepath=None, forceLoad=False):
             constructionHistory=True, channels=True, shader=True,
             constraints=True, options="v=0", type="mayaAscii", pr=False)
     if forceLoad:
-        pc.openFile(filepath, force=True)
+        pc.openFile(filepath, force=True, prompt=0)
     return filepath
 
 def set_snapshot_as_current(snapshot, doCombine=True):

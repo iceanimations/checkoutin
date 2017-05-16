@@ -13,6 +13,7 @@ reload(be)
 
 import traceback
 import re
+import json
 
 import imaya as mi
 reload(mi)
@@ -25,13 +26,14 @@ import logging
 class QTextLogHandler(QObject, logging.Handler):
     appended = pyqtSignal(str)
 
-    def __init__(self, text):
+    def __init__(self, text, progressBar=None):
         logging.Handler.__init__(self)
         QObject.__init__(self, parent=text)
         self.text=text
         self.text.setReadOnly(True)
         self.appended.connect(self._appended)
         self.loggers = []
+        self.progressBar = progressBar
 
     def __del__(self):
         for logger in self.loggers:
@@ -41,9 +43,24 @@ class QTextLogHandler(QObject, logging.Handler):
         self.text.append(msg)
         self.text.repaint()
 
+    def progress(self, record):
+        if record.msg.startswith('Progress') and self.progressBar:
+            splits = record.msg.split(':')
+            try:
+                val, maxx = (num.strip() for num in splits[2].split('of'))
+                self.progressBar.setMaximum(int(maxx))
+                self.progressBar.setValue(int(val))
+                self.progressBar.repaint()
+            except ( IndexError, ValueError ):
+                pass
+            return True
+        else:
+            return False
+
     def emit(self, record):
         try:
-            self.appended.emit(self.format(record))
+            if not self.progress(record):
+                self.appended.emit(self.format(record))
         except:
             pass
 
@@ -76,7 +93,7 @@ class PublishDialog(Form, Base):
         super(PublishDialog, self).__init__(parent=parent)
         self.setupUi(self)
         self.parent = parent
-        self.logHandler = QTextLogHandler(self.textEdit)
+        self.logHandler = QTextLogHandler(self.textEdit, self.progressBar)
         self.logHandler.addLogger(logging.getLogger(be.__name__))
         self.logHandler.addLogger(logger)
 
@@ -347,24 +364,31 @@ class PublishDialog(Form, Base):
         successString = '%s Successful'%actionName
         failureString = '%s Failed: '%actionName
         title = 'Publish Assets'
+        details = None
         try:
             logger.info('Doing %s'%actionName)
-            self.link()
-            cui.showMessage(self, title=title,
-                            msg=successString,
-                            icon=QMessageBox.Information)
-            logger.info(successString)
+            verified, details = self.link()
+            details = json.dumps(details, indent=4)
+            if verified:
+                cui.showMessage(self, title=title, msg=successString,
+                        icon=QMessageBox.Information)
+                logger.info(successString)
+            else:
+                cui.showMessage(self, title=title, msg=failureString,
+                        details=details, icon=QMessageBox.Information)
+                logger.error(failureString)
         except Exception as e:
             traceback.print_exc()
             cui.showMessage(self, title=title,
-                            msg = failureString + str(e),
-                            icon=QMessageBox.Critical)
-            logger.error(failureString)
+                    msg=failureString+': '+str(e),
+                    details=traceback.format_exc(), icon=QMessageBox.Critical)
+            logger.error(failureString + ': ' + str(e))
             success = False
         self.updatePair()
         return success
 
     def link(self):
+        details = None
         if self.context == 'rig':
             shaded, rig = self.pairSource, self.snapshot
         else:
@@ -373,21 +397,19 @@ class PublishDialog(Form, Base):
         verified = False
         reason = 'Given sets are not cache compatible'
         try:
-            verified = be.verify_cache_compatibility(shaded, rig)
+            verified, details = be.verify_cache_compatibility(shaded, rig,
+                    feedback=True)
         except Exception as e:
             reason = 'geo_set not found: ' + str(e)
             reason += ''
-
-        if not verified:
-            raise Exception, reason
-            return
 
         try:
             be.link_shaded_to_rig(shaded,rig)
         except Exception as e:
             msg='Cannot link due to Server Error: %s'%str(e)
             raise Exception, msg
-            return
+
+        return verified, details
 
     def subContextEditStart(self, *args):
         if self.subContextEdit.isEnabled():
@@ -510,7 +532,12 @@ class PublishDialog(Form, Base):
             if not goahead:
                 return False
 
-            self.defaultAction()
+            self.showProgressBar()
+            self.progressBar.setMaximum(0)
+            try:
+                self.defaultAction()
+            finally:
+                self.hideProgressBar()
             if actionName == 'Close':
                 return success
             cui.showMessage(self, title='Assets Explorer',
@@ -521,6 +548,7 @@ class PublishDialog(Form, Base):
             traceback.print_exc()
             cui.showMessage(self, title='Asset Publish',
                             msg = failureString + str(e),
+                            details = traceback.format_exc(),
                             icon=QMessageBox.Critical)
             logger.error(failureString)
             success = False
