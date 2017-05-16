@@ -1,7 +1,8 @@
 import site
-site.addsitedir(r"R:/Pipe_Repo/Users/Qurban/utilities")
+site.addsitedir(r"R:/Python_Scripts/plugins/utilities")
 site.addsitedir(r"R:\Pipe_Repo\Projects\TACTIC")
 site.addsitedir(r"R:/Pipe_Repo/Projects/TACTIC/app")
+site.addsitedir(r"R:/Python_Scripts/plugins")
 #site.addsitedir(r"D:/my/tasks/workspace")
 import uiContainer
 from PyQt4.QtGui import QApplication, qApp

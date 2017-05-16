@@ -277,6 +277,23 @@ def saveToTemp():
             else "mayaAscii")
     return orig_path, tmpfile
 
+def normalMaps():
+    nodes = {}
+    try:
+        for node in pc.ls(type=pc.nt.RedshiftNormalMap):
+            nodes[node] = node.tex0.get()
+    except: pass
+    return nodes
+
+def rsSprites():
+    nodes = {}
+    try:
+        for node in pc.ls(type=pc.nt.RedshiftSprite):
+            nodes[node] = node.tex0.get()
+    except: pass
+    return nodes
+    
+
 def checkin(sobject, context, process = None,
             version=-1, description = 'No description',
             file = None, geos = [], camera = None, preview = None,
@@ -315,6 +332,8 @@ def checkin(sobject, context, process = None,
         # texture location mapping in temp
         # normalized and lowercased -> temppath
         ftn_to_texs = mi.textureFiles(selection = False, key=op.exists, returnAsDict=True)
+        nMaps = normalMaps()
+        rsS = rsSprites()
         alltexs = list(reduce(lambda a,b: a.union(b), ftn_to_texs.values(), set()))
 
         if alltexs:

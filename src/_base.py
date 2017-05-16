@@ -56,6 +56,7 @@ class Explorer(cui.Explorer):
         if standalone:
             self.openButton.setEnabled(False)
             self.referenceButton.setEnabled(False)
+            self.advanceButton.hide()
 
         self.itemsBox = self.createScroller("%ss" %self.item_name.capitalize(),
                 cls=cui.SObjectScroller)
