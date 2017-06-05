@@ -315,7 +315,7 @@ def checkin(sobject, context, process = None,
     if process and process != context:
         context = '/'.join([process, context])
 
-    shaded = context.startswith('shaded')
+    shaded = 'shaded' in context
     ftn_to_central = central_to_ftn = {}
     cur_to_temp = temp_to_cur = {}
     filename = 'temp_file_name'
