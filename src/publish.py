@@ -168,7 +168,7 @@ class PublishDialog(Form, Base):
         self.targetCategory = self.category.split('/')[0]
         self.targetContext = self.context.split('/')[0]
         is_environment = self.category.startswith('env')
-        is_neighborhood = self.category.startswith('neighborhood')
+        is_neighborhood = self.category.startswith('neigh')
         is_vegetation = self.category.startswith('vegetation')
         self.pairContext = ''
         if not (is_environment or is_neighborhood or is_vegetation):
@@ -315,17 +315,18 @@ class PublishDialog(Form, Base):
 
         is_environment = self.category.startswith('env')
         is_neighborhood = self.category.startswith('neigh')
+        is_vegetation = self.category.startswith('vegetation')
+        is_pairless = is_environment or is_neighborhood or is_vegetation
         publishable = (self.targetContext == 'rig' or
                 self.targetContext == 'model' or self.pairSourceLinked or
-                self.category.startswith('env'))
+                is_pairless)
         texture_publishable = self.targetContext == 'shaded'
         combineable = (self.targetContext in ['rig', 'shaded'] and not
-                (is_environment or is_neighborhood))
+                is_pairless)
         linkable = (self.targetContext == 'rig' and not self.pairSourceLinked
                 and self.pair)
         compositable = ((self.targetContext == 'model' or
-                self.targetContext=='shaded') and ( is_environment or
-                    is_neighborhood ))
+                self.targetContext == 'shaded') and is_pairless)
 
         prod_elem = self.shot or self.sequence or self.episode
 
@@ -548,7 +549,7 @@ class PublishDialog(Form, Base):
         except Exception as e:
             traceback.print_exc()
             cui.showMessage(self, title='Asset Publish',
-                            msg = failureString + str(e),
+                            msg = failureString,
                             details = traceback.format_exc(),
                             icon=QMessageBox.Critical)
             logger.error(failureString)
@@ -615,7 +616,7 @@ class PublishDialog(Form, Base):
                 self.publish_combined_version(newss)
             except Exception as e:
                 logging.error('Could not publish combined due to error: %r'
-                %e)
+                    % e)
         logger.info('publishing done!')
         return newss
 
