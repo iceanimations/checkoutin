@@ -147,19 +147,19 @@ def checkout(snapshot, r = False, with_texture = True):
                                     snap['search_code'],
                                     snap['project_code']))
 
-        util.set_project(project = snap['project_code'])
+        util.set_project(project=snap['project_code'])
 
         if not r:
 
             paths = server.checkout(sobj['__search_key__'],
                                     snap['context'],
-                                    to_sandbox_dir = True,
-                                    version = snap['version'],
-                                    file_type = 'maya')
+                                    to_sandbox_dir=True,
+                                    version=snap['version'],
+                                    file_type='maya')
 
             # this has the potential of failing in case of multiple files
             # and the first file returns a non-Maya file
-            pc.openFile(paths[0], force = True, prompt=0)
+            mi.openFile(paths[0], prompt=0)
 
             # get the tactic file for identification
             tactic = util.get_tactic_file_info()
@@ -398,10 +398,7 @@ def checkin(sobject, context, process = None,
         and preview and op.exist(preview)):
         checkin_preview(sobject, preview, 'maya')
 
-    try:
-        pc.openFile(orig_path, f = True, prompt=0)
-    except:
-        pass
+    mi.openFile(orig_path, prompt=0)
 
     return snapshot
 
@@ -1202,21 +1199,21 @@ def cleanAssetExport(obj, filepath=None, forceLoad=False):
             constructionHistory=True, channels=True, shader=True,
             constraints=True, options="v=0", type="mayaAscii", pr=False)
     if forceLoad:
-        pc.openFile(filepath, force=True, prompt=0)
+        mi.openFile(filepath, prompt=0)
     return filepath
 
 def set_snapshot_as_current(snapshot, doCombine=True):
     server = user.get_server()
     logger.info('setting as current ...')
-    server.set_current_snapshot( snapshot )
+    server.set_current_snapshot(snapshot)
     texture = util.get_texture_by_dependency(snapshot)
     if texture:
         logger.info('setting dependent textures as current')
-        server.set_current_snapshot( texture )
+        server.set_current_snapshot(texture)
     combined = util.get_dependencies(snapshot, keyword='combined', source=False)
     if combined:
         logger.info('setting combined version as current')
-        server.set_current_snapshot( combined )
+        server.set_current_snapshot(combined)
     elif doCombine:
         create_combined_version(snapshot, postfix='combined')
 
