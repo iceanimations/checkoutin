@@ -167,11 +167,8 @@ class PublishDialog(Form, Base):
 
         self.targetCategory = self.category.split('/')[0]
         self.targetContext = self.context.split('/')[0]
-        is_environment = self.category.startswith('env')
-        is_neighborhood = self.category.startswith('neigh')
-        is_vegetation = self.category.startswith('vegetation')
         self.pairContext = ''
-        if not (is_environment or is_neighborhood or is_vegetation):
+        if not self.is_pairless:
             if self.targetContext == 'rig':
                 self.pairContext = 'shaded'
             elif self.targetContext == 'shaded':
@@ -306,6 +303,16 @@ class PublishDialog(Form, Base):
         self.updatePairView()
         self.updateControllers()
 
+    @property
+    def is_pairless(self):
+        is_environment = self.category.startswith('env')
+        is_neighborhood = self.category.startswith('neigh')
+        is_vegetation = self.category.startswith('vegetation')
+        is_proxy = self.category.startswith('proxy')
+        is_pairless = (is_environment or is_neighborhood or is_vegetation or
+                is_proxy)
+        return is_pairless
+
     def updateControllers(self):
         if self.pairSourceLinked or not self.pair and self.targetContext in (
                 'rig', 'shaded'):
@@ -313,10 +320,7 @@ class PublishDialog(Form, Base):
         else:
             self.linkButton.setEnabled(True)
 
-        is_environment = self.category.startswith('env')
-        is_neighborhood = self.category.startswith('neigh')
-        is_vegetation = self.category.startswith('vegetation')
-        is_pairless = is_environment or is_neighborhood or is_vegetation
+        is_pairless = self.is_pairless
         publishable = (self.targetContext == 'rig' or
                 self.targetContext == 'model' or self.pairSourceLinked or
                 is_pairless)
