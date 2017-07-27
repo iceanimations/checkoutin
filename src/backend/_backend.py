@@ -519,44 +519,9 @@ def checkin_texture(search_key, context, is_current=False, translatePath=True, t
 
     return client_dir
 
+map_textures = mi.map_textures
+collect_textures = mi.collect_textures
 
-def map_textures(mapping):
-    reverse = {}
-
-    for fileNode in mi.getFileNodes():
-        for k, v in mi.remapFileNode(fileNode, mapping):
-            reverse[k]=v
-
-    return reverse
-
-def collect_textures(dest, scene_textures=None):
-    '''
-    Collect all scene texturefiles to a flat hierarchy in a single directory
-    while resolving nameclashes
-
-    @return: {ftn: tmp}
-    '''
-
-    # normalized -> temp
-    mapping = {}
-    if not op.exists(dest):
-        return mapping
-
-    if not scene_textures:
-        scene_textures = mi.textureFiles(selection = False, key = op.exists,
-                returnAsDict=True)
-
-    for myftn in scene_textures:
-        if mapping.has_key(myftn):
-            continue
-        ftns, texs = iutil.find_related_ftns(myftn, scene_textures.copy())
-        newmappings=iutil.lCUFTN(dest, ftns, texs)
-        for fl, copy_to in newmappings.items():
-            if op.exists(fl):
-                shutil.copy(fl, copy_to)
-        mapping.update(newmappings)
-
-    return mapping
 
 def checkin_cache(shot, objs, camera = None):
     '''
@@ -895,19 +860,21 @@ def publish_asset_with_dependencies(project, episode, sequence, shot, asset,
     if publish_textures:
         logger.info('publishing textures')
         texture_context = util.get_texture_context(snapshot)
+
         pub_texture = util.publish_asset(project, prod_elem, asset, texture,
                 texture_context, set_current)
         pub_texture_vless = util.get_published_texture_snapshot(prod_asset,
                 snapshot, versionless=True)
 
-        logger.info('remapping textures to published location')
-        oldloc = os.path.dirname(
-                util.get_filename_from_snap( vless_texture,
-                    mode='client_repo', filetype='image'))
-        newloc = os.path.dirname(
-                util.get_filename_from_snap( pub_texture_vless,
-                    mode='client_repo', filetype='image'))
-        map_textures(mi.texture_mapping(newloc, oldloc))
+        if pub_texture_vless:
+            logger.info('remapping textures to published location')
+            oldloc = os.path.dirname(
+                    util.get_filename_from_snap( vless_texture,
+                        mode='client_repo', filetype='image'))
+            newloc = os.path.dirname(
+                    util.get_filename_from_snap( pub_texture_vless,
+                        mode='client_repo', filetype='image'))
+            map_textures(mi.texture_mapping(newloc, oldloc))
 
     if publish_proxies:
         publish_all_proxies(project, episode, sequence, shot)
