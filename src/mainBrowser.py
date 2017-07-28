@@ -5,26 +5,30 @@ Created on Feb 10, 2014
 copyright (c) at Ice Animations (Pvt) Ltd
 '''
 from . import _base as base
-Explorer = base.Explorer
+
+from PyQt4.QtGui import QMenu, QCursor, QMessageBox
 import os.path as osp
 import json
-from PyQt4.QtGui import QMenu, QCursor, QMessageBox
-import app.util as util
-reload(util)
-import backend
-reload(backend)
-import auth.security as sec
-reload(sec)
-from . import publish
-reload(publish)
-from . import link_rig_shaded
-reload(link_rig_shaded)
 
+import app.util as util
+import auth.security as sec
 import qtify_maya_window as qtify
+
+from . import backend
+from . import publish
+from . import link_rig_shaded
+
+reload(util)
+reload(backend)
+reload(sec)
+reload(publish)
+reload(link_rig_shaded)
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
 iconPath = osp.join(rootPath, 'icons')
+Explorer = base.Explorer
+
 
 class MainBrowser(Explorer):
 
@@ -32,8 +36,9 @@ class MainBrowser(Explorer):
     title = 'Assets Explorer'
     scroller_arg = 'Process/Context'
     pre_defined_contexts = ['model', 'rig', 'shaded']
-    pre_defined_sub_contexts = ['model/low_res', 'shaded/low_res',
-            'rig/low_res']
+    pre_defined_sub_contexts = [
+        'model/low_res', 'shaded/low_res', 'rig/low_res'
+    ]
 
     def __init__(self, shot=None, standalone=False):
 
@@ -66,7 +71,7 @@ class MainBrowser(Explorer):
         rootCtx = self.currentContext.title().split('/')[0]
         pos = QCursor.pos()
         checkinable = sec.checkinability(self.currentItem.objectName(),
-                rootCtx)
+                                         rootCtx)
         menu = QMenu(self)
 
         publishAction = menu.addAction('Publish    ')
@@ -106,7 +111,8 @@ class MainBrowser(Explorer):
         title = 'Cache Validity Check'
         snapshot = backend.get_snapshot_info(snapkey)
         filename = backend.filename_from_snap(snapshot, mode='client_repo')
-        reason = '%s is not valid for geometry caching' %osp.basename(filename)
+        reason = '%s is not valid for geometry caching' % osp.basename(
+            filename)
         try:
             validity = backend.check_validity(snapshot)
         except Exception as e:
@@ -115,13 +121,16 @@ class MainBrowser(Explorer):
             reason += ''
             traceback.print_exc()
 
-        if validity == False:
-            base.cui.showMessage(self, title=title, msg=reason,
-                    icon=QMessageBox.Warning)
+        if not validity:
+            base.cui.showMessage(
+                self, title=title, msg=reason, icon=QMessageBox.Warning)
         else:
 
-            base.cui.showMessage(self, title=title,
-                msg="%s is valid for geometry caching"%osp.basename(filename),
+            base.cui.showMessage(
+                self,
+                title=title,
+                msg="%s is valid for geometry caching" %
+                osp.basename(filename),
                 icon=QMessageBox.Information)
 
         return validity
@@ -133,12 +142,12 @@ class MainBrowser(Explorer):
         title = 'Cache Compatibility Check'
         filename = backend.filename_from_snap(snapshot, mode='client_repo')
         details = None
-        reason = 'Current scene is not cache compatible with %s' %(
-                osp.basename(filename) )
+        reason = 'Current scene is not cache compatible with %s' % (
+            osp.basename(filename))
 
         try:
-            compatibility, details = backend.current_scene_compatible(snapshot,
-                    feedback=True)
+            compatibility, details = backend.current_scene_compatible(
+                snapshot, feedback=True)
             details = json.dumps(details, indent=4)
         except Exception as e:
             import traceback
@@ -146,13 +155,20 @@ class MainBrowser(Explorer):
             reason += ''
             traceback.print_exc()
 
-        if compatibility == False:
-            base.cui.showMessage(self, title=title, msg=reason,
-                    details=details, icon=QMessageBox.Warning)
+        if not compatibility:
+            base.cui.showMessage(
+                self,
+                title=title,
+                msg=reason,
+                details=details,
+                icon=QMessageBox.Warning)
         else:
-            base.cui.showMessage(self, title=title,
-                msg="%s is cache compatible with the current scene"%(
-                    osp.basename( filename ) ), icon=QMessageBox.Information)
+            base.cui.showMessage(
+                self,
+                title=title,
+                msg="%s is cache compatible with the current scene" %
+                (osp.basename(filename)),
+                icon=QMessageBox.Information)
 
         return compatibility
 
@@ -160,7 +176,7 @@ class MainBrowser(Explorer):
         try:
             self.terminateUpdateThread()
             self.publishDialog = publish.PublishDialog(
-                    self.currentFile.objectName(), qtify.getMayaWindow() )
+                self.currentFile.objectName(), qtify.getMayaWindow())
             self.publishDialog.exec_()
         finally:
             self.startUpdateThread()
@@ -169,7 +185,7 @@ class MainBrowser(Explorer):
         try:
             self.terminateUpdateThread()
             self.linkDialog = link_rig_shaded.LinkShadedRig(
-                    self.currentFile.objectName(), self )
+                self.currentFile.objectName(), self)
             self.linkDialog.exec_()
         finally:
             self.startUpdateThread()
@@ -179,15 +195,14 @@ class MainBrowser(Explorer):
 
     def showAssets(self, assets):
         for asset in assets:
-            item = self.itemsBox.createItem('%s'%asset['code'],
-                                   asset['asset_category']
-                                   if asset['asset_category'] else '',
-                                   '', asset['description']
-                                   if asset['description'] else '')
+            item = self.itemsBox.createItem(
+                '%s' % asset['code'], asset['asset_category']
+                if asset['asset_category'] else '', '', asset['description']
+                if asset['description'] else '')
             item.setObjectName(asset['__search_key__'])
             self.itemsBox.addItem(item)
         map(lambda widget: self.bindClickEvent(widget, self.showContexts),
-                self.itemsBox.items())
+            self.itemsBox.items())
 
     def showFiles(self, context, files=None):
         super(MainBrowser, self).showFiles(context, files)
@@ -216,16 +231,15 @@ class MainBrowser(Explorer):
             self.updateItemsBox(assetsLen1, assetsLen2, newItems)
         if self.currentItem and self.contextsBox:
             if len(self.contextsBox.items()) != self.contextsLen(
-                    self.contextsProcesses() ):
+                    self.contextsProcesses()):
                 self.updateContextsBox()
         if self.currentContext and self.filesBox:
-            if len(self.filesBox.items()) != len(
-                    [snap
-                     for snap in self.snapshots
-                     if snap['process'] ==
-                     self.currentContext.title().split('/')[0]]):
+            if len(self.filesBox.items()) != len([
+                    snap for snap in self.snapshots
+                    if snap['process'] == self.currentContext.title().split(
+                        '/')[0]
+            ]):
                 self.showFiles(self.currentContext, self.snapshots)
 
     def updateContextsBox(self):
         self.showContexts(self.currentItem)
-
