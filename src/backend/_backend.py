@@ -243,10 +243,8 @@ def checkout(snapshot, r=False, with_texture=True):
             return _reference(snap)
 
 
-# check the set and obj check cache checkin simultaneously
-
-
 def _reference(snapshot, translatePaths=True):
+    # check the set and obj check cache checkin simultaneously
     filename = util.filename_from_snap(snapshot, mode='client_repo')
 
     refNode = mi.createReference(filename)
@@ -360,8 +358,8 @@ def checkin(sobject,
         context = '/'.join([process, context])
 
     shaded = context.startswith('shaded')
-    ftn_to_central = central_to_ftn = {}
-    cur_to_temp = temp_to_cur = {}
+    central_to_ftn = {}
+    cur_to_temp = {}
     filename = 'temp_file_name'
     tmpdir = make_temp_dir()
     proxy_path = gpu_path = ''
@@ -373,8 +371,6 @@ def checkin(sobject,
         # normalized and lowercased -> temppath
         ftn_to_texs = mi.textureFiles(
             selection=False, key=op.exists, returnAsDict=True)
-        nMaps = normalMaps()
-        rsS = rsSprites()
         alltexs = list(
             reduce(lambda a, b: a.union(b), ftn_to_texs.values(), set()))
 
@@ -395,23 +391,17 @@ def checkin(sobject,
 
     if dogpu:
         gpu_path = pc.mel.gpuCache(
-            *pc.ls(sl=True),
-            startTime=1,
-            endTime=1,
-            optimize=True,
-            optimizationThreshold=40000,
-            writeMaterials=True,
-            dataFormat="ogawa",
-            saveMultipleFiles=False,
-            directory=tmpdir,
+            *pc.ls(sl=True), startTime=1, endTime=1, optimize=True,
+            optimizationThreshold=40000, writeMaterials=True,
+            dataFormat="ogawa", saveMultipleFiles=False, directory=tmpdir,
             fileName=filename)
 
     if dotextures:
-
         if alltexs:
             client_dir = checkin_texture(
                 sobject, texture_context, is_current=is_current, tmpdir=texdir)
             mapping = mi.texture_mapping(client_dir, texdir)
+            mi.textureFiles()
             map_textures(mapping)
 
     snapshot = server.create_snapshot(sobject, context, is_current=is_current)
