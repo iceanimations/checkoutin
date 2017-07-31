@@ -1,3 +1,9 @@
+import traceback
+import re
+import json
+import logging
+import os.path as osp
+
 try:
     from uiContainer import uic
 except:
@@ -5,31 +11,26 @@ except:
 
 from PyQt4.QtGui import (QMessageBox, QRegExpValidator, QPixmap, QFileDialog)
 from PyQt4.QtCore import QRegExp, Qt, pyqtSignal, QObject
-import os.path as osp
 
 from customui import ui as cui
-from .backend import _backend as be
-reload(be)
-
-import traceback
-import re
-import json
-
 import imaya as mi
+
+from .backend import _backend as be
+
+reload(be)
 reload(mi)
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
 
 
-import logging
 class QTextLogHandler(QObject, logging.Handler):
     appended = pyqtSignal(str)
 
     def __init__(self, text, progressBar=None):
         logging.Handler.__init__(self)
         QObject.__init__(self, parent=text)
-        self.text=text
+        self.text = text
         self.text.setReadOnly(True)
         self.appended.connect(self._appended)
         self.loggers = []
@@ -51,7 +52,7 @@ class QTextLogHandler(QObject, logging.Handler):
                 self.progressBar.setMaximum(int(maxx))
                 self.progressBar.setValue(int(val))
                 self.progressBar.repaint()
-            except ( IndexError, ValueError ):
+            except (IndexError, ValueError):
                 pass
             return True
         else:
@@ -86,6 +87,8 @@ class QTextLogHandler(QObject, logging.Handler):
 logger = logging.getLogger(__name__)
 
 Form, Base = uic.loadUiType(osp.join(uiPath, 'publish.ui'))
+
+
 class PublishDialog(Form, Base):
     ''' Have fun '''
 
@@ -119,9 +122,9 @@ class PublishDialog(Form, Base):
         self.updateSourceView()
         self.updateTarget()
 
-        self.episodeBox.activated.connect( self.episodeSelected )
-        self.sequenceBox.activated.connect( self.sequenceSelected )
-        self.shotBox.activated.connect( self.shotSelected )
+        self.episodeBox.activated.connect(self.episodeSelected)
+        self.sequenceBox.activated.connect(self.sequenceSelected)
+        self.shotBox.activated.connect(self.shotSelected)
 
         self.validator = QRegExpValidator(QRegExp('[a-z0-9/_]+'))
         self.subContextEdit.setValidator(self.validator)
@@ -138,7 +141,7 @@ class PublishDialog(Form, Base):
     def updateSourceModel(self):
         self.snapshot = be.get_snapshot_info(self.search_key)
         self.projectName = self.snapshot['project_code']
-        self.project = 'sthpw/project?code=%s'%self.projectName
+        self.project = 'sthpw/project?code=%s' % self.projectName
         self.filename = osp.basename(be.filename_from_snap(self.snapshot))
         self.version = self.snapshot['version']
         self.iconpath = be.get_icon(self.snapshot)
@@ -149,12 +152,12 @@ class PublishDialog(Form, Base):
         self.assetCodeLabel.setText(self.snapshot['search_code'])
         self.assetCategoryLabel.setText(self.category)
         self.assetContextLabel.setText(self.context)
-        self.assetVersionLabel.setText('v%03d'%self.version)
+        self.assetVersionLabel.setText('v%03d' % self.version)
         self.assetFilenameLabel.setText(self.filename)
         if not self.iconpath:
             self.iconpath = osp.join(cui.iconPath, 'no_preview.png')
-        self.pixmap = QPixmap(self.iconpath).scaled(150, 150,
-                Qt.KeepAspectRatioByExpanding)
+        self.pixmap = QPixmap(self.iconpath).scaled(
+            150, 150, Qt.KeepAspectRatioByExpanding)
         self.assetIconLabel.setPixmap(self.pixmap)
 
     def updateSource(self):
@@ -162,8 +165,9 @@ class PublishDialog(Form, Base):
         self.updateSourceView()
 
     def updateTargetModel(self):
-        self.publishedSnapshots = be.get_published_snapshots(self.projectName,
-                self.episode, self.sequence, self.shot, self.snapshot['asset'])
+        self.publishedSnapshots = be.get_published_snapshots(
+            self.projectName, self.episode, self.sequence, self.shot,
+            self.snapshot['asset'])
 
         self.targetCategory = self.category.split('/')[0]
         self.targetContext = self.context.split('/')[0]
@@ -175,21 +179,20 @@ class PublishDialog(Form, Base):
                 self.pairContext = 'rig'
         subContext = '/'.join(self.context.split('/')[1:])
         customSubContext = self.subContextEdit.text()
-        self.targetSubContext = ( subContext + ('/' if customSubContext else '') +
-                customSubContext )
+        self.targetSubContext = (
+            subContext + ('/' if customSubContext else '') + customSubContext)
         self.targetSubContext.strip('/')
-        self.publishContext = self.targetContext + ('/' if
-                self.targetSubContext else '') + self.targetSubContext
-        ( self.targetSnapshots, self.targetLatest,
-                self.targetCurrent ) = be.get_targets_in_published(
-                        self.snapshot, self.publishedSnapshots,
-                        self.publishContext)
+        self.publishContext = self.targetContext + (
+            '/' if self.targetSubContext else '') + self.targetSubContext
+        (self.targetSnapshots, self.targetLatest,
+         self.targetCurrent) = be.get_targets_in_published(
+             self.snapshot, self.publishedSnapshots, self.publishContext)
         self.currentPublished = be.get_current_in_published(
-                self.publishedSnapshots, self.publishContext )
+            self.publishedSnapshots, self.publishContext)
         self.currentPublishedSource = {}
         if self.currentPublished:
             self.currentPublishedSource = be.get_publish_source(
-                    self.currentPublished)
+                self.currentPublished)
 
         self.published = False
         self.combined = False
@@ -214,53 +217,63 @@ class PublishDialog(Form, Base):
         self.pair = None
         if self.pairContext:
             self.pairSubContext = self.targetSubContext
-            pairContext = self.pairContext + ( '/' if self.targetSubContext
-                    else '') + self.targetSubContext
+            pairContext = self.pairContext + ('/' if self.targetSubContext else
+                                              '') + self.targetSubContext
 
             self.pair = be.get_current_in_published(self.publishedSnapshots,
-                    pairContext)
+                                                    pairContext)
 
         self.pairVersion = self.pair['version'] if self.pair else 0
         self.pairSource = None
         if self.pair:
             self.pairSource = be.get_publish_source(self.pair)
-        self.pairSourceContext = (self.pairSource['context'] if self.pairSource
-                else '')
-        self.pairSourceVersion = (self.pairSource['version'] if self.pairSource
-                else 0)
+        self.pairSourceContext = (self.pairSource['context']
+                                  if self.pairSource else '')
+        self.pairSourceVersion = (self.pairSource['version']
+                                  if self.pairSource else 0)
 
         self.pairSourceLinked = self.publishedLinked = False
         if self.pair and self.pairSource:
             pairSourceLinks = be.get_linked(self.pairSource)
-            self.pairSourceLinked = any( [snap for snap in pairSourceLinks if
-                snap['code'] == self.snapshot['code']] )
+            self.pairSourceLinked = any([
+                snap for snap in pairSourceLinks
+                if snap['code'] == self.snapshot['code']
+            ])
             if self.currentPublishedSource:
-                self.publishedLinked = any( [snap for snap in pairSourceLinks
-                    if snap['code'] == self.currentPublishedSource['code']] )
+                self.publishedLinked = any([
+                    snap for snap in pairSourceLinks
+                    if snap['code'] == self.currentPublishedSource['code']
+                ])
 
     def updateTargetView(self):
         self.publishAssetCodeLabel.setText(self.snapshot['search_code'])
         self.publishCategoryLabel.setText(self.targetCategory.split('/')[0])
         self.publishContextLabel.setText(self.publishContext)
-        self.publishVersionLabel.setText('v%03d'%(self.targetVersion))
+        self.publishVersionLabel.setText('v%03d' % (self.targetVersion))
         if self.current or not self.published:
             self.setCurrentCheck.setChecked(True)
         self.publishedLabel.setPixmap(self.getPublishedLabel(self.published))
         self.updatePairView()
 
-    __pairTrue = QPixmap(cui.Item.kLabel.get_path(cui.Item.kLabel.kPAIR, True)).scaled(15,
-            15, Qt.KeepAspectRatioByExpanding)
-    __pairFalse = QPixmap(cui.Item.kLabel.get_path(cui.Item.kLabel.kPAIR, False)).scaled(15,
-            15, Qt.KeepAspectRatioByExpanding)
+    __pairTrue = QPixmap(
+        cui.Item.kLabel.get_path(cui.Item.kLabel.kPAIR, True)).scaled(
+            15, 15, Qt.KeepAspectRatioByExpanding)
+    __pairFalse = QPixmap(
+        cui.Item.kLabel.get_path(cui.Item.kLabel.kPAIR, False)).scaled(
+            15, 15, Qt.KeepAspectRatioByExpanding)
+
     def getPairLabel(self, state=True):
         if state:
             return self.__pairTrue
         return self.__pairFalse
 
-    __publishedTrue = QPixmap(cui.Item.kLabel.get_path(cui.Item.kLabel.kPUB, True)).scaled(15,
-            15, Qt.KeepAspectRatioByExpanding)
-    __publishedFalse = QPixmap(cui.Item.kLabel.get_path(cui.Item.kLabel.kPUB, False)).scaled(15,
-            15, Qt.KeepAspectRatioByExpanding)
+    __publishedTrue = QPixmap(
+        cui.Item.kLabel.get_path(cui.Item.kLabel.kPUB, True)).scaled(
+            15, 15, Qt.KeepAspectRatioByExpanding)
+    __publishedFalse = QPixmap(
+        cui.Item.kLabel.get_path(cui.Item.kLabel.kPUB, False)).scaled(
+            15, 15, Qt.KeepAspectRatioByExpanding)
+
     def getPublishedLabel(self, state=True):
         if state:
             return self.__publishedTrue
@@ -286,12 +299,16 @@ class PublishDialog(Form, Base):
             self.pairFrame.show()
             self.pairContextLabel.setText(self.pairContext)
             self.pairSubContextLabel.setText(self.pairSubContext)
-            self.pairVersionLabel.setText('v%03d'%self.pairVersion)
+            self.pairVersionLabel.setText('v%03d' % self.pairVersion)
             self.pairSourceContextLabel.setText(self.pairSourceContext)
-            self.pairSourceVersionLabel.setText('v%03d'%self.pairSourceVersion)
-            self.pairPublishedLabel.setPixmap(self.getPublishedLabel(bool(self.pair)))
-            self.publishedLinkedLabel.setPixmap(self.getPairLabel(self.publishedLinked))
-            self.pairSourceLinkedLabel.setPixmap(self.getPairLabel(self.pairSourceLinked))
+            self.pairSourceVersionLabel.setText(
+                'v%03d' % self.pairSourceVersion)
+            self.pairPublishedLabel.setPixmap(
+                self.getPublishedLabel(bool(self.pair)))
+            self.publishedLinkedLabel.setPixmap(
+                self.getPairLabel(self.publishedLinked))
+            self.pairSourceLinkedLabel.setPixmap(
+                self.getPairLabel(self.pairSourceLinked))
 
     def updateTarget(self):
         self.updateTargetModel()
@@ -310,7 +327,7 @@ class PublishDialog(Form, Base):
         is_vegetation = self.category.startswith('vegetation')
         is_proxy = self.category.startswith('proxy')
         is_pairless = (is_environment or is_neighborhood or is_vegetation or
-                is_proxy)
+                       is_proxy)
         return is_pairless
 
     def updateControllers(self):
@@ -322,41 +339,42 @@ class PublishDialog(Form, Base):
 
         is_pairless = self.is_pairless
         publishable = (self.targetContext == 'rig' or
-                self.targetContext == 'model' or self.pairSourceLinked or
-                is_pairless)
+                       self.targetContext == 'model' or
+                       self.pairSourceLinked or is_pairless)
         texture_publishable = self.targetContext == 'shaded'
-        combineable = (self.targetContext in ['rig', 'shaded'] and not
-                is_pairless)
-        linkable = (self.targetContext == 'rig' and not self.pairSourceLinked
-                and self.pair)
+        combineable = (self.targetContext in ['rig', 'shaded'] and
+                       not is_pairless)
+        linkable = (self.targetContext == 'rig' and
+                    not self.pairSourceLinked and self.pair)
         compositable = ((self.targetContext == 'model' or
-                self.targetContext == 'shaded') and is_pairless)
+                         self.targetContext == 'shaded') and is_pairless)
 
         prod_elem = self.shot or self.sequence or self.episode
 
         if not self.published:
             if publishable:
-                logger.info('Asset snapshot %s is publishable in %s'
-                        %(self.snapshot['code'], prod_elem['code']))
+                logger.info('Asset snapshot %s is publishable in %s' %
+                            (self.snapshot['code'], prod_elem['code']))
 
                 self.setDefaultAction('publish')
                 self.texturesCheck.setChecked(bool(texture_publishable))
-                self.combinedCheck.setChecked(bool( combineable ))
-                self.linkCheck.setChecked(bool( linkable ))
-                self.proxyCheck.setChecked(bool( compositable ))
+                self.combinedCheck.setChecked(bool(combineable))
+                self.linkCheck.setChecked(bool(linkable))
+                self.proxyCheck.setChecked(bool(compositable))
                 self.setCurrentCheck.setChecked(True)
                 if self.targetSnapshots:
                     self.setCurrentCheck.setEnabled(False)
 
             else:
-                logger.info('Asset snapshot %s is not publishable in %s'
-                        %(self.snapshot['code'], prod_elem['code']))
+                logger.info('Asset snapshot %s is not publishable in %s' %
+                            (self.snapshot['code'], prod_elem['code']))
 
                 self.setDefaultAction()
 
         else:
-            logger.info('Asset snapshot %s is published in %s as %s' %(
-                self.snapshot['code'], prod_elem['code'], self.target['code']))
+            logger.info('Asset snapshot %s is published in %s as %s' %
+                        (self.snapshot['code'], prod_elem['code'],
+                         self.target['code']))
             if not self.current and publishable:
                 self.setDefaultAction('setCurrent')
             elif not self.combined and combineable:
@@ -367,27 +385,37 @@ class PublishDialog(Form, Base):
     def doLink(self):
         success = True
         actionName = 'Link'
-        successString = '%s Successful'%actionName
-        failureString = '%s Failed: '%actionName
+        successString = '%s Successful' % actionName
+        failureString = '%s Failed: ' % actionName
         title = 'Publish Assets'
         details = None
         try:
-            logger.info('Doing %s'%actionName)
+            logger.info('Doing %s' % actionName)
             verified, details = self.link()
             details = json.dumps(details, indent=4)
             if verified:
-                cui.showMessage(self, title=title, msg=successString,
-                        icon=QMessageBox.Information)
+                cui.showMessage(
+                    self,
+                    title=title,
+                    msg=successString,
+                    icon=QMessageBox.Information)
                 logger.info(successString)
             else:
-                cui.showMessage(self, title=title, msg=failureString,
-                        details=details, icon=QMessageBox.Information)
+                cui.showMessage(
+                    self,
+                    title=title,
+                    msg=failureString,
+                    details=details,
+                    icon=QMessageBox.Information)
                 logger.error(failureString)
         except Exception as e:
             traceback.print_exc()
-            cui.showMessage(self, title=title,
-                    msg=failureString+': '+str(e),
-                    details=traceback.format_exc(), icon=QMessageBox.Critical)
+            cui.showMessage(
+                self,
+                title=title,
+                msg=failureString + ': ' + str(e),
+                details=traceback.format_exc(),
+                icon=QMessageBox.Critical)
             logger.error(failureString + ': ' + str(e))
             success = False
         self.updatePair()
@@ -403,17 +431,17 @@ class PublishDialog(Form, Base):
         verified = False
         reason = 'Given sets are not cache compatible'
         try:
-            verified, details = be.verify_cache_compatibility(shaded, rig,
-                    feedback=True)
+            verified, details = be.verify_cache_compatibility(
+                shaded, rig, feedback=True)
         except Exception as e:
             reason = 'geo_set not found: ' + str(e)
             reason += ''
 
         try:
-            be.link_shaded_to_rig(shaded,rig)
+            be.link_shaded_to_rig(shaded, rig)
         except Exception as e:
-            msg='Cannot link due to Server Error: %s'%str(e)
-            raise Exception, msg
+            msg = 'Cannot link due to Server Error: %s' % str(e)
+            raise Exception(msg)
 
         return verified, details
 
@@ -430,7 +458,7 @@ class PublishDialog(Form, Base):
     def subContextEditingFinished(self, *args):
         text = self.subContextEdit.text()
         if re.match('.*combined$', text, re.I):
-            logger.error('%s is not allowed as subcontext'%text)
+            logger.error('%s is not allowed as subcontext' % text)
             self.subContextEditingCancelled()
         else:
             self.subContextEdit.setEnabled(False)
@@ -445,8 +473,8 @@ class PublishDialog(Form, Base):
     def populateEpisodeBox(self):
         self.episodeBox.clear()
         if self.episodes:
-            map(lambda x: self.episodeBox.addItem(x['code']), filter(None,
-                self.episodes ))
+            map(lambda x: self.episodeBox.addItem(x['code']),
+                filter(None, self.episodes))
             self.episodeBox.setCurrentIndex(0)
             self.episode = self.episodes[0]
 
@@ -456,8 +484,8 @@ class PublishDialog(Form, Base):
         self.sequenceBox.setCurrentIndex(0)
         self.sequence = None
         if self.sequences:
-            map(lambda x: self.sequenceBox.addItem(x['code']), filter(None,
-                self.sequences))
+            map(lambda x: self.sequenceBox.addItem(x['code']),
+                filter(None, self.sequences))
 
     def populateShotBox(self):
         self.shotBox.clear()
@@ -465,8 +493,8 @@ class PublishDialog(Form, Base):
         self.shotBox.setCurrentIndex(0)
         self.shot = None
         if self.shots:
-            map(lambda x: self.shotBox.addItem(x['code']), filter(None,
-                self.shots))
+            map(lambda x: self.shotBox.addItem(x['code']),
+                filter(None, self.shots))
 
     def episodeSelected(self, event):
         if not self.episodes:
@@ -475,10 +503,10 @@ class PublishDialog(Form, Base):
         if self.episode == newepisode:
             return
         self.episode = newepisode
-        self.sequences = [None] + be.get_sequences(self.projectName,
-                episode=self.episode['__search_key__'])
+        self.sequences = [None] + be.get_sequences(
+            self.projectName, episode=self.episode['__search_key__'])
         self.populateSequenceBox()
-        self.shots = [ None ]
+        self.shots = [None]
         self.populateShotBox()
         self.updateTarget()
 
@@ -487,10 +515,11 @@ class PublishDialog(Form, Base):
         if self.sequence == newsequence:
             return
         self.sequence = newsequence
-        self.shots = [None] + be.get_shots(self.projectName,
-                episode = self.episode['__search_key__'],
-                sequence = (self.sequence['__search_key__'] if self.sequence
-                    else None))
+        self.shots = [None] + be.get_shots(
+            self.projectName,
+            episode=self.episode['__search_key__'],
+            sequence=(self.sequence['__search_key__']
+                      if self.sequence else None))
         self.populateShotBox()
         self.updateTarget()
 
@@ -504,36 +533,37 @@ class PublishDialog(Form, Base):
     def do(self):
         success = True
         actionName = self.doButton.text()
-        successString = '%s Successful'%actionName
-        failureString = '%s Failed: '%actionName
+        successString = '%s Successful' % actionName
+        failureString = '%s Failed: ' % actionName
 
         try:
-            logger.info('Doing %s'%actionName)
+            logger.info('Doing %s' % actionName)
 
             goahead = True
 
-            if mi.is_modified() and actionName!= 'Close':
+            if mi.is_modified() and actionName != 'Close':
                 btn = cui.showMessage(
-                    self, title='Scene modified',
+                    self,
+                    title='Scene modified',
                     msg='Current scene contains unsaved changes',
                     ques='Do you want to save the changes?',
-                    btns=QMessageBox.Save | QMessageBox.Discard |
-                    QMessageBox.Cancel,
+                    btns=(QMessageBox.Save | QMessageBox.Discard |
+                          QMessageBox.Cancel),
                     icon=QMessageBox.Question)
                 if btn == QMessageBox.Save:
                     path = mi.get_file_path()
                     if path == 'unknown':
-                        path =  QFileDialog.getSaveFileName(self,
-                                                            'Save', '',
-                                                            'MayaBinary(*.mb);; MayaAscii(*.ma)')
+                        path = QFileDialog.getSaveFileName(
+                            self, 'Save', '',
+                            'MayaBinary(*.mb);; MayaAscii(*.ma)')
                         if mi.maya_version() == 2014:
                             path = path[0]
                         mi.rename_scene(path)
                     mi.save_scene(osp.splitext(path)[-1])
                 elif btn == QMessageBox.Discard:
-                    goahead=True
+                    goahead = True
                 else:
-                    goahead=False
+                    goahead = False
 
             if not goahead:
                 return False
@@ -546,16 +576,20 @@ class PublishDialog(Form, Base):
                 self.hideProgressBar()
             if actionName == 'Close':
                 return success
-            cui.showMessage(self, title='Assets Explorer',
-                            msg=successString,
-                            icon=QMessageBox.Information)
+            cui.showMessage(
+                self,
+                title='Assets Explorer',
+                msg=successString,
+                icon=QMessageBox.Information)
             logger.info(successString)
-        except Exception as e:
+        except Exception:
             traceback.print_exc()
-            cui.showMessage(self, title='Asset Publish',
-                            msg = failureString,
-                            details = traceback.format_exc(),
-                            icon=QMessageBox.Critical)
+            cui.showMessage(
+                self,
+                title='Asset Publish',
+                msg=failureString,
+                details=traceback.format_exc(),
+                icon=QMessageBox.Critical)
             logger.error(failureString)
             success = False
         self.updateTarget()
@@ -605,9 +639,14 @@ class PublishDialog(Form, Base):
         publish_with_textures = self.texturesCheck.isChecked()
 
         if publish_with_proxy:
-            newss = be.publish_asset_with_dependencies(self.projectName,
-                self.episode, self.sequence, self.shot, self.snapshot['asset'],
-                self.snapshot, self.publishContext,
+            newss = be.publish_asset_with_dependencies(
+                self.projectName,
+                self.episode,
+                self.sequence,
+                self.shot,
+                self.snapshot['asset'],
+                self.snapshot,
+                self.publishContext,
                 self.setCurrentCheck.isChecked(),
                 publish_textures=self.texturesCheck.isChecked(),
                 publish_proxies=self.proxyCheck.isChecked())
@@ -619,38 +658,51 @@ class PublishDialog(Form, Base):
             try:
                 self.publish_combined_version(newss)
             except Exception as e:
-                logging.error('Could not publish combined due to error: %r'
-                    % e)
+                logging.error(
+                    'Could not publish combined due to error: %r' % e)
         logger.info('publishing done!')
         return newss
 
     def simple_publish(self):
         newss = be.publish_asset(self.projectName, self.episode, self.sequence,
-                self.shot, self.snapshot['asset'], self.snapshot,
-                self.publishContext, self.setCurrentCheck.isChecked() )
+                                 self.shot, self.snapshot['asset'],
+                                 self.snapshot, self.publishContext,
+                                 self.setCurrentCheck.isChecked())
         return newss
 
     def publish_with_textures(self):
-        newss = be.publish_asset_with_textures(self.projectName, self.episode,
-                self.sequence, self.shot, self.snapshot['asset'],
-                self.snapshot, self.publishContext,
-                self.setCurrentCheck.isChecked())
+        newss = be.publish_asset_with_textures(
+            self.projectName, self.episode, self.sequence, self.shot,
+            self.snapshot['asset'], self.snapshot, self.publishContext,
+            self.setCurrentCheck.isChecked())
         return newss
 
     def publish_with_proxies(self):
-        newss = be.publish_asset_with_dependencies(self.projectName,
-                self.episode, self.sequence, self.shot, self.snapshot['asset'],
-                self.snapshot, self.publishContext,
-                self.setCurrentCheck.isChecked(), publish_textures=False,
-                publish_proxies=True)
+        newss = be.publish_asset_with_dependencies(
+            self.projectName,
+            self.episode,
+            self.sequence,
+            self.shot,
+            self.snapshot['asset'],
+            self.snapshot,
+            self.publishContext,
+            self.setCurrentCheck.isChecked(),
+            publish_textures=False,
+            publish_proxies=True)
         return newss
 
     def publish_with_proxies_and_textures(self):
-        newss = be.publish_asset_with_dependencies(self.projectName,
-                self.episode, self.sequence, self.shot, self.snapshot['asset'],
-                self.snapshot, self.publishContext,
-                self.setCurrentCheck.isChecked(), publish_textures=True,
-                publish_proxies=True)
+        newss = be.publish_asset_with_dependencies(
+            self.projectName,
+            self.episode,
+            self.sequence,
+            self.shot,
+            self.snapshot['asset'],
+            self.snapshot,
+            self.publishContext,
+            self.setCurrentCheck.isChecked(),
+            publish_textures=True,
+            publish_proxies=True)
         return newss
 
     def publish_combined_version(self, snapshot=None):
@@ -665,7 +717,7 @@ class PublishDialog(Form, Base):
             if be.check_validity(self.snapshot):
                 validity = True
             else:
-                raise Exception, 'Asset has no valid geosets'
+                raise Exception('Asset has no valid geosets')
             logger.info('asset valid!')
         except Exception as e:
             logger.error('asset invalid')
@@ -687,16 +739,16 @@ class PublishDialog(Form, Base):
             super(PublishDialog, self).keyPressEvent(event)
 
     def keyReleaseEvent(self, event):
-        if (event.text() == 'e'
-                and event.modifiers() & Qt.AltModifier
-                and self.subContextEditButton.clicked.isEnabled()):
+        if (event.text() == 'e' and event.modifiers() & Qt.AltModifier and
+                self.subContextEditButton.clicked.isEnabled()):
             self.subContextEditButton.clicked.emit()
+
 
 def main():
     snapshot_key = 'sthpw/snapshot?code=SNAPSHOT00018558'
     dialog = PublishDialog(snapshot_key)
     dialog.show()
 
+
 if __name__ == '__main__':
     main()
-

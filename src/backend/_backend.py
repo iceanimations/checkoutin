@@ -391,16 +391,23 @@ def checkin(sobject,
 
     if dogpu:
         gpu_path = pc.mel.gpuCache(
-            *pc.ls(sl=True), startTime=1, endTime=1, optimize=True,
-            optimizationThreshold=40000, writeMaterials=True,
-            dataFormat="ogawa", saveMultipleFiles=False, directory=tmpdir,
+            *pc.ls(sl=True),
+            startTime=1,
+            endTime=1,
+            optimize=True,
+            optimizationThreshold=40000,
+            writeMaterials=True,
+            dataFormat="ogawa",
+            saveMultipleFiles=False,
+            directory=tmpdir,
             fileName=filename)
 
     if dotextures:
         if alltexs:
             client_dir = checkin_texture(
                 sobject, texture_context, is_current=is_current, tmpdir=texdir)
-            mapping = mi.texture_mapping(client_dir, texdir)
+            mapping = mi.texture_mapping(
+                client_dir, texdir, mi.textureFiles(returnAsDict=True))
             mi.textureFiles()
             map_textures(mapping)
 
@@ -534,10 +541,7 @@ def make_temp_dir():
                       mkd=True)).replace("\\", "/")
 
 
-def checkin_texture(search_key,
-                    context,
-                    is_current=False,
-                    translatePath=True,
+def checkin_texture(search_key, context, is_current=False, translatePath=True,
                     tmpdir=None):
     if not security.checkinability(search_key):
 
@@ -765,24 +769,25 @@ def verify_cache_compatibility(shaded, rig, newFile=False, feedback=False):
     shaded_path = util.filename_from_snap(shaded, mode='client_repo')
     shaded_ref = mi.createReference(shaded_path)
     if not shaded_ref:
-        raise Exception, 'file not found: %s' % shaded_path
+        raise Exception('file not found: %s' % shaded_path)
 
     shaded_geo_set = mi.find_geo_set_in_ref(shaded_ref)
     if shaded_geo_set is None or not mi.geo_set_valid(shaded_geo_set):
         mi.removeReference(shaded_ref)
-        raise Exception, 'no valid geo_set found in shaded file %s' % shaded_path
+        raise Exception('no valid geo_set found in shaded file %s' %
+                        shaded_path)
 
     rig_path = util.filename_from_snap(rig, mode='client_repo')
     rig_ref = mi.createReference(rig_path)
     if not rig_ref:
         mi.removeReference(shaded_ref)
-        raise Exception, 'file not found: %s' % rig_path
+        raise Exception('file not found: %s' % rig_path)
 
     rig_geo_set = mi.find_geo_set_in_ref(rig_ref)
     if rig_geo_set is None or not mi.geo_set_valid(rig_geo_set):
         mi.removeReference(shaded_ref)
         mi.removeReference(rig_ref)
-        raise Exception, 'no valid geo_set found in rig file %s' % rig_path
+        raise Exception('no valid geo_set found in rig file %s' % rig_path)
 
     result = mi.geo_sets_compatible(
         shaded_geo_set, rig_geo_set, feedback=feedback)
@@ -794,19 +799,19 @@ def verify_cache_compatibility(shaded, rig, newFile=False, feedback=False):
 def current_scene_compatible(other, feedback=False):
     geo_set = mi.get_geo_sets()
     if not geo_set or not mi.geo_set_valid(geo_set[0]):
-        raise Exception, 'no valid geo_set found in current scene'
+        raise Exception('no valid geo_set found in current scene')
     else:
         geo_set = geo_set[0]
 
     other_path = util.filename_from_snap(other, mode='client_repo')
     other_ref = mi.createReference(other_path)
     if not other_ref:
-        raise Exception, 'other file not found %s' % other_path
+        raise Exception('other file not found %s' % other_path)
 
     other_geo_set = mi.find_geo_set_in_ref(other_ref)
     if other_geo_set is None or not mi.geo_set_valid(other_geo_set):
         mi.removeReference(other_geo_set)
-        raise Exception, 'no valid geo_set found in other file %s' % other_path
+        raise Exception('no valid geo_set found in other file %s' % other_path)
 
     result = mi.geo_sets_compatible(geo_set, other_geo_set, feedback=feedback)
     mi.removeReference(other_ref)
@@ -819,7 +824,7 @@ def check_validity(other):
     other_ref = mi.createReference(other_path)
 
     if not other_ref:
-        raise Exception, 'other file not found %s' % other_path
+        raise Exception('other file not found %s' % other_path)
 
     other_geo_set = mi.find_geo_set_in_ref(other_ref)
     validity = False
@@ -1084,13 +1089,13 @@ def publish_all_proxies(project, episode, sequence, shot):
     logging.info('remapping gpu caches file')
     for node in pc.ls(type='gpuCache'):
         path = node.cacheFileName.get()
-        if gpuMap.has_key(path):
+        if path in gpuMap:
             node.cacheFileName.set(gpuMap.get(path))
 
     logging.info('remapping rsProxies file')
     for node in pc.ls(type='RedshiftProxyMesh'):
         path = node.fileName.get()
-        if proxyMap.has_key(path):
+        if path in proxyMap:
             node.fileName.set(proxyMap.get(path))
 
     return True
@@ -1137,9 +1142,10 @@ def publish_proxy(project, episode, sequence, shot, path, filetype='rs'):
             if not has_proxy(
                     filter(lambda s: s['context'] == context, latest_snaps)[0],
                     filetype=filetype):
-                raise Exception, 'proxy not found in latest snapshot of %s' % path
+                raise Exception(
+                        'proxy not found in latest snapshot of %s' % path)
         except IndexError:
-            raise Exception, 'proxy not found in latest snapshot of %s' % path
+            raise Exception('proxy not found in latest snapshot of %s' % path)
 
         for latest in latest_snaps:
             if latest.get('context').split('/')[0] not in ['model', 'shaded']:
@@ -1158,10 +1164,10 @@ def publish_proxy(project, episode, sequence, shot, path, filetype='rs'):
 
     if not pub_path:
         if snap_latest:
-            raise Exception, 'snapshot %s does not have filetype %s' % (
-                snap_latest['code'], filetype)
+            raise Exception('snapshot %s does not have filetype %s' % (
+                            snap_latest['code'], filetype))
         else:
-            raise Exception, 'invalid proxy %s' % path
+            raise Exception('invalid proxy %s' % path)
 
     return pub_path
 
