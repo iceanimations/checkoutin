@@ -9,9 +9,11 @@ try:
 except:
     from PyQt4 import uic
 
-from PyQt4.QtGui import (QMessageBox, QRegExpValidator, QPixmap, QFileDialog)
-from PyQt4.QtCore import QRegExp, Qt, pyqtSignal, QObject
 
+from PyQt4.QtGui import QMessageBox, QRegExpValidator, QPixmap, QFileDialog
+from PyQt4.QtCore import QRegExp, Qt
+
+from cui import QTextLogHandler
 from customui import ui as cui
 import imaya as mi
 
@@ -22,74 +24,11 @@ reload(mi)
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
-
-
-class QTextLogHandler(QObject, logging.Handler):
-    appended = pyqtSignal(str)
-
-    def __init__(self, text, progressBar=None):
-        logging.Handler.__init__(self)
-        QObject.__init__(self, parent=text)
-        self.text = text
-        self.text.setReadOnly(True)
-        self.appended.connect(self._appended)
-        self.loggers = []
-        self.progressBar = progressBar
-
-    def __del__(self):
-        for logger in self.loggers:
-            self.removeLogger(logger)
-
-    def _appended(self, msg):
-        self.text.append(msg)
-        self.text.repaint()
-
-    def progress(self, record):
-        if record.msg.startswith('Progress') and self.progressBar:
-            splits = record.msg.split(':')
-            try:
-                val, maxx = (num.strip() for num in splits[2].split('of'))
-                self.progressBar.setMaximum(int(maxx))
-                self.progressBar.setValue(int(val))
-                self.progressBar.repaint()
-            except (IndexError, ValueError):
-                pass
-            return True
-        else:
-            return False
-
-    def emit(self, record):
-        try:
-            if not self.progress(record):
-                self.appended.emit(self.format(record))
-        except:
-            pass
-
-    def addLogger(self, logger=None):
-        if logger is None:
-            logger = logging.getLogger()
-        if logger not in self.loggers:
-            self.loggers.append(logger)
-            logger.addHandler(self)
-
-    def removeLogger(self, logger):
-        if logger in self.loggers:
-            self.loggers.remove(logger)
-            logger.removeHandler(self)
-
-    def setLevel(self, level, setLoggerLevels=True):
-        super(QTextLogHandler, self).setLevel(level)
-        if setLoggerLevels:
-            for logger in self.loggers:
-                logger.setLevel(level)
-
-
 logger = logging.getLogger(__name__)
+PubForm, PubBase = uic.loadUiType(osp.join(uiPath, 'publish.ui'))
 
-Form, Base = uic.loadUiType(osp.join(uiPath, 'publish.ui'))
 
-
-class PublishDialog(Form, Base):
+class PublishDialog(PubForm, PubBase):
     ''' Have fun '''
 
     def __init__(self, search_key, parent=None):
