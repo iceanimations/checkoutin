@@ -941,7 +941,8 @@ def publish_asset_with_textures(project,
     newloc = os.path.dirname(
         util.get_filename_from_snap(
             pub_texture_vless, mode='client_repo', filetype='image'))
-    map_textures(mi.texture_mapping(newloc, oldloc))
+    map_textures(mi.texture_mapping(
+            newloc, oldloc, mi.textureFiles(returnAsDict=True)))
     if cleanup:
         general_cleanup(lights=False)
 
@@ -1017,7 +1018,8 @@ def publish_asset_with_dependencies(project,
             newloc = os.path.dirname(
                 util.get_filename_from_snap(
                     pub_texture_vless, mode='client_repo', filetype='image'))
-            map_textures(mi.texture_mapping(newloc, oldloc))
+            map_textures(mi.texture_mapping(
+                newloc, oldloc, mi.textureFiles(returnAsDict=True)))
 
     if publish_proxies:
         publish_all_proxies(project, episode, sequence, shot)
