@@ -8,6 +8,7 @@ from customui import ui as cui
 import app.util as util
 import imaya as mi
 import os.path as osp
+import logging
 
 from PyQt4.QtGui import QMessageBox, QFileDialog
 from PyQt4.QtCore import QThread
@@ -35,6 +36,9 @@ reload(mi)
 reload(security)
 reload(checkinput)
 reload(appUsageApp)
+
+
+logger = logging.getLogger(__name__)
 
 
 class Explorer(cui.Explorer):
@@ -81,6 +85,7 @@ class Explorer(cui.Explorer):
         if self.currentFile:
             error = backend.createRedshiftProxy(self.currentFile.objectName())
             if error:
+                logger.error(error)
                 cui.showMessage(
                     self,
                     title='No File',
@@ -91,6 +96,7 @@ class Explorer(cui.Explorer):
         if self.currentFile:
             error = backend.createGPUCache(self.currentFile.objectName())
             if error:
+                logger.error(error)
                 cui.showMessage(
                     self,
                     title='No File',
@@ -174,6 +180,7 @@ class Explorer(cui.Explorer):
                         name_comps[0], name_comps[1], check_out=True)
                     # self.call_checkout()
         else:
+            logger.warning('No Process/Context selected')
             cui.showMessage(
                 self, title='Warning', msg='No Process/Context selected')
 
@@ -204,7 +211,9 @@ class Explorer(cui.Explorer):
                     icon=QMessageBox.Warning,
                     btns=QMessageBox.Save | QMessageBox.Cancel)
                 if b == QMessageBox.Save:
+                    logger.info('Saving Scene ...')
                     mi.save_scene('.ma')
+                    logger.info('Scene saved!')
                 else:
                     return
             if self.currentContext:
@@ -217,6 +226,7 @@ class Explorer(cui.Explorer):
                         self.currentContext.title())
                     self.checkinputDialog.show()
                 else:
+                    logger.error('Access Denied')
                     cui.showMessage(
                         self,
                         title='Assets Explorer',
@@ -225,6 +235,7 @@ class Explorer(cui.Explorer):
                         'selected Process',
                         icon=QMessageBox.Critical)
             else:
+                logger.warning('No Process/Context selected')
                 cui.showMessage(
                     self,
                     title='Assets Explorer',
@@ -243,6 +254,7 @@ class Explorer(cui.Explorer):
             sobj = str(self.currentItem.objectName())
             error = backend.checkCheckinValidity(sobj, context)
             if error:
+                logger.error(error)
                 cui.showMessage(
                     self,
                     title='Asset Explorer',
@@ -250,6 +262,7 @@ class Explorer(cui.Explorer):
                     icon=QMessageBox.Critical)
                 return
             pro = self.currentContext.title().split('/')[0]
+
             backend.checkin(
                 sobj,
                 context,
@@ -269,6 +282,7 @@ class Explorer(cui.Explorer):
             if self.currentContext:
                 self.showFiles(self.currentContext, self.snapshots)
         else:
+            logger.error(self.no_item_selected)
             cui.showMessage(
                 self,
                 title=self.title,

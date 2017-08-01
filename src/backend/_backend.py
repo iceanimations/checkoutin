@@ -371,14 +371,14 @@ def checkin(sobject,
         # normalized and lowercased -> temppath
         ftn_to_texs = mi.textureFiles(
             selection=False, key=op.exists, returnAsDict=True)
-        alltexs = list(
-            reduce(lambda a, b: a.union(b), ftn_to_texs.values(), set()))
+        alltexs = ftn_to_texs.reduced()
 
         if alltexs:
             texture_context = '/'.join(['texture'] + context.split('/')[1:])
             texdir = op.join(tmpdir, texture_context)
             if not op.exists(texdir):
                 iutil.mkdir(tmpdir, texture_context)
+            logger.info('Collecting %d Texture files ...' % len(alltexs))
             cur_to_temp = collect_textures(texdir, ftn_to_texs)
             map_textures(cur_to_temp)
 
@@ -387,9 +387,11 @@ def checkin(sobject,
         proxy_path = op.join(proxy_dir, filename + '.rs')  # .replace(" ", "_")
         if not op.exists(proxy_dir):
             iutil.mkdir(tmpdir, context)
+        logger.info('Saving Proxy ...')
         pc.mel.rsProxy(fp=proxy_path.replace('\\', '/'), sl=True)
 
     if dogpu:
+        logger.info('Saving GPU ...')
         gpu_path = pc.mel.gpuCache(
             *pc.ls(sl=True),
             startTime=1,
@@ -404,11 +406,12 @@ def checkin(sobject,
 
     if dotextures:
         if alltexs:
+            logger.info('Checking in %d Texture files ...' % len(alltexs))
             client_dir = checkin_texture(
                 sobject, texture_context, is_current=is_current, tmpdir=texdir)
             mapping = mi.texture_mapping(
                 client_dir, texdir, mi.textureFiles(returnAsDict=True))
-            mi.textureFiles()
+            logger.info('Remapping textures to new location ...')
             map_textures(mapping)
 
     snapshot = server.create_snapshot(sobject, context, is_current=is_current)
@@ -432,6 +435,7 @@ def checkin(sobject,
         iutil.getTemp(prefix=dt.now().strftime("%Y-%M-%d %H-%M-%S"))).replace(
             "\\", "/")
     orig_path = pc.sceneName()
+    logger.info('Saving File to Temporary Location ...')
     save_path = (m.save(
         tmpfile,
         file_type="mayaBinary"
@@ -439,9 +443,11 @@ def checkin(sobject,
                  if not file else file)
 
     snap_code = snapshot.get('code')
+    logger.info('Uploading Maya File ...')
     server.add_file(
         snap_code, save_path, file_type='maya', mode='copy', create_icon=False)
     if doproxy and op.exists(proxy_path):
+        logger.info('Uploading RS Proxy ...')
         server.add_file(
             snap_code,
             proxy_path,
@@ -449,6 +455,7 @@ def checkin(sobject,
             mode='copy',
             create_icon=False)
     if dogpu and op.exists(gpu_path[0]):
+        logger.info('Uploading GPU Cache ...')
         server.add_file(
             snap_code,
             gpu_path,
@@ -463,8 +470,10 @@ def checkin(sobject,
 
     if (any([key in sobject for key in ['vfx/shot', 'vfx/asset']]) and
             preview and op.exist(preview)):
+        logger.info('Checking in preview ...')
         checkin_preview(sobject, preview, 'maya')
 
+    logger.info('Loading Original Scene...')
     mi.openFile(orig_path, prompt=0)
 
     return snapshot
@@ -579,6 +588,7 @@ def checkin_texture(search_key, context, is_current=False, translatePath=True,
 
     snapshot_code = util.get_search_key_code(texture_snap['__search_key__'])
 
+    logger.info('Uploading textures ...')
     server.add_file(
         snapshot_code,
         files_to_upload,

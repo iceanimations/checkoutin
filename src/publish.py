@@ -29,7 +29,7 @@ PubForm, PubBase = uic.loadUiType(osp.join(uiPath, 'publish.ui'))
 
 
 class PublishDialog(PubForm, PubBase):
-    ''' Have fun '''
+    '''Dialog for publishing'''
 
     def __init__(self, search_key, parent=None):
         super(PublishDialog, self).__init__(parent=parent)
