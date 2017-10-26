@@ -8,5 +8,6 @@ reload(mt)
 reload(pr)
 MyTasks = mt.MyTasks
 MainBrowser = ae.MainBrowser
+Window = MainBrowser
 ShotExplorer = ss.ShotExplorer
 PublishReport = pr.PublishReport
