@@ -22,30 +22,30 @@ m = maya.Maya()
 TEXTURE_TYPE = 'vfx/texture'
 CURRENT_PROJECT_KEY = 'current_project_key'
 
-try:
-    if not pc.pluginInfo('redshift4maya', q=1, l=1):
-        pc.loadPlugin('redshift4maya')
-except Exception as e:
-    logging.error('cannot load plugin %s' % str(e))
 
-try:
-    if not pc.pluginInfo('gpuCache', q=1, l=1):
-        pc.loadPlugin('gpuCache')
-except Exception as e:
-    logging.error('cannot load plugin %s' % str(e))
+def load_plugin(plugin):
+    try:
+        if not pc.pluginInfo(plugin, q=1, l=1):
+            pc.loadPlugin(plugin)
+    except Exception as e:
+        logging.error('cannot load plugin %s' % str(e))
 
 
-def getSnapshotPaths(snapshot):
+load_plugin('redshift4maya')
+load_plugin('gpuCache')
+
+
+def get_snapshot_paths(snapshot):
     if user.user_registered():
         server = user.get_server().server
         return server.get_all_paths_from_snapshot(
             snapshot.split('?')[-1].split('=')[-1])
 
 
-def createRedshiftProxy(snapshot):
+def create_redshift_proxy(snapshot):
     '''@params: snapshot search key'''
     filePath = ''
-    paths = getSnapshotPaths(snapshot)
+    paths = get_snapshot_paths(snapshot)
     if paths:
         for path in paths:
             if path.endswith('.rs'):
@@ -59,10 +59,10 @@ def createRedshiftProxy(snapshot):
         return 'Could not find a Proxy file'
 
 
-def createGPUCache(snapshot):
+def create_gpu_cached(snapshot):
     '''@params: snapshot search key'''
     filePath = ''
-    paths = getSnapshotPaths(snapshot)
+    paths = get_snapshot_paths(snapshot)
     if paths:
         for path in paths:
             if path.endswith('.abc'):
@@ -75,7 +75,7 @@ def createGPUCache(snapshot):
         return 'Could not find a GPU Cache file'
 
 
-def validateSelectionForProxy():
+def validate_selection_for_proxy():
     error = ''
     sl = pc.ls(sl=True, type=['mesh', 'gpuCache'], dag=True)
     if sl:
@@ -130,26 +130,27 @@ def create_first_snapshot(item, context, check_out=True):
     return snapshot
 
 
-def checkCheckinValidity(sobj, context):
+def check_checkin_validity(sobj, context):
     '''Performs check if the scene contains more than one geosets and if the
     name of the only geoset matches the asset name'''
-    geosets = [
-        geoset for geoset in pc.ls(exactType=pc.nt.ObjectSet)
-        if geoset.name().lower().endswith('_geo_set')
-    ]
+
+    geo_sets = mi.get_geo_sets(nonReferencedOnly=True, valid_only=False)
+
     if context.lower().startswith('rig'):
-        if not geosets:
+        if not geo_sets:
             return 'Could not find a geoset or properly named geoset'
-    if len(geosets) > 1:
-        return 'A scene can not contain more than one geosets'
-    if geosets:
-        if not mi.getNiceName(geosets[0].name()).lower().replace(
-                '_geo_set', '') == sobj.split('=')[-1]:
-            try:
-                pc.rename(geosets[0], "%s_geo_set" % sobj.split('=')[-1])
-            except Exception as ex:
-                return ('Geoset name does not match the Asset name and could '
-                        ' not rename it\n' + str(ex))
+
+    asset_name = sobj.split('=')[-1]
+    required_name = "%s_geo_set" % asset_name
+
+    name_found = any((_set.name() == required_name for _set in geo_sets))
+
+    if geo_sets and not name_found:
+        try:
+            pc.rename(geo_sets[0], required_name)
+        except Exception as ex:
+            return ('Geoset name does not match the Asset name and could '
+                    ' not rename it\n' + str(ex))
 
 
 def checkout(snapshot, r=False, with_texture=True):
@@ -291,7 +292,7 @@ def _reference(snapshot, translatePaths=True):
     return present
 
 
-def saveToTemp():
+def save_to_temp():
     ''' '''
     orig_path = pc.sceneName()
     tmpfile = op.normpath(
@@ -304,7 +305,7 @@ def saveToTemp():
     return orig_path, tmpfile
 
 
-def normalMaps():
+def normal_maps():
     nodes = {}
     try:
         for node in pc.ls(type=pc.nt.RedshiftNormalMap):
@@ -314,7 +315,7 @@ def normalMaps():
     return nodes
 
 
-def rsSprites():
+def rs_sprites():
     nodes = {}
     try:
         for node in pc.ls(type=pc.nt.RedshiftSprite):
@@ -610,10 +611,6 @@ def checkin_texture(search_key, context, is_current=False, translatePath=True,
     return client_dir
 
 
-map_textures = mi.map_textures
-collect_textures = mi.collect_textures
-
-
 def checkin_cache(shot, objs, camera=None):
     '''
     :shot: shot search key
@@ -629,16 +626,16 @@ def checkin_cache(shot, objs, camera=None):
     end_frame = shot_sobj.get('tc_frame_end')
     context = 'cache'
 
-    if camera:
-        # check if camera in and out respects shot_frame_range
-        # switch camera
-        playblast = mi.playblast(*args)
+    # if camera:
+    #   # # check if camera in and out respects shot_frame_range
+    #   # # switch camera
+    #   # playblast = mi.playblast(*args)
 
-    else:
-        playblast = None
+    # else:
+    #   # playblast = None
 
     tmpdir = make_temp_dir()
-    ref_path = util.get_references()
+    # ref_path = util.get_references()
 
     version = [
         int(snap.get('version'))
@@ -649,7 +646,7 @@ def checkin_cache(shot, objs, camera=None):
     version = (max(version) if version else 0) + 1
 
     t_info = util.get_tactic_file_info()
-    codes = [snap.get('search_code') for snap in t_info.get('assets')]
+    # codes = [snap.get('search_code') for snap in t_info.get('assets')]
 
     naming = []
 
@@ -659,7 +656,7 @@ def checkin_cache(shot, objs, camera=None):
 
     obj_ref = {}
     path_snap = {}
-    code_naming = {}
+    # code_naming = {}
     for snap in t_info.get('assets'):
         path_snap[op.normpath(
             util.get_filename_from_snap(snap, 'client_repo')).lower()] = snap
@@ -775,55 +772,36 @@ def get_current_in_published(published, context):
 def verify_cache_compatibility(shaded, rig, newFile=False, feedback=False):
     if newFile:
         pc.newFile(f=True)
+    result = False
 
-    shaded_path = util.filename_from_snap(shaded, mode='client_repo')
-    shaded_ref = mi.createReference(shaded_path)
-    if not shaded_ref:
-        raise Exception('file not found: %s' % shaded_path)
+    try:
+        shaded_path = util.filename_from_snap(shaded, mode='client_repo')
+        shaded_ref = mi.createReference(shaded_path)
+        if not shaded_ref:
+            raise Exception('file not found: %s' % shaded_path)
 
-    shaded_geo_set = mi.find_geo_set_in_ref(shaded_ref)
-    if shaded_geo_set is None or not mi.geo_set_valid(shaded_geo_set):
-        mi.removeReference(shaded_ref)
-        raise Exception('no valid geo_set found in shaded file %s' %
-                        shaded_path)
+        rig_path = util.filename_from_snap(rig, mode='client_repo')
+        rig_ref = mi.createReference(rig_path)
+        if not rig_ref:
+            mi.removeReference(shaded_ref)
+            raise Exception('file not found: %s' % rig_path)
 
-    rig_path = util.filename_from_snap(rig, mode='client_repo')
-    rig_ref = mi.createReference(rig_path)
-    if not rig_ref:
-        mi.removeReference(shaded_ref)
-        raise Exception('file not found: %s' % rig_path)
+        result = mi.refs_compatible(shaded_ref, rig_ref, feedback=feedback)
 
-    rig_geo_set = mi.find_geo_set_in_ref(rig_ref)
-    if rig_geo_set is None or not mi.geo_set_valid(rig_geo_set):
+    finally:
         mi.removeReference(shaded_ref)
         mi.removeReference(rig_ref)
-        raise Exception('no valid geo_set found in rig file %s' % rig_path)
 
-    result = mi.geo_sets_compatible(
-        shaded_geo_set, rig_geo_set, feedback=feedback)
-    mi.removeReference(shaded_ref)
-    mi.removeReference(rig_ref)
     return result
 
 
 def current_scene_compatible(other, feedback=False):
-    geo_set = mi.get_geo_sets()
-    if not geo_set or not mi.geo_set_valid(geo_set[0]):
-        raise Exception('no valid geo_set found in current scene')
-    else:
-        geo_set = geo_set[0]
-
     other_path = util.filename_from_snap(other, mode='client_repo')
     other_ref = mi.createReference(other_path)
     if not other_ref:
         raise Exception('other file not found %s' % other_path)
 
-    other_geo_set = mi.find_geo_set_in_ref(other_ref)
-    if other_geo_set is None or not mi.geo_set_valid(other_geo_set):
-        mi.removeReference(other_geo_set)
-        raise Exception('no valid geo_set found in other file %s' % other_path)
-
-    result = mi.geo_sets_compatible(geo_set, other_geo_set, feedback=feedback)
+    result = mi.refs_compatible(other_ref, feedback=feedback)
     mi.removeReference(other_ref)
 
     return result
@@ -836,11 +814,11 @@ def check_validity(other):
     if not other_ref:
         raise Exception('other file not found %s' % other_path)
 
-    other_geo_set = mi.find_geo_set_in_ref(other_ref)
-    validity = False
+    geo_sets = mi.get_geo_sets_from_reference(other_ref, valid_only=False)
+    validity = bool(geo_sets)
 
     try:
-        if other_geo_set is None or not mi.geo_set_valid(other_geo_set):
+        if geo_sets is None or not mi.geo_set_valid(other_geo_set):
             validity = False
         else:
             validity = True
@@ -1286,7 +1264,7 @@ def delete_unknown_nodes():
                 'Error Encountered while deleting unknown nodes:%s' % str(e))
 
 
-def removeBundleScriptNodes():
+def remove_bundle_script_nodes():
     scripts = pc.ls(type='script')
     for node in scripts:
         if node.name().find('ICE_BundleScript') >= 0:
@@ -1314,7 +1292,7 @@ def general_cleanup(unknowns=True,
     if unknowns:
         delete_unknown_nodes()
     if bundleScriptNodes:
-        removeBundleScriptNodes()
+        remove_bundle_script_nodes()
 
 
 def create_combined_version(snapshot,
@@ -1348,7 +1326,7 @@ def create_combined_version(snapshot,
     filepath = None
     if useCleanExport:
         logger.info('exporting combined mesh')
-        filepath = cleanAssetExport(combined_mesh)
+        filepath = clean_asset_export(combined_mesh)
 
     logger.info('Checking in file as combined')
     combinedContext = '/'.join([context, postfix])
@@ -1369,7 +1347,7 @@ def create_combined_version(snapshot,
     return combined
 
 
-def cleanAssetExport(obj, filepath=None, forceLoad=False):
+def clean_asset_export(obj, filepath=None, forceLoad=False):
     if not filepath:
         filepath = op.normpath(
             iutil.getTemp(prefix=dt.now().strftime(
@@ -1439,6 +1417,7 @@ def is_production_asset_paired(prod_asset, use_new=True):
         source_shaded, source_rig)
 
 
+# migrated to app.utils
 get_all_projects = util.get_all_projects
 get_publish_targets = util.get_all_publish_targets
 get_publish_source = util.get_publish_source
@@ -1452,3 +1431,7 @@ filename_from_snap = util.get_filename_from_snap
 link_shaded_to_rig = util.link_shaded_to_rig
 get_combined_version = util.get_combined_version
 get_production_assets = util.get_production_assets
+
+# migrated to imaya
+map_textures = mi.map_textures
+collect_textures = mi.collect_textures

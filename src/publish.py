@@ -376,11 +376,15 @@ class PublishDialog(PubForm, PubBase):
             reason = 'geo_set not found: ' + str(e)
             reason += ''
 
+        import pprint
+        pprint.pprint(shaded)
+        pprint.pprint(rig)
         try:
             be.link_shaded_to_rig(shaded, rig)
         except Exception as e:
             msg = 'Cannot link due to Server Error: %s' % str(e)
-            raise Exception(msg)
+            e.args = tuple([msg])
+            raise
 
         return verified, details
 
@@ -486,7 +490,8 @@ class PublishDialog(PubForm, PubBase):
                     title='Scene modified',
                     msg='Current scene contains unsaved changes',
                     ques='Do you want to save the changes?',
-                    btns=(QMessageBox.Save | QMessageBox.Discard |
+                    btns=(QMessageBox.Save |
+                          QMessageBox.Discard |
                           QMessageBox.Cancel),
                     icon=QMessageBox.Question)
                 if btn == QMessageBox.Save:
