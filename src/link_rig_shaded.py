@@ -6,26 +6,28 @@ except:
     from PyQt4 import uic
 
 from app.customui import ui as cui
-reload(cui)
 import app.util as util
-reload(util)
 
 from . import backend
-reload(backend)
 
 import imaya as mi
-reload(mi)
 
 import json
 
 import PyQt4.QtGui as gui
 import os.path as osp
 
+reload(cui)
+reload(util)
+reload(backend)
+reload(mi)
 
 rootPath = osp.dirname(osp.dirname(__file__))
 uiPath = osp.join(rootPath, 'ui')
 
 Form, Base = uic.loadUiType(osp.join(uiPath, 'link_rig_shaded.ui'))
+
+
 class LinkShadedRig(Form, Base):
     def __init__(self, snapshot_sk, parent=None):
         super(LinkShadedRig, self).__init__(parent)
@@ -36,17 +38,17 @@ class LinkShadedRig(Form, Base):
         self.retrieveSnapshotInfo()
 
         self.assetCategoryEdit.setText(
-                self.snapshot['asset']['asset_category'])
+            self.snapshot['asset']['asset_category'])
         self.assetCodeEdit.setText(self.snapshot['search_code'])
         self.assetContextEdit.setText(self.snapshot['context'])
-        self.assetVersionEdit.setText('v%03d'%self.snapshot['version'])
+        self.assetVersionEdit.setText('v%03d' % self.snapshot['version'])
 
         self.populateTargetContexts()
         self.targetContextBox.currentIndexChanged.connect(self.populateItems)
         self.currentTargetContext = self.targetContextBox.currentText()
 
         self.scroller = cui.Scroller(self)
-        self.scroller.setTitle('%s Versions'%self.currentTargetContext)
+        self.scroller.setTitle('%s Versions' % self.currentTargetContext)
         self.scrollerLayout.addWidget(self.scroller)
 
         self.linkButton.setEnabled(False)
@@ -75,8 +77,8 @@ class LinkShadedRig(Form, Base):
         verified = False
         reason = 'Given sets are not cache compatible'
         try:
-            verified, details = backend.verify_cache_compatibility(shaded, rig,
-                    feedback=True)
+            verified, details = backend.verify_cache_compatibility(
+                shaded, rig, feedback=True)
             details = json.dumps(details, indent=4)
         except Exception as e:
             import traceback
@@ -86,25 +88,31 @@ class LinkShadedRig(Form, Base):
             traceback.print_exc()
 
         if not verified:
-            cui.showMessage(self, title='',
-                            msg=reason,
-                            icon=gui.QMessageBox.Critical,
-                            details=details)
+            cui.showMessage(
+                self,
+                title='',
+                msg=reason,
+                icon=gui.QMessageBox.Critical,
+                details=details)
             return
 
         try:
-            util.link_shaded_to_rig(shaded,rig)
+            util.link_shaded_to_rig(shaded, rig)
         except Exception as e:
             import traceback
-            cui.showMessage(self, title='',
-                    msg='Cannot link due to Server Error: %s'%str(e),
-                            icon=gui.QMessageBox.Critical)
+            cui.showMessage(
+                self,
+                title='',
+                msg='Cannot link due to Server Error: %s' % str(e),
+                icon=gui.QMessageBox.Critical)
             traceback.print_exc
             return
 
-        cui.showMessage(self, title='Link Shaded to Rig',
-                            msg="Linking Successful",
-                            icon=gui.QMessageBox.Information)
+        cui.showMessage(
+            self,
+            title='Link Shaded to Rig',
+            msg="Linking Successful",
+            icon=gui.QMessageBox.Information)
 
         self.currentItem.labelStatus |= self.currentItem.kLabel.kPAIR
         self.currentItem.labelDisplay |= self.currentItem.kLabel.kPAIR
@@ -112,9 +120,9 @@ class LinkShadedRig(Form, Base):
     def retrieveSnapshotInfo(self):
         self.snapshot = util.get_snapshot_info(self.snapshot_sk)
         self.snapshot['cache_compatible'] = util.get_cache_compatible_objects(
-                self.snapshot )
+            self.snapshot)
         self.snapshots = util.get_snapshot_from_sobject(
-                self.snapshot['asset']['__search_key__'] )
+            self.snapshot['asset']['__search_key__'])
 
     def populateItems(self, *args):
         self.scroller.clearItems()
@@ -125,20 +133,20 @@ class LinkShadedRig(Form, Base):
             if snap['context'] == targetContext:
                 main_filename = 'File not Found'
                 try:
-                    main_filename = osp.basename(
-                            util.filename_from_snap(snap) )
+                    main_filename = osp.basename(util.filename_from_snap(snap))
                 except IndexError:
                     continue
 
-                item = self.createItem( main_filename,
-                        str(util.date_str_to_datetime(snap['timestamp'])),
-                        snap['login'], snap['description'] )
+                item = self.createItem(
+                    main_filename,
+                    str(util.date_str_to_datetime(snap['timestamp'])),
+                    snap['login'], snap['description'])
                 item.snapshot = snap
                 if self.snapshot_linked(snap):
                     item.labelStatus = item.kLabel.kPAIR
                     item.labelDisplay = item.kLabel.kPAIR
                 if util.get_all_publish_targets(snap):
-                    item.labelStatus  |= item.kLabel.kPUB
+                    item.labelStatus |= item.kLabel.kPUB
                     item.labelDisplay |= item.kLabel.kPUB
                 self.bindClickEvent(item, self.itemClicked)
                 self.scroller.addItem(item)
@@ -147,7 +155,7 @@ class LinkShadedRig(Form, Base):
 
     def updateSnapshots(self):
         self.snapshots = util.get_snapshot_from_sobject(
-                self.snapshot['asset']['__search_key__'] )
+            self.snapshot['asset']['__search_key__'])
 
     def populateTargetContexts(self):
         self.targetContextBox.clear()
@@ -210,8 +218,5 @@ class LinkShadedRig(Form, Base):
 if __name__ == '__main__':
     import qtify_maya_window as qtfy
     parent = qtfy.getMayaWindow()
-    win = LinkShadedRig(
-            'sthpw/snapshot?code=SNAPSHOT00017302',
-            parent)
+    win = LinkShadedRig('sthpw/snapshot?code=SNAPSHOT00017302', parent)
     win.show()
-

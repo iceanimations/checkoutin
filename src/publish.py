@@ -9,7 +9,6 @@ try:
 except:
     from PyQt4 import uic
 
-
 from PyQt4.QtGui import QMessageBox, QRegExpValidator, QPixmap, QFileDialog
 from PyQt4.QtCore import QRegExp, Qt
 
@@ -265,8 +264,8 @@ class PublishDialog(PubForm, PubBase):
         is_neighborhood = self.category.startswith('neigh')
         is_vegetation = self.category.startswith('vegetation')
         is_proxy = self.category.startswith('proxy')
-        is_pairless = (is_environment or is_neighborhood or is_vegetation or
-                       is_proxy)
+        is_pairless = (is_environment or is_neighborhood or is_vegetation
+                       or is_proxy)
         return is_pairless
 
     def updateControllers(self):
@@ -277,16 +276,16 @@ class PublishDialog(PubForm, PubBase):
             self.linkButton.setEnabled(True)
 
         is_pairless = self.is_pairless
-        publishable = (self.targetContext == 'rig' or
-                       self.targetContext == 'model' or
-                       self.pairSourceLinked or is_pairless)
+        publishable = (self.targetContext == 'rig'
+                       or self.targetContext == 'model'
+                       or self.pairSourceLinked or is_pairless)
         texture_publishable = self.targetContext == 'shaded'
-        combineable = (self.targetContext in ['rig', 'shaded'] and
-                       not is_pairless)
-        linkable = (self.targetContext == 'rig' and
-                    not self.pairSourceLinked and self.pair)
-        compositable = ((self.targetContext == 'model' or
-                         self.targetContext == 'shaded') and is_pairless)
+        combineable = (self.targetContext in ['rig', 'shaded']
+                       and not is_pairless)
+        linkable = (self.targetContext == 'rig' and not self.pairSourceLinked
+                    and self.pair)
+        compositable = ((self.targetContext == 'model'
+                         or self.targetContext == 'shaded') and is_pairless)
 
         prod_elem = self.shot or self.sequence or self.episode
 
@@ -376,9 +375,9 @@ class PublishDialog(PubForm, PubBase):
             reason = 'geo_set not found: ' + str(e)
             reason += ''
 
-        import pprint
-        pprint.pprint(shaded)
-        pprint.pprint(rig)
+        if not verified:
+            return verified, details
+
         try:
             be.link_shaded_to_rig(shaded, rig)
         except Exception as e:
@@ -490,9 +489,8 @@ class PublishDialog(PubForm, PubBase):
                     title='Scene modified',
                     msg='Current scene contains unsaved changes',
                     ques='Do you want to save the changes?',
-                    btns=(QMessageBox.Save |
-                          QMessageBox.Discard |
-                          QMessageBox.Cancel),
+                    btns=(QMessageBox.Save | QMessageBox.Discard
+                          | QMessageBox.Cancel),
                     icon=QMessageBox.Question)
                 if btn == QMessageBox.Save:
                     path = mi.get_file_path()

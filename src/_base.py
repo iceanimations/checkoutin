@@ -252,7 +252,7 @@ class Explorer(cui.Explorer):
                 dogpu=False):
         if self.currentItem:
             sobj = str(self.currentItem.objectName())
-            error = backend.checkCheckinValidity(sobj, context)
+            error = backend.check_checkin_validity(sobj, context)
             if error:
                 logger.error(error)
                 cui.showMessage(

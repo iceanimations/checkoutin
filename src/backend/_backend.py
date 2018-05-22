@@ -134,7 +134,7 @@ def check_checkin_validity(sobj, context):
     '''Performs check if the scene contains more than one geosets and if the
     name of the only geoset matches the asset name'''
 
-    geo_sets = mi.get_geo_sets(nonReferencedOnly=True, valid_only=False)
+    geo_sets = mi.get_geo_sets(non_referenced_only=True, valid_only=False)
 
     if context.lower().startswith('rig'):
         if not geo_sets:
@@ -1306,12 +1306,12 @@ def create_combined_version(snapshot,
     mi.openFile(path, prompt=0)
 
     logger.info('Combining geo sets ...')
-    geo_sets = mi.get_geo_sets(nonReferencedOnly=True, validOnly=True)
+    geo_sets = mi.get_geo_sets(non_referenced_only=True, valid_only=True)
     if not geo_sets:
         mi.newScene()
         raise Exception('No valid geo sets found')
     geo_set = geo_sets[0]
-    combined_mesh = mi.getCombinedMeshFromSet(
+    combined_mesh = mi.get_combined_mesh_from_set(
         geo_set, midfix=context.split('/')[0])
 
     if cleanup:
