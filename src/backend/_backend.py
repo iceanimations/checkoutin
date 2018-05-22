@@ -1306,17 +1306,12 @@ def create_combined_version(snapshot,
     mi.openFile(path, prompt=0)
 
     logger.info('Combining geo sets ...')
-    geo_sets = mi.get_geo_sets(non_referenced_only=True, valid_only=True)
-    if not geo_sets:
-        mi.newScene()
-        raise Exception('No valid geo sets found')
-    geo_set = geo_sets[0]
-    combined_mesh = mi.get_combined_mesh_from_set(
-        geo_set, midfix=context.split('/')[0])
+    combined_meshes = mi.get_combined_meshes_from_current_scene(
+            midfix=context.split('/')[0])
 
     if cleanup:
         if context.split('/')[0] != 'rig':
-            pc.select(combined_mesh)
+            pc.select(combined_meshes)
             pc.mel.DeleteHistory()
         else:
             useCleanExport = False
@@ -1326,7 +1321,7 @@ def create_combined_version(snapshot,
     filepath = None
     if useCleanExport:
         logger.info('exporting combined mesh')
-        filepath = clean_asset_export(combined_mesh)
+        filepath = clean_asset_export(combined_meshes)
 
     logger.info('Checking in file as combined')
     combinedContext = '/'.join([context, postfix])
