@@ -197,8 +197,15 @@ class Explorer(cui.Explorer):
             None
 
     def checkout(self, r=False):
+        with_texture = False
+        if self.currentContext:
+            context = self.currentContext.title().split('/')[0]
+            if context == 'shaded':
+                with_texture = True
         if self.currentFile:
-            backend.checkout(str(self.currentFile.objectName()), r=r)
+            backend.checkout(
+                    str(self.currentFile.objectName()), r=r,
+                    with_texture=with_texture)
 
     def showCheckinputDialog(self):
         try:
