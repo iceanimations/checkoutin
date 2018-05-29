@@ -185,7 +185,7 @@ class Dialog(CheckinForm, CheckinBase):
                     context = self.parentWin.currentContext.title().split('/')[
                         0]
                 if self.isProxy():
-                    error = backend.validateSelectionForProxy()
+                    error = backend.validate_selection_for_proxy()
                     logger.error(error)
                     if error:
                         cui.showMessage(

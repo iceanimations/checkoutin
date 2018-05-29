@@ -164,8 +164,9 @@ def checkout(snapshot, r=False, with_texture=True):
 
         snap = server.get_by_search_key(snapshot)
         sobj = server.get_by_search_key(
-            server.build_search_key(snap['search_type'], snap['search_code'],
-                                    snap['project_code']))
+                server.build_search_key(
+                        snap['search_type'], snap['search_code'],
+                        snap['project_code']))
 
         util.set_project(project=snap['project_code'])
 
