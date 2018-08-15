@@ -59,7 +59,7 @@ class MainBrowser(Explorer):
             self.clearWindow()
             return
         backend.set_project(projectName)
-        assets = util.all_assets(self.projects[projectName])
+        assets = self.getAssets()
         # clear the window
         self.clearWindow()
         self.showAssets(assets)
@@ -214,8 +214,21 @@ class MainBrowser(Explorer):
         self.currentItem = None
         self.clearContextsProcesses()
 
+    def getAssets(self):
+        newItems = []
+        name = str(self.projectsBox.currentText())
+        if name == '--Select Project--':
+            return newItems
+        try:
+            proj = self.projects[name]
+            newItems = util.all_assets(proj)
+        except Exception as exc:
+            print "Error retrieving assets: %r" % exc
+        return newItems
+
     def updateWindow(self):
 
+        newItems = []
         if self.shot:
             project, shot = self.shot.split('>')
             newItems = util.get_assets_in_shot(project, shot)
@@ -223,7 +236,7 @@ class MainBrowser(Explorer):
             proj = str(self.projectsBox.currentText())
             if proj == '--Select Project--':
                 return
-            newItems = util.all_assets(self.projects[proj])
+            newItems = self.getAssets()
 
         assetsLen1 = len(newItems)
         assetsLen2 = len(self.itemsBox.items())

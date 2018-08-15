@@ -104,6 +104,11 @@ def set_project(name):
 
 
 def get_project():
+    try:
+        raise ValueError
+    except:
+        import traceback
+        traceback.print_exc()
     return pc.optionVar(q=CURRENT_PROJECT_KEY)
 
 

@@ -81,6 +81,14 @@ class Explorer(cui.Explorer):
 
         appUsageApp.updateDatabase(''.join(self.title.split()))
 
+    def setProjectsBox(self):
+        super(Explorer, self).setProjectsBox()
+        if backend:
+            name = backend.get_project()
+            project = self.projects.get(name, '')
+            if project:
+                util.get_server().set_project(project)
+
     def createRedshiftProxy(self):
         if self.currentFile:
             error = backend.createRedshiftProxy(self.currentFile.objectName())
